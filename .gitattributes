@@ -1,0 +1,14 @@
+# 文本文件统一 LF 换行
+* text=auto eol=lf
+*.php text eol=lf
+*.js text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.sql text eol=lf
+
+# 二进制文件
+*.xlsx binary
+*.png binary
+*.jpg binary
+*.webp binary
