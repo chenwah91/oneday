@@ -18,4 +18,12 @@ final class ErrorCode
 
     // 登录
     public const BAD_CREDENTIALS = 'BAD_CREDENTIALS';
+
+    // 游戏经济 Mutation(建造/升级/拆除等)
+    public const INSUFFICIENT_RESOURCE = 'INSUFFICIENT_RESOURCE';
+    public const BUILDING_LIMIT_REACHED = 'BUILDING_LIMIT_REACHED';
+    public const INVALID_POSITION = 'INVALID_POSITION';
+    public const LAND_OCCUPIED = 'LAND_OCCUPIED';
+    public const REVISION_CONFLICT = 'REVISION_CONFLICT';
+    public const INVALID_BUILDING = 'INVALID_BUILDING';
 }
