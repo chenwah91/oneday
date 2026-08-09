@@ -1,0 +1,502 @@
+[
+  {
+    "tech_id": "TECH_I_SUST",
+    "era": "I",
+    "branch": "生存/农业",
+    "name": "生存采集",
+    "knowledge_cost": 20,
+    "research_minutes": 1,
+    "prerequisite_tech_ids": [],
+    "unlock_building_ids": ["F01"]
+  },
+  {
+    "tech_id": "TECH_I_IND",
+    "era": "I",
+    "branch": "工业/加工",
+    "name": "石木工艺",
+    "knowledge_cost": 30,
+    "research_minutes": 1,
+    "prerequisite_tech_ids": [],
+    "unlock_building_ids": ["R01", "E01"]
+  },
+  {
+    "tech_id": "TECH_I_CIV",
+    "era": "I",
+    "branch": "治理/科研/商贸",
+    "name": "部落治理",
+    "knowledge_cost": 30,
+    "research_minutes": 1,
+    "prerequisite_tech_ids": [],
+    "unlock_building_ids": ["H01", "A01"]
+  },
+  {
+    "tech_id": "TECH_I_LOG",
+    "era": "I",
+    "branch": "仓储/运输",
+    "name": "基础仓储",
+    "knowledge_cost": 30,
+    "research_minutes": 1,
+    "prerequisite_tech_ids": [],
+    "unlock_building_ids": ["S01"]
+  },
+  {
+    "tech_id": "TECH_I_DEF",
+    "era": "I",
+    "branch": "国防",
+    "name": "警戒与栅栏",
+    "knowledge_cost": 20,
+    "research_minutes": 1,
+    "prerequisite_tech_ids": [],
+    "unlock_building_ids": ["D01"]
+  },
+  {
+    "tech_id": "TECH_II_SUST",
+    "era": "II",
+    "branch": "生存/农业",
+    "name": "定居农业",
+    "knowledge_cost": 60,
+    "research_minutes": 1,
+    "prerequisite_tech_ids": ["TECH_I_SUST"],
+    "unlock_building_ids": ["F02"]
+  },
+  {
+    "tech_id": "TECH_II_IND",
+    "era": "II",
+    "branch": "工业/加工",
+    "name": "石工与窑作",
+    "knowledge_cost": 80,
+    "research_minutes": 1,
+    "prerequisite_tech_ids": ["TECH_I_IND"],
+    "unlock_building_ids": ["R02", "P01", "P02"]
+  },
+  {
+    "tech_id": "TECH_II_CIV",
+    "era": "II",
+    "branch": "治理/科研/商贸",
+    "name": "村落贸易",
+    "knowledge_cost": 70,
+    "research_minutes": 1,
+    "prerequisite_tech_ids": ["TECH_I_CIV"],
+    "unlock_building_ids": ["H02", "A02", "C01"]
+  },
+  {
+    "tech_id": "TECH_II_LOG",
+    "era": "II",
+    "branch": "仓储/运输",
+    "name": "道路与谷仓",
+    "knowledge_cost": 70,
+    "research_minutes": 1,
+    "prerequisite_tech_ids": ["TECH_I_LOG"],
+    "unlock_building_ids": ["S02", "T02"]
+  },
+  {
+    "tech_id": "TECH_II_DEF",
+    "era": "II",
+    "branch": "国防",
+    "name": "瞭望制度",
+    "knowledge_cost": 60,
+    "research_minutes": 1,
+    "prerequisite_tech_ids": ["TECH_I_DEF"],
+    "unlock_building_ids": ["D02"]
+  },
+  {
+    "tech_id": "TECH_III_SUST",
+    "era": "III",
+    "branch": "生存/农业",
+    "name": "灌溉农业",
+    "knowledge_cost": 150,
+    "research_minutes": 1.2,
+    "prerequisite_tech_ids": ["TECH_II_SUST"],
+    "unlock_building_ids": ["F03"]
+  },
+  {
+    "tech_id": "TECH_III_IND",
+    "era": "III",
+    "branch": "工业/加工",
+    "name": "青铜冶金",
+    "knowledge_cost": 190,
+    "research_minutes": 1.6,
+    "prerequisite_tech_ids": ["TECH_II_IND"],
+    "unlock_building_ids": ["R03", "R04", "P03", "P04", "E02"]
+  },
+  {
+    "tech_id": "TECH_III_CIV",
+    "era": "III",
+    "branch": "治理/科研/商贸",
+    "name": "文字与城政",
+    "knowledge_cost": 180,
+    "research_minutes": 1.5,
+    "prerequisite_tech_ids": ["TECH_II_CIV"],
+    "unlock_building_ids": ["H03", "A03", "K01"]
+  },
+  {
+    "tech_id": "TECH_III_LOG",
+    "era": "III",
+    "branch": "仓储/运输",
+    "name": "城市物流",
+    "knowledge_cost": 170,
+    "research_minutes": 1.4,
+    "prerequisite_tech_ids": ["TECH_II_LOG"],
+    "unlock_building_ids": ["S03", "T03"]
+  },
+  {
+    "tech_id": "TECH_III_DEF",
+    "era": "III",
+    "branch": "国防",
+    "name": "青铜城防",
+    "knowledge_cost": 150,
+    "research_minutes": 1.2,
+    "prerequisite_tech_ids": ["TECH_II_DEF"],
+    "unlock_building_ids": ["D03"]
+  },
+  {
+    "tech_id": "TECH_IV_SUST",
+    "era": "IV",
+    "branch": "生存/农业",
+    "name": "大型农庄",
+    "knowledge_cost": 300,
+    "research_minutes": 2.5,
+    "prerequisite_tech_ids": ["TECH_III_SUST"],
+    "unlock_building_ids": ["F04"]
+  },
+  {
+    "tech_id": "TECH_IV_IND",
+    "era": "IV",
+    "branch": "工业/加工",
+    "name": "铁器与煤炭",
+    "knowledge_cost": 380,
+    "research_minutes": 3.2,
+    "prerequisite_tech_ids": ["TECH_III_IND"],
+    "unlock_building_ids": ["R05", "R06", "P05"]
+  },
+  {
+    "tech_id": "TECH_IV_CIV",
+    "era": "IV",
+    "branch": "治理/科研/商贸",
+    "name": "国家行政",
+    "knowledge_cost": 350,
+    "research_minutes": 2.9,
+    "prerequisite_tech_ids": ["TECH_III_CIV"],
+    "unlock_building_ids": ["H04", "A04"]
+  },
+  {
+    "tech_id": "TECH_IV_LOG",
+    "era": "IV",
+    "branch": "仓储/运输",
+    "name": "道路工程",
+    "knowledge_cost": 330,
+    "research_minutes": 2.8,
+    "prerequisite_tech_ids": ["TECH_III_LOG"],
+    "unlock_building_ids": ["S04", "T04"]
+  },
+  {
+    "tech_id": "TECH_IV_DEF",
+    "era": "IV",
+    "branch": "国防",
+    "name": "铁制城防",
+    "knowledge_cost": 300,
+    "research_minutes": 2.5,
+    "prerequisite_tech_ids": ["TECH_III_DEF"],
+    "unlock_building_ids": ["D04"]
+  },
+  {
+    "tech_id": "TECH_V_SUST",
+    "era": "V",
+    "branch": "生存/农业",
+    "name": "帝国农业",
+    "knowledge_cost": 600,
+    "research_minutes": 5.0,
+    "prerequisite_tech_ids": ["TECH_IV_SUST"],
+    "unlock_building_ids": ["F05"]
+  },
+  {
+    "tech_id": "TECH_V_IND",
+    "era": "V",
+    "branch": "工业/加工",
+    "name": "古典工艺",
+    "knowledge_cost": 750,
+    "research_minutes": 6.2,
+    "prerequisite_tech_ids": ["TECH_IV_IND"],
+    "unlock_building_ids": []
+  },
+  {
+    "tech_id": "TECH_V_CIV",
+    "era": "V",
+    "branch": "治理/科研/商贸",
+    "name": "学院与帝国贸易",
+    "knowledge_cost": 690,
+    "research_minutes": 5.8,
+    "prerequisite_tech_ids": ["TECH_IV_CIV"],
+    "unlock_building_ids": ["H05", "A05", "C02", "K02", "M01"]
+  },
+  {
+    "tech_id": "TECH_V_LOG",
+    "era": "V",
+    "branch": "仓储/运输",
+    "name": "帝国交通",
+    "knowledge_cost": 660,
+    "research_minutes": 5.5,
+    "prerequisite_tech_ids": ["TECH_IV_LOG"],
+    "unlock_building_ids": ["S05", "T05"]
+  },
+  {
+    "tech_id": "TECH_V_DEF",
+    "era": "V",
+    "branch": "国防",
+    "name": "军团要塞",
+    "knowledge_cost": 600,
+    "research_minutes": 5.0,
+    "prerequisite_tech_ids": ["TECH_IV_DEF"],
+    "unlock_building_ids": ["D05"]
+  },
+  {
+    "tech_id": "TECH_VI_SUST",
+    "era": "VI",
+    "branch": "生存/农业",
+    "name": "庄园农业",
+    "knowledge_cost": 1200,
+    "research_minutes": 10.0,
+    "prerequisite_tech_ids": ["TECH_V_SUST"],
+    "unlock_building_ids": ["F06"]
+  },
+  {
+    "tech_id": "TECH_VI_IND",
+    "era": "VI",
+    "branch": "工业/加工",
+    "name": "行会工艺",
+    "knowledge_cost": 1500,
+    "research_minutes": 12.5,
+    "prerequisite_tech_ids": ["TECH_V_IND"],
+    "unlock_building_ids": []
+  },
+  {
+    "tech_id": "TECH_VI_CIV",
+    "era": "VI",
+    "branch": "治理/科研/商贸",
+    "name": "大学制度",
+    "knowledge_cost": 1380,
+    "research_minutes": 11.5,
+    "prerequisite_tech_ids": ["TECH_V_CIV"],
+    "unlock_building_ids": ["H06", "A06", "K03"]
+  },
+  {
+    "tech_id": "TECH_VI_LOG",
+    "era": "VI",
+    "branch": "仓储/运输",
+    "name": "驿道网络",
+    "knowledge_cost": 1320,
+    "research_minutes": 11.0,
+    "prerequisite_tech_ids": ["TECH_V_LOG"],
+    "unlock_building_ids": ["S06", "T06"]
+  },
+  {
+    "tech_id": "TECH_VI_DEF",
+    "era": "VI",
+    "branch": "国防",
+    "name": "城堡工程",
+    "knowledge_cost": 1200,
+    "research_minutes": 10.0,
+    "prerequisite_tech_ids": ["TECH_V_DEF"],
+    "unlock_building_ids": ["D06"]
+  },
+  {
+    "tech_id": "TECH_VII_SUST",
+    "era": "VII",
+    "branch": "生存/农业",
+    "name": "商业农业",
+    "knowledge_cost": 2500,
+    "research_minutes": 20.8,
+    "prerequisite_tech_ids": ["TECH_VI_SUST"],
+    "unlock_building_ids": ["F07"]
+  },
+  {
+    "tech_id": "TECH_VII_IND",
+    "era": "VII",
+    "branch": "工业/加工",
+    "name": "玻璃与精密工艺",
+    "knowledge_cost": 3130,
+    "research_minutes": 26.1,
+    "prerequisite_tech_ids": ["TECH_VI_IND"],
+    "unlock_building_ids": ["P06"]
+  },
+  {
+    "tech_id": "TECH_VII_CIV",
+    "era": "VII",
+    "branch": "治理/科研/商贸",
+    "name": "银行与研究院",
+    "knowledge_cost": 2880,
+    "research_minutes": 24.0,
+    "prerequisite_tech_ids": ["TECH_VI_CIV"],
+    "unlock_building_ids": ["H07", "A07", "C03"]
+  },
+  {
+    "tech_id": "TECH_VII_LOG",
+    "era": "VII",
+    "branch": "仓储/运输",
+    "name": "商贸运输",
+    "knowledge_cost": 2750,
+    "research_minutes": 22.9,
+    "prerequisite_tech_ids": ["TECH_VI_LOG"],
+    "unlock_building_ids": ["S07", "T07"]
+  },
+  {
+    "tech_id": "TECH_VII_DEF",
+    "era": "VII",
+    "branch": "国防",
+    "name": "火炮堡垒",
+    "knowledge_cost": 2500,
+    "research_minutes": 20.8,
+    "prerequisite_tech_ids": ["TECH_VI_DEF"],
+    "unlock_building_ids": ["D07"]
+  },
+  {
+    "tech_id": "TECH_VIII_SUST",
+    "era": "VIII",
+    "branch": "生存/农业",
+    "name": "机械化农业",
+    "knowledge_cost": 5000,
+    "research_minutes": 41.7,
+    "prerequisite_tech_ids": ["TECH_VII_SUST"],
+    "unlock_building_ids": ["F08"]
+  },
+  {
+    "tech_id": "TECH_VIII_IND",
+    "era": "VIII",
+    "branch": "工业/加工",
+    "name": "钢铁与机械化",
+    "knowledge_cost": 6250,
+    "research_minutes": 52.1,
+    "prerequisite_tech_ids": ["TECH_VII_IND"],
+    "unlock_building_ids": ["P07", "P08", "E03"]
+  },
+  {
+    "tech_id": "TECH_VIII_CIV",
+    "era": "VIII",
+    "branch": "治理/科研/商贸",
+    "name": "工业城市管理",
+    "knowledge_cost": 5750,
+    "research_minutes": 47.9,
+    "prerequisite_tech_ids": ["TECH_VII_CIV"],
+    "unlock_building_ids": ["H08", "A08"]
+  },
+  {
+    "tech_id": "TECH_VIII_LOG",
+    "era": "VIII",
+    "branch": "仓储/运输",
+    "name": "铁路与电力网",
+    "knowledge_cost": 5500,
+    "research_minutes": 45.8,
+    "prerequisite_tech_ids": ["TECH_VII_LOG", "TECH_VIII_IND"],
+    "unlock_building_ids": ["S08", "T08"]
+  },
+  {
+    "tech_id": "TECH_VIII_DEF",
+    "era": "VIII",
+    "branch": "国防",
+    "name": "工业防卫",
+    "knowledge_cost": 5000,
+    "research_minutes": 41.7,
+    "prerequisite_tech_ids": ["TECH_VII_DEF"],
+    "unlock_building_ids": ["D08"]
+  },
+  {
+    "tech_id": "TECH_IX_SUST",
+    "era": "IX",
+    "branch": "生存/农业",
+    "name": "智慧农业",
+    "knowledge_cost": 10000,
+    "research_minutes": 83.3,
+    "prerequisite_tech_ids": ["TECH_VIII_SUST"],
+    "unlock_building_ids": ["F09"]
+  },
+  {
+    "tech_id": "TECH_IX_IND",
+    "era": "IX",
+    "branch": "工业/加工",
+    "name": "石化与自动化",
+    "knowledge_cost": 12500,
+    "research_minutes": 104.2,
+    "prerequisite_tech_ids": ["TECH_VIII_IND", "TECH_VIII_LOG"],
+    "unlock_building_ids": ["R07", "P09", "P10", "E04"]
+  },
+  {
+    "tech_id": "TECH_IX_CIV",
+    "era": "IX",
+    "branch": "治理/科研/商贸",
+    "name": "现代科研与医疗",
+    "knowledge_cost": 11500,
+    "research_minutes": 95.8,
+    "prerequisite_tech_ids": ["TECH_VIII_CIV", "TECH_VIII_LOG"],
+    "unlock_building_ids": ["H09", "A09", "C04", "K04", "M02"]
+  },
+  {
+    "tech_id": "TECH_IX_LOG",
+    "era": "IX",
+    "branch": "仓储/运输",
+    "name": "高速物流",
+    "knowledge_cost": 11000,
+    "research_minutes": 91.7,
+    "prerequisite_tech_ids": ["TECH_VIII_LOG"],
+    "unlock_building_ids": ["S09", "T09"]
+  },
+  {
+    "tech_id": "TECH_IX_DEF",
+    "era": "IX",
+    "branch": "国防",
+    "name": "现代防卫",
+    "knowledge_cost": 10000,
+    "research_minutes": 83.3,
+    "prerequisite_tech_ids": ["TECH_VIII_DEF"],
+    "unlock_building_ids": ["D09"]
+  },
+  {
+    "tech_id": "TECH_X_SUST",
+    "era": "X",
+    "branch": "生存/农业",
+    "name": "垂直农业",
+    "knowledge_cost": 20000,
+    "research_minutes": 166.7,
+    "prerequisite_tech_ids": ["TECH_IX_SUST"],
+    "unlock_building_ids": ["F10"]
+  },
+  {
+    "tech_id": "TECH_X_IND",
+    "era": "X",
+    "branch": "工业/加工",
+    "name": "先进材料",
+    "knowledge_cost": 25000,
+    "research_minutes": 208.3,
+    "prerequisite_tech_ids": ["TECH_IX_IND", "TECH_IX_CIV"],
+    "unlock_building_ids": ["R08", "P11", "E05"]
+  },
+  {
+    "tech_id": "TECH_X_CIV",
+    "era": "X",
+    "branch": "治理/科研/商贸",
+    "name": "全球治理",
+    "knowledge_cost": 23000,
+    "research_minutes": 191.7,
+    "prerequisite_tech_ids": ["TECH_IX_CIV", "TECH_X_IND"],
+    "unlock_building_ids": ["H10", "A10", "K05"]
+  },
+  {
+    "tech_id": "TECH_X_LOG",
+    "era": "X",
+    "branch": "仓储/运输",
+    "name": "智能物流网络",
+    "knowledge_cost": 22000,
+    "research_minutes": 183.3,
+    "prerequisite_tech_ids": ["TECH_IX_LOG", "TECH_X_IND"],
+    "unlock_building_ids": ["S10", "T10"]
+  },
+  {
+    "tech_id": "TECH_X_DEF",
+    "era": "X",
+    "branch": "国防",
+    "name": "联合防卫",
+    "knowledge_cost": 20000,
+    "research_minutes": 166.7,
+    "prerequisite_tech_ids": ["TECH_IX_DEF"],
+    "unlock_building_ids": ["D10"]
+  }
+]

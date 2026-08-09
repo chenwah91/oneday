@@ -1,0 +1,3326 @@
+[
+    {
+        "building_id": "H01",
+        "era": "I",
+        "category": "居住",
+        "series": "住宅",
+        "name": "兽皮帐篷",
+        "max_count": 18,
+        "footprint_w": 2,
+        "footprint_h": 2,
+        "base_workers": 0,
+        "base_build_seconds": 32,
+        "tech_id": "TECH_I_CIV",
+        "cost": {
+            "木材": 12,
+            "资金": 8
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "人口容量",
+                "rate_per_min": 18
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 0,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "木屋"
+    },
+    {
+        "building_id": "F01",
+        "era": "I",
+        "category": "粮食生产",
+        "series": "农业",
+        "name": "采集营地",
+        "max_count": 13,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 3,
+        "base_build_seconds": 38,
+        "tech_id": "TECH_I_SUST",
+        "cost": {
+            "木材": 10,
+            "资金": 6
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "浆果",
+                "rate_per_min": 8
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 2,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "基础农田"
+    },
+    {
+        "building_id": "S01",
+        "era": "I",
+        "category": "仓储",
+        "series": "仓储",
+        "name": "储藏坑",
+        "max_count": 4,
+        "footprint_w": 2,
+        "footprint_h": 2,
+        "base_workers": 0,
+        "base_build_seconds": 39,
+        "tech_id": "TECH_I_LOG",
+        "cost": {
+            "木材": 15,
+            "资金": 10
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "仓储容量",
+                "rate_per_min": 150
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 2,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "谷仓"
+    },
+    {
+        "building_id": "A01",
+        "era": "I",
+        "category": "行政",
+        "series": "治理",
+        "name": "部落议事火堆",
+        "max_count": 1,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 5,
+        "base_build_seconds": 65,
+        "tech_id": "TECH_I_CIV",
+        "cost": {
+            "木材": 20,
+            "石料": 12,
+            "资金": 25
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "治理容量",
+                "rate_per_min": 80
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 7,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "议事厅"
+    },
+    {
+        "building_id": "D01",
+        "era": "I",
+        "category": "国防",
+        "series": "城防",
+        "name": "木栅栏",
+        "max_count": 6,
+        "footprint_w": 2,
+        "footprint_h": 2,
+        "base_workers": 4,
+        "base_build_seconds": 53,
+        "tech_id": "TECH_I_DEF",
+        "cost": {
+            "木材": 18,
+            "石料": 15,
+            "资金": 15
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "国防值",
+                "rate_per_min": 25
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 5,
+            "food_per_min": 1,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "瞭望塔"
+    },
+    {
+        "building_id": "H02",
+        "era": "II",
+        "category": "居住",
+        "series": "住宅",
+        "name": "木屋",
+        "max_count": 30,
+        "footprint_w": 2,
+        "footprint_h": 2,
+        "base_workers": 0,
+        "base_build_seconds": 44,
+        "tech_id": "TECH_II_CIV",
+        "cost": {
+            "木材": 24,
+            "石料": 10,
+            "资金": 16
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "人口容量",
+                "rate_per_min": 30
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 1,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "砖石民居"
+    },
+    {
+        "building_id": "F02",
+        "era": "II",
+        "category": "粮食生产",
+        "series": "农业",
+        "name": "基础农田",
+        "max_count": 18,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 4,
+        "base_build_seconds": 51,
+        "tech_id": "TECH_II_SUST",
+        "cost": {
+            "木材": 20,
+            "石料": 5,
+            "资金": 12
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "粮食",
+                "rate_per_min": 14
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 4,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "灌溉农田"
+    },
+    {
+        "building_id": "S02",
+        "era": "II",
+        "category": "仓储",
+        "series": "仓储",
+        "name": "谷仓",
+        "max_count": 5,
+        "footprint_w": 2,
+        "footprint_h": 2,
+        "base_workers": 1,
+        "base_build_seconds": 53,
+        "tech_id": "TECH_II_LOG",
+        "cost": {
+            "木材": 30,
+            "石料": 7,
+            "资金": 20
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "仓储容量",
+                "rate_per_min": 600
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 4,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "公共仓库"
+    },
+    {
+        "building_id": "T02",
+        "era": "II",
+        "category": "运输",
+        "series": "陆路运输",
+        "name": "土路",
+        "max_count": 50,
+        "footprint_w": 1,
+        "footprint_h": 4,
+        "base_workers": 0,
+        "base_build_seconds": 31,
+        "tech_id": "TECH_II_LOG",
+        "cost": {
+            "木材": 10,
+            "石料": 16,
+            "资金": 14
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "运输容量",
+                "rate_per_min": 140
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 2,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "石板路"
+    },
+    {
+        "building_id": "A02",
+        "era": "II",
+        "category": "行政",
+        "series": "治理",
+        "name": "议事厅",
+        "max_count": 1,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 8,
+        "base_build_seconds": 85,
+        "tech_id": "TECH_II_CIV",
+        "cost": {
+            "木材": 40,
+            "石料": 24,
+            "资金": 50
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "治理容量",
+                "rate_per_min": 320
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 14,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "行政厅"
+    },
+    {
+        "building_id": "D02",
+        "era": "II",
+        "category": "国防",
+        "series": "城防",
+        "name": "瞭望塔",
+        "max_count": 8,
+        "footprint_w": 2,
+        "footprint_h": 2,
+        "base_workers": 6,
+        "base_build_seconds": 71,
+        "tech_id": "TECH_II_DEF",
+        "cost": {
+            "木材": 36,
+            "石料": 30,
+            "资金": 30
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "国防值",
+                "rate_per_min": 100
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 10,
+            "food_per_min": 2,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "青铜城墙"
+    },
+    {
+        "building_id": "H03",
+        "era": "III",
+        "category": "居住",
+        "series": "住宅",
+        "name": "砖石民居",
+        "max_count": 42,
+        "footprint_w": 2,
+        "footprint_h": 2,
+        "base_workers": 0,
+        "base_build_seconds": 56,
+        "tech_id": "TECH_III_CIV",
+        "cost": {
+            "木材": 36,
+            "石料": 20,
+            "砖": 8,
+            "资金": 24
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "人口容量",
+                "rate_per_min": 42
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 2,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "城市住宅"
+    },
+    {
+        "building_id": "F03",
+        "era": "III",
+        "category": "粮食生产",
+        "series": "农业",
+        "name": "灌溉农田",
+        "max_count": 23,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 5,
+        "base_build_seconds": 64,
+        "tech_id": "TECH_III_SUST",
+        "cost": {
+            "木材": 30,
+            "石料": 10,
+            "砖": 4,
+            "资金": 18
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "粮食",
+                "rate_per_min": 20
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 6,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "大型农庄"
+    },
+    {
+        "building_id": "S03",
+        "era": "III",
+        "category": "仓储",
+        "series": "仓储",
+        "name": "公共仓库",
+        "max_count": 6,
+        "footprint_w": 2,
+        "footprint_h": 2,
+        "base_workers": 2,
+        "base_build_seconds": 67,
+        "tech_id": "TECH_III_LOG",
+        "cost": {
+            "木材": 45,
+            "石料": 14,
+            "砖": 7,
+            "资金": 30
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "仓储容量",
+                "rate_per_min": 1350
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 6,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "大型仓库"
+    },
+    {
+        "building_id": "T03",
+        "era": "III",
+        "category": "运输",
+        "series": "陆路运输",
+        "name": "石板路",
+        "max_count": 65,
+        "footprint_w": 1,
+        "footprint_h": 4,
+        "base_workers": 1,
+        "base_build_seconds": 39,
+        "tech_id": "TECH_III_LOG",
+        "cost": {
+            "木材": 15,
+            "石料": 24,
+            "砖": 5,
+            "资金": 21
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "运输容量",
+                "rate_per_min": 315
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 3,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "铺装道路"
+    },
+    {
+        "building_id": "A03",
+        "era": "III",
+        "category": "行政",
+        "series": "治理",
+        "name": "行政厅",
+        "max_count": 1,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 11,
+        "base_build_seconds": 105,
+        "tech_id": "TECH_III_CIV",
+        "cost": {
+            "木材": 60,
+            "石料": 36,
+            "砖": 10,
+            "资金": 75
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "治理容量",
+                "rate_per_min": 720
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 21,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "城镇官署"
+    },
+    {
+        "building_id": "D03",
+        "era": "III",
+        "category": "国防",
+        "series": "城防",
+        "name": "青铜城墙",
+        "max_count": 10,
+        "footprint_w": 3,
+        "footprint_h": 2,
+        "base_workers": 8,
+        "base_build_seconds": 89,
+        "tech_id": "TECH_III_DEF",
+        "cost": {
+            "木材": 54,
+            "石料": 45,
+            "青铜": 6,
+            "资金": 45
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "国防值",
+                "rate_per_min": 225
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 15,
+            "food_per_min": 3,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "铁制城门"
+    },
+    {
+        "building_id": "H04",
+        "era": "IV",
+        "category": "居住",
+        "series": "住宅",
+        "name": "城市住宅",
+        "max_count": 54,
+        "footprint_w": 2,
+        "footprint_h": 2,
+        "base_workers": 0,
+        "base_build_seconds": 68,
+        "tech_id": "TECH_IV_CIV",
+        "cost": {
+            "木材": 48,
+            "石料": 30,
+            "砖": 16,
+            "铁": 4,
+            "资金": 32
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "人口容量",
+                "rate_per_min": 54
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 3,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "公寓民居"
+    },
+    {
+        "building_id": "F04",
+        "era": "IV",
+        "category": "粮食生产",
+        "series": "农业",
+        "name": "大型农庄",
+        "max_count": 28,
+        "footprint_w": 4,
+        "footprint_h": 3,
+        "base_workers": 6,
+        "base_build_seconds": 77,
+        "tech_id": "TECH_IV_SUST",
+        "cost": {
+            "木材": 40,
+            "石料": 15,
+            "砖": 8,
+            "铁": 3,
+            "资金": 24
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "粮食",
+                "rate_per_min": 30
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 8,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "帝国农场"
+    },
+    {
+        "building_id": "S04",
+        "era": "IV",
+        "category": "仓储",
+        "series": "仓储",
+        "name": "大型仓库",
+        "max_count": 7,
+        "footprint_w": 3,
+        "footprint_h": 2,
+        "base_workers": 3,
+        "base_build_seconds": 81,
+        "tech_id": "TECH_IV_LOG",
+        "cost": {
+            "木材": 60,
+            "石料": 21,
+            "砖": 14,
+            "资金": 40
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "仓储容量",
+                "rate_per_min": 2400
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 8,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "帝国仓储所"
+    },
+    {
+        "building_id": "T04",
+        "era": "IV",
+        "category": "运输",
+        "series": "陆路运输",
+        "name": "铺装道路",
+        "max_count": 80,
+        "footprint_w": 1,
+        "footprint_h": 4,
+        "base_workers": 2,
+        "base_build_seconds": 47,
+        "tech_id": "TECH_IV_LOG",
+        "cost": {
+            "木材": 20,
+            "石料": 32,
+            "砖": 10,
+            "铁": 3,
+            "资金": 28
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "运输容量",
+                "rate_per_min": 560
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 4,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "帝国大道"
+    },
+    {
+        "building_id": "A04",
+        "era": "IV",
+        "category": "行政",
+        "series": "治理",
+        "name": "城镇官署",
+        "max_count": 1,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 14,
+        "base_build_seconds": 125,
+        "tech_id": "TECH_IV_CIV",
+        "cost": {
+            "木材": 80,
+            "石料": 48,
+            "砖": 20,
+            "铁": 4,
+            "资金": 100
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "治理容量",
+                "rate_per_min": 1280
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 28,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "总督府"
+    },
+    {
+        "building_id": "D04",
+        "era": "IV",
+        "category": "国防",
+        "series": "城防",
+        "name": "铁制城门",
+        "max_count": 12,
+        "footprint_w": 3,
+        "footprint_h": 2,
+        "base_workers": 10,
+        "base_build_seconds": 107,
+        "tech_id": "TECH_IV_DEF",
+        "cost": {
+            "木材": 72,
+            "石料": 60,
+            "青铜": 12,
+            "铁": 8,
+            "资金": 60
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "国防值",
+                "rate_per_min": 400
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 20,
+            "food_per_min": 4,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "军团要塞"
+    },
+    {
+        "building_id": "H05",
+        "era": "V",
+        "category": "居住",
+        "series": "住宅",
+        "name": "公寓民居",
+        "max_count": 66,
+        "footprint_w": 3,
+        "footprint_h": 2,
+        "base_workers": 0,
+        "base_build_seconds": 80,
+        "tech_id": "TECH_V_CIV",
+        "cost": {
+            "木材": 60,
+            "石料": 40,
+            "砖": 24,
+            "铁": 8,
+            "资金": 40
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "人口容量",
+                "rate_per_min": 66
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 4,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "市民住宅"
+    },
+    {
+        "building_id": "F05",
+        "era": "V",
+        "category": "粮食生产",
+        "series": "农业",
+        "name": "帝国农场",
+        "max_count": 33,
+        "footprint_w": 4,
+        "footprint_h": 3,
+        "base_workers": 7,
+        "base_build_seconds": 90,
+        "tech_id": "TECH_V_SUST",
+        "cost": {
+            "木材": 50,
+            "石料": 20,
+            "砖": 12,
+            "铁": 6,
+            "资金": 30
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "粮食",
+                "rate_per_min": 42
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 10,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "庄园农场"
+    },
+    {
+        "building_id": "S05",
+        "era": "V",
+        "category": "仓储",
+        "series": "仓储",
+        "name": "帝国仓储所",
+        "max_count": 8,
+        "footprint_w": 3,
+        "footprint_h": 2,
+        "base_workers": 4,
+        "base_build_seconds": 95,
+        "tech_id": "TECH_V_LOG",
+        "cost": {
+            "木材": 75,
+            "石料": 28,
+            "砖": 21,
+            "资金": 50
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "仓储容量",
+                "rate_per_min": 3750
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 10,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "城镇仓库"
+    },
+    {
+        "building_id": "T05",
+        "era": "V",
+        "category": "运输",
+        "series": "陆路运输",
+        "name": "帝国大道",
+        "max_count": 95,
+        "footprint_w": 1,
+        "footprint_h": 4,
+        "base_workers": 3,
+        "base_build_seconds": 55,
+        "tech_id": "TECH_V_LOG",
+        "cost": {
+            "木材": 25,
+            "石料": 40,
+            "砖": 15,
+            "铁": 6,
+            "资金": 35
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "运输容量",
+                "rate_per_min": 875
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 5,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "驿道"
+    },
+    {
+        "building_id": "A05",
+        "era": "V",
+        "category": "行政",
+        "series": "治理",
+        "name": "总督府",
+        "max_count": 2,
+        "footprint_w": 4,
+        "footprint_h": 3,
+        "base_workers": 17,
+        "base_build_seconds": 145,
+        "tech_id": "TECH_V_CIV",
+        "cost": {
+            "木材": 100,
+            "石料": 60,
+            "砖": 30,
+            "铁": 8,
+            "资金": 125
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "治理容量",
+                "rate_per_min": 2000
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 35,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "领主大厅"
+    },
+    {
+        "building_id": "D05",
+        "era": "V",
+        "category": "国防",
+        "series": "城防",
+        "name": "军团要塞",
+        "max_count": 14,
+        "footprint_w": 3,
+        "footprint_h": 2,
+        "base_workers": 12,
+        "base_build_seconds": 125,
+        "tech_id": "TECH_V_DEF",
+        "cost": {
+            "木材": 90,
+            "石料": 75,
+            "青铜": 18,
+            "铁": 16,
+            "资金": 75
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "国防值",
+                "rate_per_min": 625
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 25,
+            "food_per_min": 5,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "城堡"
+    },
+    {
+        "building_id": "H06",
+        "era": "VI",
+        "category": "居住",
+        "series": "住宅",
+        "name": "市民住宅",
+        "max_count": 78,
+        "footprint_w": 3,
+        "footprint_h": 2,
+        "base_workers": 0,
+        "base_build_seconds": 92,
+        "tech_id": "TECH_VI_CIV",
+        "cost": {
+            "木材": 72,
+            "石料": 50,
+            "砖": 32,
+            "铁": 12,
+            "资金": 48
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "人口容量",
+                "rate_per_min": 78
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 5,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "联排公寓"
+    },
+    {
+        "building_id": "F06",
+        "era": "VI",
+        "category": "粮食生产",
+        "series": "农业",
+        "name": "庄园农场",
+        "max_count": 38,
+        "footprint_w": 4,
+        "footprint_h": 3,
+        "base_workers": 8,
+        "base_build_seconds": 103,
+        "tech_id": "TECH_VI_SUST",
+        "cost": {
+            "木材": 60,
+            "石料": 25,
+            "砖": 16,
+            "铁": 9,
+            "资金": 36
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "粮食",
+                "rate_per_min": 55
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 12,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "商业农场"
+    },
+    {
+        "building_id": "S06",
+        "era": "VI",
+        "category": "仓储",
+        "series": "仓储",
+        "name": "城镇仓库",
+        "max_count": 9,
+        "footprint_w": 3,
+        "footprint_h": 2,
+        "base_workers": 5,
+        "base_build_seconds": 109,
+        "tech_id": "TECH_VI_LOG",
+        "cost": {
+            "木材": 90,
+            "石料": 35,
+            "砖": 28,
+            "资金": 60
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "仓储容量",
+                "rate_per_min": 5400
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 12,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "商贸仓库"
+    },
+    {
+        "building_id": "T06",
+        "era": "VI",
+        "category": "运输",
+        "series": "陆路运输",
+        "name": "驿道",
+        "max_count": 110,
+        "footprint_w": 1,
+        "footprint_h": 4,
+        "base_workers": 4,
+        "base_build_seconds": 63,
+        "tech_id": "TECH_VI_LOG",
+        "cost": {
+            "木材": 30,
+            "石料": 48,
+            "砖": 20,
+            "铁": 9,
+            "资金": 42
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "运输容量",
+                "rate_per_min": 1260
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 6,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "商贸大道"
+    },
+    {
+        "building_id": "A06",
+        "era": "VI",
+        "category": "行政",
+        "series": "治理",
+        "name": "领主大厅",
+        "max_count": 2,
+        "footprint_w": 4,
+        "footprint_h": 3,
+        "base_workers": 20,
+        "base_build_seconds": 165,
+        "tech_id": "TECH_VI_CIV",
+        "cost": {
+            "木材": 120,
+            "石料": 72,
+            "砖": 40,
+            "铁": 12,
+            "资金": 150
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "治理容量",
+                "rate_per_min": 2880
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 42,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "市政厅"
+    },
+    {
+        "building_id": "D06",
+        "era": "VI",
+        "category": "国防",
+        "series": "城防",
+        "name": "城堡",
+        "max_count": 10,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 14,
+        "base_build_seconds": 143,
+        "tech_id": "TECH_VI_DEF",
+        "cost": {
+            "木材": 108,
+            "石料": 90,
+            "青铜": 24,
+            "铁": 24,
+            "资金": 90
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "国防值",
+                "rate_per_min": 900
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 30,
+            "food_per_min": 6,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "火炮堡垒"
+    },
+    {
+        "building_id": "H07",
+        "era": "VII",
+        "category": "居住",
+        "series": "住宅",
+        "name": "联排公寓",
+        "max_count": 90,
+        "footprint_w": 3,
+        "footprint_h": 2,
+        "base_workers": 0,
+        "base_build_seconds": 104,
+        "tech_id": "TECH_VII_CIV",
+        "cost": {
+            "木材": 84,
+            "石料": 60,
+            "砖": 40,
+            "铁": 16,
+            "资金": 56
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "人口容量",
+                "rate_per_min": 90
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 6,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "工人公寓"
+    },
+    {
+        "building_id": "F07",
+        "era": "VII",
+        "category": "粮食生产",
+        "series": "农业",
+        "name": "商业农场",
+        "max_count": 43,
+        "footprint_w": 4,
+        "footprint_h": 3,
+        "base_workers": 9,
+        "base_build_seconds": 116,
+        "tech_id": "TECH_VII_SUST",
+        "cost": {
+            "木材": 70,
+            "石料": 30,
+            "砖": 20,
+            "铁": 12,
+            "资金": 42
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "粮食",
+                "rate_per_min": 75
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 14,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "机械化农场"
+    },
+    {
+        "building_id": "S07",
+        "era": "VII",
+        "category": "仓储",
+        "series": "仓储",
+        "name": "商贸仓库",
+        "max_count": 10,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 6,
+        "base_build_seconds": 123,
+        "tech_id": "TECH_VII_LOG",
+        "cost": {
+            "木材": 105,
+            "石料": 42,
+            "砖": 35,
+            "资金": 70
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "仓储容量",
+                "rate_per_min": 7350
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 14,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "工业仓库"
+    },
+    {
+        "building_id": "T07",
+        "era": "VII",
+        "category": "运输",
+        "series": "陆路运输",
+        "name": "商贸大道",
+        "max_count": 125,
+        "footprint_w": 1,
+        "footprint_h": 4,
+        "base_workers": 5,
+        "base_build_seconds": 71,
+        "tech_id": "TECH_VII_LOG",
+        "cost": {
+            "木材": 35,
+            "石料": 56,
+            "砖": 25,
+            "铁": 12,
+            "资金": 49
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "运输容量",
+                "rate_per_min": 1715
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 7,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "铁路"
+    },
+    {
+        "building_id": "A07",
+        "era": "VII",
+        "category": "行政",
+        "series": "治理",
+        "name": "市政厅",
+        "max_count": 2,
+        "footprint_w": 4,
+        "footprint_h": 3,
+        "base_workers": 23,
+        "base_build_seconds": 185,
+        "tech_id": "TECH_VII_CIV",
+        "cost": {
+            "木材": 140,
+            "石料": 84,
+            "砖": 50,
+            "铁": 16,
+            "资金": 175
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "治理容量",
+                "rate_per_min": 3920
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 49,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "城市管理局"
+    },
+    {
+        "building_id": "D07",
+        "era": "VII",
+        "category": "国防",
+        "series": "城防",
+        "name": "火炮堡垒",
+        "max_count": 11,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 16,
+        "base_build_seconds": 161,
+        "tech_id": "TECH_VII_DEF",
+        "cost": {
+            "木材": 126,
+            "石料": 105,
+            "青铜": 30,
+            "铁": 32,
+            "煤炭": 5,
+            "资金": 105
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "国防值",
+                "rate_per_min": 1225
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 35,
+            "food_per_min": 7,
+            "fuel_per_min": 2,
+            "power_per_min": 0
+        },
+        "upgrade_to": "工业军营"
+    },
+    {
+        "building_id": "H08",
+        "era": "VIII",
+        "category": "居住",
+        "series": "住宅",
+        "name": "工人公寓",
+        "max_count": 102,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 0,
+        "base_build_seconds": 116,
+        "tech_id": "TECH_VIII_CIV",
+        "cost": {
+            "木材": 96,
+            "石料": 70,
+            "砖": 48,
+            "铁": 20,
+            "钢铁": 8,
+            "资金": 64
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "人口容量",
+                "rate_per_min": 102
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 7,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "现代住宅楼"
+    },
+    {
+        "building_id": "F08",
+        "era": "VIII",
+        "category": "粮食生产",
+        "series": "农业",
+        "name": "机械化农场",
+        "max_count": 48,
+        "footprint_w": 4,
+        "footprint_h": 4,
+        "base_workers": 10,
+        "base_build_seconds": 129,
+        "tech_id": "TECH_VIII_SUST",
+        "cost": {
+            "木材": 80,
+            "石料": 35,
+            "砖": 24,
+            "铁": 15,
+            "煤炭": 6,
+            "钢铁": 10,
+            "资金": 48
+        },
+        "input": [
+            {
+                "resource": "燃料",
+                "rate_per_min": 11
+            },
+            {
+                "resource": "电力",
+                "rate_per_min": 4
+            }
+        ],
+        "output": [
+            {
+                "resource": "粮食",
+                "rate_per_min": 110
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 16,
+            "food_per_min": 0,
+            "fuel_per_min": 2,
+            "power_per_min": 5
+        },
+        "upgrade_to": "智慧农业基地"
+    },
+    {
+        "building_id": "S08",
+        "era": "VIII",
+        "category": "仓储",
+        "series": "仓储",
+        "name": "工业仓库",
+        "max_count": 11,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 7,
+        "base_build_seconds": 137,
+        "tech_id": "TECH_VIII_LOG",
+        "cost": {
+            "木材": 120,
+            "石料": 49,
+            "砖": 42,
+            "钢铁": 15,
+            "资金": 80
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "仓储容量",
+                "rate_per_min": 9600
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 16,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "自动物流中心"
+    },
+    {
+        "building_id": "T08",
+        "era": "VIII",
+        "category": "运输",
+        "series": "陆路运输",
+        "name": "铁路",
+        "max_count": 140,
+        "footprint_w": 1,
+        "footprint_h": 4,
+        "base_workers": 6,
+        "base_build_seconds": 79,
+        "tech_id": "TECH_VIII_LOG",
+        "cost": {
+            "木材": 40,
+            "石料": 64,
+            "砖": 30,
+            "铁": 15,
+            "煤炭": 8,
+            "钢铁": 15,
+            "资金": 56
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "运输容量",
+                "rate_per_min": 2240
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 8,
+            "food_per_min": 0,
+            "fuel_per_min": 2,
+            "power_per_min": 0
+        },
+        "upgrade_to": "高速公路"
+    },
+    {
+        "building_id": "A08",
+        "era": "VIII",
+        "category": "行政",
+        "series": "治理",
+        "name": "城市管理局",
+        "max_count": 2,
+        "footprint_w": 4,
+        "footprint_h": 4,
+        "base_workers": 26,
+        "base_build_seconds": 205,
+        "tech_id": "TECH_VIII_CIV",
+        "cost": {
+            "木材": 160,
+            "石料": 96,
+            "砖": 60,
+            "铁": 20,
+            "钢铁": 15,
+            "资金": 200
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "治理容量",
+                "rate_per_min": 5120
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 56,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "中央行政中心"
+    },
+    {
+        "building_id": "D08",
+        "era": "VIII",
+        "category": "国防",
+        "series": "城防",
+        "name": "工业军营",
+        "max_count": 12,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 18,
+        "base_build_seconds": 179,
+        "tech_id": "TECH_VIII_DEF",
+        "cost": {
+            "木材": 144,
+            "石料": 120,
+            "青铜": 36,
+            "铁": 40,
+            "煤炭": 10,
+            "钢铁": 20,
+            "资金": 120
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "国防值",
+                "rate_per_min": 1600
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 40,
+            "food_per_min": 8,
+            "fuel_per_min": 2,
+            "power_per_min": 0
+        },
+        "upgrade_to": "现代防卫基地"
+    },
+    {
+        "building_id": "H09",
+        "era": "IX",
+        "category": "居住",
+        "series": "住宅",
+        "name": "现代住宅楼",
+        "max_count": 114,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 0,
+        "base_build_seconds": 128,
+        "tech_id": "TECH_IX_CIV",
+        "cost": {
+            "木材": 108,
+            "石料": 80,
+            "砖": 56,
+            "铁": 24,
+            "钢铁": 16,
+            "玻璃": 8,
+            "水泥": 10,
+            "资金": 72
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "人口容量",
+                "rate_per_min": 114
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 8,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "生态超级社区"
+    },
+    {
+        "building_id": "F09",
+        "era": "IX",
+        "category": "粮食生产",
+        "series": "农业",
+        "name": "智慧农业基地",
+        "max_count": 53,
+        "footprint_w": 4,
+        "footprint_h": 4,
+        "base_workers": 11,
+        "base_build_seconds": 142,
+        "tech_id": "TECH_IX_SUST",
+        "cost": {
+            "木材": 90,
+            "石料": 40,
+            "砖": 28,
+            "铁": 18,
+            "煤炭": 6,
+            "钢铁": 20,
+            "水泥": 8,
+            "电子元件": 5,
+            "资金": 54
+        },
+        "input": [
+            {
+                "resource": "燃料",
+                "rate_per_min": 12
+            },
+            {
+                "resource": "电力",
+                "rate_per_min": 8
+            }
+        ],
+        "output": [
+            {
+                "resource": "粮食",
+                "rate_per_min": 160
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 18,
+            "food_per_min": 0,
+            "fuel_per_min": 2,
+            "power_per_min": 10
+        },
+        "upgrade_to": "垂直农业中心"
+    },
+    {
+        "building_id": "S09",
+        "era": "IX",
+        "category": "仓储",
+        "series": "仓储",
+        "name": "自动物流中心",
+        "max_count": 12,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 8,
+        "base_build_seconds": 151,
+        "tech_id": "TECH_IX_LOG",
+        "cost": {
+            "木材": 135,
+            "石料": 56,
+            "砖": 49,
+            "钢铁": 30,
+            "电子元件": 6,
+            "资金": 90
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "仓储容量",
+                "rate_per_min": 12150
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 18,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 3
+        },
+        "upgrade_to": "全球物流枢纽"
+    },
+    {
+        "building_id": "T09",
+        "era": "IX",
+        "category": "运输",
+        "series": "陆路运输",
+        "name": "高速公路",
+        "max_count": 155,
+        "footprint_w": 1,
+        "footprint_h": 4,
+        "base_workers": 7,
+        "base_build_seconds": 87,
+        "tech_id": "TECH_IX_LOG",
+        "cost": {
+            "木材": 45,
+            "石料": 72,
+            "砖": 35,
+            "铁": 18,
+            "煤炭": 8,
+            "钢铁": 30,
+            "水泥": 20,
+            "资金": 63
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "运输容量",
+                "rate_per_min": 2835
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 9,
+            "food_per_min": 0,
+            "fuel_per_min": 2,
+            "power_per_min": 0
+        },
+        "upgrade_to": "智能运输网络"
+    },
+    {
+        "building_id": "A09",
+        "era": "IX",
+        "category": "行政",
+        "series": "治理",
+        "name": "中央行政中心",
+        "max_count": 2,
+        "footprint_w": 4,
+        "footprint_h": 4,
+        "base_workers": 29,
+        "base_build_seconds": 225,
+        "tech_id": "TECH_IX_CIV",
+        "cost": {
+            "木材": 180,
+            "石料": 108,
+            "砖": 70,
+            "铁": 24,
+            "钢铁": 30,
+            "玻璃": 10,
+            "电子元件": 8,
+            "资金": 225
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "治理容量",
+                "rate_per_min": 6480
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 63,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "世界议会中心"
+    },
+    {
+        "building_id": "D09",
+        "era": "IX",
+        "category": "国防",
+        "series": "城防",
+        "name": "现代防卫基地",
+        "max_count": 13,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 20,
+        "base_build_seconds": 197,
+        "tech_id": "TECH_IX_DEF",
+        "cost": {
+            "木材": 162,
+            "石料": 135,
+            "青铜": 42,
+            "铁": 48,
+            "煤炭": 15,
+            "钢铁": 40,
+            "水泥": 20,
+            "电子元件": 10,
+            "资金": 135
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "国防值",
+                "rate_per_min": 2025
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 45,
+            "food_per_min": 9,
+            "fuel_per_min": 2,
+            "power_per_min": 3
+        },
+        "upgrade_to": "联合防卫司令部"
+    },
+    {
+        "building_id": "H10",
+        "era": "X",
+        "category": "居住",
+        "series": "住宅",
+        "name": "生态超级社区",
+        "max_count": 126,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 0,
+        "base_build_seconds": 140,
+        "tech_id": "TECH_X_CIV",
+        "cost": {
+            "木材": 120,
+            "石料": 90,
+            "砖": 64,
+            "铁": 28,
+            "钢铁": 24,
+            "玻璃": 16,
+            "水泥": 20,
+            "电子元件": 5,
+            "稀有金属": 2,
+            "资金": 80
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "人口容量",
+                "rate_per_min": 126
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 9,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "终局"
+    },
+    {
+        "building_id": "F10",
+        "era": "X",
+        "category": "粮食生产",
+        "series": "农业",
+        "name": "垂直农业中心",
+        "max_count": 58,
+        "footprint_w": 4,
+        "footprint_h": 4,
+        "base_workers": 12,
+        "base_build_seconds": 155,
+        "tech_id": "TECH_X_SUST",
+        "cost": {
+            "木材": 100,
+            "石料": 45,
+            "砖": 32,
+            "铁": 21,
+            "煤炭": 6,
+            "钢铁": 30,
+            "水泥": 16,
+            "电子元件": 10,
+            "资金": 60
+        },
+        "input": [
+            {
+                "resource": "燃料",
+                "rate_per_min": 13
+            },
+            {
+                "resource": "电力",
+                "rate_per_min": 12
+            }
+        ],
+        "output": [
+            {
+                "resource": "高品质粮食",
+                "rate_per_min": 240
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 20,
+            "food_per_min": 0,
+            "fuel_per_min": 2,
+            "power_per_min": 15
+        },
+        "upgrade_to": "终局"
+    },
+    {
+        "building_id": "S10",
+        "era": "X",
+        "category": "仓储",
+        "series": "仓储",
+        "name": "全球物流枢纽",
+        "max_count": 13,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 9,
+        "base_build_seconds": 165,
+        "tech_id": "TECH_X_LOG",
+        "cost": {
+            "木材": 150,
+            "石料": 63,
+            "砖": 56,
+            "钢铁": 45,
+            "电子元件": 12,
+            "资金": 100
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "仓储容量",
+                "rate_per_min": 15000
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 20,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 6
+        },
+        "upgrade_to": "终局"
+    },
+    {
+        "building_id": "T10",
+        "era": "X",
+        "category": "运输",
+        "series": "陆路运输",
+        "name": "智能运输网络",
+        "max_count": 170,
+        "footprint_w": 1,
+        "footprint_h": 4,
+        "base_workers": 8,
+        "base_build_seconds": 95,
+        "tech_id": "TECH_X_LOG",
+        "cost": {
+            "木材": 50,
+            "石料": 80,
+            "砖": 40,
+            "铁": 21,
+            "煤炭": 8,
+            "钢铁": 45,
+            "水泥": 40,
+            "电子元件": 10,
+            "资金": 70
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "运输容量",
+                "rate_per_min": 3500
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 10,
+            "food_per_min": 0,
+            "fuel_per_min": 2,
+            "power_per_min": 2
+        },
+        "upgrade_to": "终局"
+    },
+    {
+        "building_id": "A10",
+        "era": "X",
+        "category": "行政",
+        "series": "治理",
+        "name": "世界议会中心",
+        "max_count": 2,
+        "footprint_w": 4,
+        "footprint_h": 4,
+        "base_workers": 32,
+        "base_build_seconds": 245,
+        "tech_id": "TECH_X_CIV",
+        "cost": {
+            "木材": 200,
+            "石料": 120,
+            "砖": 80,
+            "铁": 28,
+            "钢铁": 45,
+            "玻璃": 20,
+            "电子元件": 16,
+            "资金": 250
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "治理容量",
+                "rate_per_min": 8000
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 70,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "终局"
+    },
+    {
+        "building_id": "D10",
+        "era": "X",
+        "category": "国防",
+        "series": "城防",
+        "name": "联合防卫司令部",
+        "max_count": 14,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 22,
+        "base_build_seconds": 215,
+        "tech_id": "TECH_X_DEF",
+        "cost": {
+            "木材": 180,
+            "石料": 150,
+            "青铜": 48,
+            "铁": 56,
+            "煤炭": 20,
+            "钢铁": 60,
+            "水泥": 40,
+            "电子元件": 20,
+            "稀有金属": 5,
+            "资金": 150
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "国防值",
+                "rate_per_min": 2500
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 50,
+            "food_per_min": 10,
+            "fuel_per_min": 2,
+            "power_per_min": 6
+        },
+        "upgrade_to": "终局"
+    },
+    {
+        "building_id": "R01",
+        "era": "I",
+        "category": "原料采集",
+        "series": "木材",
+        "name": "伐木营地",
+        "max_count": 5,
+        "footprint_w": 2,
+        "footprint_h": 2,
+        "base_workers": 3,
+        "base_build_seconds": 30,
+        "tech_id": "TECH_I_IND",
+        "cost": {
+            "木材": 15
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "木材",
+                "rate_per_min": 10
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 1,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "伐木场"
+    },
+    {
+        "building_id": "R02",
+        "era": "II",
+        "category": "原料采集",
+        "series": "石料",
+        "name": "采石场",
+        "max_count": 6,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 5,
+        "base_build_seconds": 55,
+        "tech_id": "TECH_II_IND",
+        "cost": {
+            "木材": 35,
+            "石料": 10
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "石料",
+                "rate_per_min": 12
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 3,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "大型采石场"
+    },
+    {
+        "building_id": "R03",
+        "era": "III",
+        "category": "原料采集",
+        "series": "铜矿",
+        "name": "铜矿",
+        "max_count": 5,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 6,
+        "base_build_seconds": 70,
+        "tech_id": "TECH_III_IND",
+        "cost": {
+            "木材": 45,
+            "石料": 30
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "铜",
+                "rate_per_min": 7
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 5,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "深层铜矿"
+    },
+    {
+        "building_id": "R04",
+        "era": "III",
+        "category": "原料采集",
+        "series": "锡矿",
+        "name": "锡矿",
+        "max_count": 3,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 6,
+        "base_build_seconds": 75,
+        "tech_id": "TECH_III_IND",
+        "cost": {
+            "木材": 50,
+            "石料": 35
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "锡",
+                "rate_per_min": 4
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 6,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "深层锡矿"
+    },
+    {
+        "building_id": "R05",
+        "era": "IV",
+        "category": "原料采集",
+        "series": "铁矿",
+        "name": "铁矿",
+        "max_count": 6,
+        "footprint_w": 4,
+        "footprint_h": 3,
+        "base_workers": 8,
+        "base_build_seconds": 90,
+        "tech_id": "TECH_IV_IND",
+        "cost": {
+            "木材": 60,
+            "石料": 50,
+            "铁": 5
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "铁",
+                "rate_per_min": 10
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 8,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "深井铁矿"
+    },
+    {
+        "building_id": "R06",
+        "era": "IV",
+        "category": "原料采集",
+        "series": "煤矿",
+        "name": "煤矿",
+        "max_count": 5,
+        "footprint_w": 4,
+        "footprint_h": 3,
+        "base_workers": 8,
+        "base_build_seconds": 90,
+        "tech_id": "TECH_IV_IND",
+        "cost": {
+            "木材": 60,
+            "石料": 45,
+            "铁": 5
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "煤炭",
+                "rate_per_min": 10
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 8,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "机械煤矿"
+    },
+    {
+        "building_id": "R07",
+        "era": "IX",
+        "category": "原料采集",
+        "series": "石油",
+        "name": "油井",
+        "max_count": 8,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 12,
+        "base_build_seconds": 140,
+        "tech_id": "TECH_IX_IND",
+        "cost": {
+            "钢铁": 45,
+            "水泥": 35,
+            "资金": 120
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "石油",
+                "rate_per_min": 18
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 16,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 6
+        },
+        "upgrade_to": "自动油田"
+    },
+    {
+        "building_id": "R08",
+        "era": "X",
+        "category": "原料采集",
+        "series": "稀有金属",
+        "name": "稀有金属矿场",
+        "max_count": 4,
+        "footprint_w": 4,
+        "footprint_h": 4,
+        "base_workers": 20,
+        "base_build_seconds": 240,
+        "tech_id": "TECH_X_IND",
+        "cost": {
+            "钢铁": 120,
+            "水泥": 80,
+            "电子元件": 30,
+            "资金": 400
+        },
+        "input": [
+            {
+                "resource": "电力",
+                "rate_per_min": 20
+            }
+        ],
+        "output": [
+            {
+                "resource": "稀有金属",
+                "rate_per_min": 6
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 40,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 20
+        },
+        "upgrade_to": "终局"
+    },
+    {
+        "building_id": "P01",
+        "era": "II",
+        "category": "加工",
+        "series": "粮食加工",
+        "name": "磨坊",
+        "max_count": 6,
+        "footprint_w": 3,
+        "footprint_h": 2,
+        "base_workers": 3,
+        "base_build_seconds": 50,
+        "tech_id": "TECH_II_IND",
+        "cost": {
+            "木材": 35,
+            "石料": 15
+        },
+        "input": [
+            {
+                "resource": "粮食",
+                "rate_per_min": 10
+            }
+        ],
+        "output": [
+            {
+                "resource": "面粉",
+                "rate_per_min": 8
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 2,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "水力磨坊"
+    },
+    {
+        "building_id": "P02",
+        "era": "II",
+        "category": "加工",
+        "series": "粮食加工",
+        "name": "烘焙坊",
+        "max_count": 6,
+        "footprint_w": 3,
+        "footprint_h": 2,
+        "base_workers": 3,
+        "base_build_seconds": 55,
+        "tech_id": "TECH_II_IND",
+        "cost": {
+            "木材": 30,
+            "石料": 20
+        },
+        "input": [
+            {
+                "resource": "面粉",
+                "rate_per_min": 7
+            }
+        ],
+        "output": [
+            {
+                "resource": "面包",
+                "rate_per_min": 6
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 2,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "城市烘焙所"
+    },
+    {
+        "building_id": "P03",
+        "era": "III",
+        "category": "加工",
+        "series": "金属加工",
+        "name": "青铜作坊",
+        "max_count": 5,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 6,
+        "base_build_seconds": 80,
+        "tech_id": "TECH_III_IND",
+        "cost": {
+            "木材": 40,
+            "石料": 30,
+            "铜": 10,
+            "锡": 5
+        },
+        "input": [
+            {
+                "resource": "铜",
+                "rate_per_min": 5
+            },
+            {
+                "resource": "锡",
+                "rate_per_min": 2
+            }
+        ],
+        "output": [
+            {
+                "resource": "青铜",
+                "rate_per_min": 6
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 6,
+            "food_per_min": 0,
+            "fuel_per_min": 1,
+            "power_per_min": 0
+        },
+        "upgrade_to": "铸造工坊"
+    },
+    {
+        "building_id": "P04",
+        "era": "III",
+        "category": "加工",
+        "series": "建材加工",
+        "name": "砖窑",
+        "max_count": 7,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 5,
+        "base_build_seconds": 65,
+        "tech_id": "TECH_III_IND",
+        "cost": {
+            "木材": 40,
+            "石料": 20,
+            "黏土": 20
+        },
+        "input": [
+            {
+                "resource": "黏土",
+                "rate_per_min": 10
+            },
+            {
+                "resource": "木材",
+                "rate_per_min": 2
+            }
+        ],
+        "output": [
+            {
+                "resource": "砖",
+                "rate_per_min": 12
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 4,
+            "food_per_min": 0,
+            "fuel_per_min": 1,
+            "power_per_min": 0
+        },
+        "upgrade_to": "砖石工坊"
+    },
+    {
+        "building_id": "P05",
+        "era": "IV",
+        "category": "加工",
+        "series": "金属加工",
+        "name": "铁匠铺",
+        "max_count": 8,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 6,
+        "base_build_seconds": 90,
+        "tech_id": "TECH_IV_IND",
+        "cost": {
+            "木材": 45,
+            "石料": 40,
+            "铁": 20
+        },
+        "input": [
+            {
+                "resource": "铁",
+                "rate_per_min": 7
+            },
+            {
+                "resource": "煤炭",
+                "rate_per_min": 2
+            }
+        ],
+        "output": [
+            {
+                "resource": "铁制工具",
+                "rate_per_min": 5
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 7,
+            "food_per_min": 0,
+            "fuel_per_min": 1,
+            "power_per_min": 0
+        },
+        "upgrade_to": "锻造工坊"
+    },
+    {
+        "building_id": "P06",
+        "era": "VII",
+        "category": "加工",
+        "series": "建材加工",
+        "name": "玻璃工坊",
+        "max_count": 6,
+        "footprint_w": 4,
+        "footprint_h": 3,
+        "base_workers": 10,
+        "base_build_seconds": 120,
+        "tech_id": "TECH_VII_IND",
+        "cost": {
+            "石料": 70,
+            "砖": 50,
+            "铁": 15,
+            "资金": 80
+        },
+        "input": [
+            {
+                "resource": "砂石",
+                "rate_per_min": 10
+            },
+            {
+                "resource": "煤炭",
+                "rate_per_min": 5
+            }
+        ],
+        "output": [
+            {
+                "resource": "玻璃",
+                "rate_per_min": 8
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 10,
+            "food_per_min": 0,
+            "fuel_per_min": 2,
+            "power_per_min": 0
+        },
+        "upgrade_to": "玻璃厂"
+    },
+    {
+        "building_id": "P07",
+        "era": "VIII",
+        "category": "加工",
+        "series": "金属加工",
+        "name": "钢铁厂",
+        "max_count": 8,
+        "footprint_w": 5,
+        "footprint_h": 4,
+        "base_workers": 25,
+        "base_build_seconds": 210,
+        "tech_id": "TECH_VIII_IND",
+        "cost": {
+            "砖": 80,
+            "铁": 60,
+            "煤炭": 40,
+            "资金": 150
+        },
+        "input": [
+            {
+                "resource": "铁",
+                "rate_per_min": 18
+            },
+            {
+                "resource": "煤炭",
+                "rate_per_min": 15
+            }
+        ],
+        "output": [
+            {
+                "resource": "钢铁",
+                "rate_per_min": 14
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 24,
+            "food_per_min": 0,
+            "fuel_per_min": 5,
+            "power_per_min": 8
+        },
+        "upgrade_to": "自动钢铁联合厂"
+    },
+    {
+        "building_id": "P08",
+        "era": "VIII",
+        "category": "加工",
+        "series": "机械制造",
+        "name": "机械厂",
+        "max_count": 6,
+        "footprint_w": 5,
+        "footprint_h": 4,
+        "base_workers": 30,
+        "base_build_seconds": 230,
+        "tech_id": "TECH_VIII_IND",
+        "cost": {
+            "钢铁": 60,
+            "玻璃": 20,
+            "资金": 220
+        },
+        "input": [
+            {
+                "resource": "钢铁",
+                "rate_per_min": 14
+            },
+            {
+                "resource": "电力",
+                "rate_per_min": 15
+            }
+        ],
+        "output": [
+            {
+                "resource": "机械",
+                "rate_per_min": 6
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 28,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 15
+        },
+        "upgrade_to": "自动化机械厂"
+    },
+    {
+        "building_id": "P09",
+        "era": "IX",
+        "category": "加工",
+        "series": "食品加工",
+        "name": "食品加工厂",
+        "max_count": 8,
+        "footprint_w": 5,
+        "footprint_h": 4,
+        "base_workers": 22,
+        "base_build_seconds": 190,
+        "tech_id": "TECH_IX_IND",
+        "cost": {
+            "钢铁": 40,
+            "玻璃": 30,
+            "水泥": 50,
+            "资金": 200
+        },
+        "input": [
+            {
+                "resource": "粮食",
+                "rate_per_min": 35
+            },
+            {
+                "resource": "电力",
+                "rate_per_min": 18
+            }
+        ],
+        "output": [
+            {
+                "resource": "加工食品",
+                "rate_per_min": 28
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 22,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 18
+        },
+        "upgrade_to": "智能食品工厂"
+    },
+    {
+        "building_id": "P10",
+        "era": "IX",
+        "category": "加工",
+        "series": "石化加工",
+        "name": "炼油厂",
+        "max_count": 6,
+        "footprint_w": 5,
+        "footprint_h": 5,
+        "base_workers": 28,
+        "base_build_seconds": 220,
+        "tech_id": "TECH_IX_IND",
+        "cost": {
+            "钢铁": 80,
+            "水泥": 60,
+            "资金": 300
+        },
+        "input": [
+            {
+                "resource": "石油",
+                "rate_per_min": 22
+            },
+            {
+                "resource": "电力",
+                "rate_per_min": 15
+            }
+        ],
+        "output": [
+            {
+                "resource": "燃料",
+                "rate_per_min": 16
+            },
+            {
+                "resource": "塑料",
+                "rate_per_min": 7
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 30,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 15
+        },
+        "upgrade_to": "综合石化厂"
+    },
+    {
+        "building_id": "P11",
+        "era": "X",
+        "category": "加工",
+        "series": "高科技",
+        "name": "先进材料工厂",
+        "max_count": 5,
+        "footprint_w": 6,
+        "footprint_h": 5,
+        "base_workers": 40,
+        "base_build_seconds": 320,
+        "tech_id": "TECH_X_IND",
+        "cost": {
+            "钢铁": 150,
+            "玻璃": 80,
+            "水泥": 100,
+            "电子元件": 40,
+            "资金": 700
+        },
+        "input": [
+            {
+                "resource": "稀有金属",
+                "rate_per_min": 8
+            },
+            {
+                "resource": "电力",
+                "rate_per_min": 45
+            }
+        ],
+        "output": [
+            {
+                "resource": "先进材料",
+                "rate_per_min": 10
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 55,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 45
+        },
+        "upgrade_to": "终局"
+    },
+    {
+        "building_id": "E01",
+        "era": "I",
+        "category": "能源",
+        "series": "基础能源",
+        "name": "柴火堆",
+        "max_count": 5,
+        "footprint_w": 2,
+        "footprint_h": 2,
+        "base_workers": 1,
+        "base_build_seconds": 20,
+        "tech_id": "TECH_I_IND",
+        "cost": {
+            "木材": 20
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "燃料",
+                "rate_per_min": 4
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 1,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "木炭窑"
+    },
+    {
+        "building_id": "E02",
+        "era": "III",
+        "category": "能源",
+        "series": "基础能源",
+        "name": "木炭窑",
+        "max_count": 5,
+        "footprint_w": 3,
+        "footprint_h": 2,
+        "base_workers": 4,
+        "base_build_seconds": 60,
+        "tech_id": "TECH_III_IND",
+        "cost": {
+            "木材": 40,
+            "石料": 20
+        },
+        "input": [
+            {
+                "resource": "木材",
+                "rate_per_min": 6
+            }
+        ],
+        "output": [
+            {
+                "resource": "燃料",
+                "rate_per_min": 5
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 4,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "煤炭作坊"
+    },
+    {
+        "building_id": "E03",
+        "era": "VIII",
+        "category": "能源",
+        "series": "电力",
+        "name": "燃煤发电厂",
+        "max_count": 5,
+        "footprint_w": 5,
+        "footprint_h": 5,
+        "base_workers": 25,
+        "base_build_seconds": 220,
+        "tech_id": "TECH_VIII_IND",
+        "cost": {
+            "砖": 80,
+            "钢铁": 70,
+            "资金": 250
+        },
+        "input": [
+            {
+                "resource": "煤炭",
+                "rate_per_min": 28
+            }
+        ],
+        "output": [
+            {
+                "resource": "电力",
+                "rate_per_min": 110
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 30,
+            "food_per_min": 0,
+            "fuel_per_min": 5,
+            "power_per_min": 0
+        },
+        "upgrade_to": "燃油/燃气电站"
+    },
+    {
+        "building_id": "E04",
+        "era": "IX",
+        "category": "能源",
+        "series": "电力",
+        "name": "燃气联合电站",
+        "max_count": 5,
+        "footprint_w": 5,
+        "footprint_h": 5,
+        "base_workers": 22,
+        "base_build_seconds": 210,
+        "tech_id": "TECH_IX_IND",
+        "cost": {
+            "钢铁": 80,
+            "水泥": 70,
+            "电子元件": 20,
+            "资金": 350
+        },
+        "input": [
+            {
+                "resource": "燃料",
+                "rate_per_min": 22
+            }
+        ],
+        "output": [
+            {
+                "resource": "电力",
+                "rate_per_min": 160
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 36,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "清洁能源中心"
+    },
+    {
+        "building_id": "E05",
+        "era": "X",
+        "category": "能源",
+        "series": "电力",
+        "name": "先进能源中心",
+        "max_count": 3,
+        "footprint_w": 6,
+        "footprint_h": 6,
+        "base_workers": 35,
+        "base_build_seconds": 360,
+        "tech_id": "TECH_X_IND",
+        "cost": {
+            "钢铁": 180,
+            "电子元件": 60,
+            "稀有金属": 25,
+            "资金": 900
+        },
+        "input": [
+            {
+                "resource": "先进材料",
+                "rate_per_min": 4
+            }
+        ],
+        "output": [
+            {
+                "resource": "电力",
+                "rate_per_min": 350
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 70,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "终局"
+    },
+    {
+        "building_id": "C01",
+        "era": "II",
+        "category": "商贸",
+        "series": "市场",
+        "name": "村落市场",
+        "max_count": 4,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 4,
+        "base_build_seconds": 70,
+        "tech_id": "TECH_II_CIV",
+        "cost": {
+            "木材": 50,
+            "石料": 20,
+            "资金": 40
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "贸易容量",
+                "rate_per_min": 100
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 5,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "城市市场"
+    },
+    {
+        "building_id": "C02",
+        "era": "V",
+        "category": "商贸",
+        "series": "市场",
+        "name": "帝国市场",
+        "max_count": 5,
+        "footprint_w": 4,
+        "footprint_h": 4,
+        "base_workers": 10,
+        "base_build_seconds": 130,
+        "tech_id": "TECH_V_CIV",
+        "cost": {
+            "石料": 100,
+            "砖": 80,
+            "铁": 20,
+            "资金": 150
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "贸易容量",
+                "rate_per_min": 450
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 15,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "商贸中心"
+    },
+    {
+        "building_id": "C03",
+        "era": "VII",
+        "category": "商贸",
+        "series": "金融",
+        "name": "银行",
+        "max_count": 4,
+        "footprint_w": 4,
+        "footprint_h": 4,
+        "base_workers": 18,
+        "base_build_seconds": 180,
+        "tech_id": "TECH_VII_CIV",
+        "cost": {
+            "石料": 120,
+            "玻璃": 30,
+            "资金": 350
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "金融容量",
+                "rate_per_min": 800
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 22,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "中央银行"
+    },
+    {
+        "building_id": "C04",
+        "era": "IX",
+        "category": "商贸",
+        "series": "全球贸易",
+        "name": "国际贸易中心",
+        "max_count": 3,
+        "footprint_w": 6,
+        "footprint_h": 5,
+        "base_workers": 35,
+        "base_build_seconds": 280,
+        "tech_id": "TECH_IX_CIV",
+        "cost": {
+            "钢铁": 100,
+            "玻璃": 80,
+            "水泥": 80,
+            "电子元件": 25,
+            "资金": 800
+        },
+        "input": [
+            {
+                "resource": "电力",
+                "rate_per_min": 20
+            }
+        ],
+        "output": [
+            {
+                "resource": "贸易容量",
+                "rate_per_min": 3000
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 55,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 20
+        },
+        "upgrade_to": "世界贸易中心"
+    },
+    {
+        "building_id": "K01",
+        "era": "III",
+        "category": "科研教育",
+        "series": "教育",
+        "name": "学堂",
+        "max_count": 3,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 8,
+        "base_build_seconds": 100,
+        "tech_id": "TECH_III_CIV",
+        "cost": {
+            "木材": 70,
+            "石料": 50,
+            "资金": 80
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "知识",
+                "rate_per_min": 3
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 8,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "学院"
+    },
+    {
+        "building_id": "K02",
+        "era": "V",
+        "category": "科研教育",
+        "series": "教育",
+        "name": "学院",
+        "max_count": 4,
+        "footprint_w": 4,
+        "footprint_h": 4,
+        "base_workers": 16,
+        "base_build_seconds": 160,
+        "tech_id": "TECH_V_CIV",
+        "cost": {
+            "石料": 120,
+            "砖": 80,
+            "资金": 180
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "知识",
+                "rate_per_min": 8
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 16,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "大学"
+    },
+    {
+        "building_id": "K03",
+        "era": "VI",
+        "category": "科研教育",
+        "series": "教育",
+        "name": "大学",
+        "max_count": 5,
+        "footprint_w": 4,
+        "footprint_h": 4,
+        "base_workers": 24,
+        "base_build_seconds": 210,
+        "tech_id": "TECH_VI_CIV",
+        "cost": {
+            "石料": 160,
+            "砖": 100,
+            "玻璃": 20,
+            "资金": 300
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "知识",
+                "rate_per_min": 14
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 25,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "研究院"
+    },
+    {
+        "building_id": "K04",
+        "era": "IX",
+        "category": "科研教育",
+        "series": "科研",
+        "name": "科研中心",
+        "max_count": 5,
+        "footprint_w": 5,
+        "footprint_h": 5,
+        "base_workers": 32,
+        "base_build_seconds": 280,
+        "tech_id": "TECH_IX_CIV",
+        "cost": {
+            "钢铁": 100,
+            "玻璃": 80,
+            "水泥": 60,
+            "电子元件": 35,
+            "资金": 600
+        },
+        "input": [
+            {
+                "resource": "电力",
+                "rate_per_min": 25
+            }
+        ],
+        "output": [
+            {
+                "resource": "知识",
+                "rate_per_min": 24
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 45,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 25
+        },
+        "upgrade_to": "超级科研中心"
+    },
+    {
+        "building_id": "K05",
+        "era": "X",
+        "category": "科研教育",
+        "series": "科研",
+        "name": "超级科研中心",
+        "max_count": 3,
+        "footprint_w": 6,
+        "footprint_h": 6,
+        "base_workers": 55,
+        "base_build_seconds": 400,
+        "tech_id": "TECH_X_CIV",
+        "cost": {
+            "钢铁": 180,
+            "玻璃": 100,
+            "电子元件": 80,
+            "稀有金属": 20,
+            "资金": 1200
+        },
+        "input": [
+            {
+                "resource": "电力",
+                "rate_per_min": 70
+            },
+            {
+                "resource": "先进材料",
+                "rate_per_min": 3
+            }
+        ],
+        "output": [
+            {
+                "resource": "知识",
+                "rate_per_min": 50
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 90,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 70
+        },
+        "upgrade_to": "终局"
+    },
+    {
+        "building_id": "M01",
+        "era": "V",
+        "category": "公共服务",
+        "series": "医疗",
+        "name": "医馆",
+        "max_count": 5,
+        "footprint_w": 3,
+        "footprint_h": 3,
+        "base_workers": 8,
+        "base_build_seconds": 120,
+        "tech_id": "TECH_V_CIV",
+        "cost": {
+            "木材": 60,
+            "石料": 50,
+            "资金": 100
+        },
+        "input": [],
+        "output": [
+            {
+                "resource": "医疗容量",
+                "rate_per_min": 120
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 10,
+            "food_per_min": 1,
+            "fuel_per_min": 0,
+            "power_per_min": 0
+        },
+        "upgrade_to": "医院"
+    },
+    {
+        "building_id": "M02",
+        "era": "IX",
+        "category": "公共服务",
+        "series": "医疗",
+        "name": "医院",
+        "max_count": 8,
+        "footprint_w": 5,
+        "footprint_h": 4,
+        "base_workers": 24,
+        "base_build_seconds": 230,
+        "tech_id": "TECH_IX_CIV",
+        "cost": {
+            "钢铁": 70,
+            "玻璃": 50,
+            "水泥": 60,
+            "电子元件": 20,
+            "资金": 450
+        },
+        "input": [
+            {
+                "resource": "电力",
+                "rate_per_min": 18
+            },
+            {
+                "resource": "药品",
+                "rate_per_min": 3
+            }
+        ],
+        "output": [
+            {
+                "resource": "医疗容量",
+                "rate_per_min": 1000
+            }
+        ],
+        "maintenance": {
+            "money_per_min": 38,
+            "food_per_min": 0,
+            "fuel_per_min": 0,
+            "power_per_min": 18
+        },
+        "upgrade_to": "综合医疗中心"
+    }
+]

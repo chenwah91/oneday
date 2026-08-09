@@ -1,0 +1,250 @@
+[
+    {
+        "resource_id": "资金",
+        "name": "资金",
+        "category": "货币",
+        "first_era": "I",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "木材",
+        "name": "木材",
+        "category": "原料",
+        "first_era": "I",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "浆果",
+        "name": "浆果",
+        "category": "食物",
+        "first_era": "I",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "燃料",
+        "name": "燃料",
+        "category": "能源",
+        "first_era": "I",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "石料",
+        "name": "石料",
+        "category": "原料",
+        "first_era": "II",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "面粉",
+        "name": "面粉",
+        "category": "加工品",
+        "first_era": "II",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "粮食",
+        "name": "粮食",
+        "category": "食物",
+        "first_era": "II",
+        "is_population_consumable": true,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "面包",
+        "name": "面包",
+        "category": "食物",
+        "first_era": "II",
+        "is_population_consumable": true,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "铜",
+        "name": "铜",
+        "category": "原料",
+        "first_era": "III",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "锡",
+        "name": "锡",
+        "category": "原料",
+        "first_era": "III",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "黏土",
+        "name": "黏土",
+        "category": "原料",
+        "first_era": "III",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "青铜",
+        "name": "青铜",
+        "category": "加工品",
+        "first_era": "III",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "砖",
+        "name": "砖",
+        "category": "加工品",
+        "first_era": "III",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "知识",
+        "name": "知识",
+        "category": "知识",
+        "first_era": "III",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "铁",
+        "name": "铁",
+        "category": "原料",
+        "first_era": "IV",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "煤炭",
+        "name": "煤炭",
+        "category": "原料",
+        "first_era": "IV",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "铁制工具",
+        "name": "铁制工具",
+        "category": "加工品",
+        "first_era": "IV",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "砂石",
+        "name": "砂石",
+        "category": "原料",
+        "first_era": "VII",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "玻璃",
+        "name": "玻璃",
+        "category": "加工品",
+        "first_era": "VII",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "钢铁",
+        "name": "钢铁",
+        "category": "加工品",
+        "first_era": "VIII",
+        "is_population_consumable": false,
+        "is_strategic": true
+    },
+    {
+        "resource_id": "机械",
+        "name": "机械",
+        "category": "加工品",
+        "first_era": "VIII",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "电力",
+        "name": "电力",
+        "category": "能源",
+        "first_era": "VIII",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "石油",
+        "name": "石油",
+        "category": "原料",
+        "first_era": "IX",
+        "is_population_consumable": false,
+        "is_strategic": true
+    },
+    {
+        "resource_id": "水泥",
+        "name": "水泥",
+        "category": "加工品",
+        "first_era": "IX",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "电子元件",
+        "name": "电子元件",
+        "category": "加工品",
+        "first_era": "IX",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "塑料",
+        "name": "塑料",
+        "category": "加工品",
+        "first_era": "IX",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "加工食品",
+        "name": "加工食品",
+        "category": "食物",
+        "first_era": "IX",
+        "is_population_consumable": true,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "药品",
+        "name": "药品",
+        "category": "食物",
+        "first_era": "IX",
+        "is_population_consumable": false,
+        "is_strategic": false
+    },
+    {
+        "resource_id": "稀有金属",
+        "name": "稀有金属",
+        "category": "原料",
+        "first_era": "X",
+        "is_population_consumable": false,
+        "is_strategic": true
+    },
+    {
+        "resource_id": "先进材料",
+        "name": "先进材料",
+        "category": "加工品",
+        "first_era": "X",
+        "is_population_consumable": false,
+        "is_strategic": true
+    },
+    {
+        "resource_id": "高品质粮食",
+        "name": "高品质粮食",
+        "category": "食物",
+        "first_era": "X",
+        "is_population_consumable": true,
+        "is_strategic": false
+    }
+]

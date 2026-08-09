@@ -1,0 +1,12 @@
+[
+    {"era_key": "I", "era_order": 1, "name": "部落时代"},
+    {"era_key": "II", "era_order": 2, "name": "定居时代"},
+    {"era_key": "III", "era_order": 3, "name": "城邦时代"},
+    {"era_key": "IV", "era_order": 4, "name": "王国时代"},
+    {"era_key": "V", "era_order": 5, "name": "古典帝国"},
+    {"era_key": "VI", "era_order": 6, "name": "领地时代"},
+    {"era_key": "VII", "era_order": 7, "name": "商业时代"},
+    {"era_key": "VIII", "era_order": 8, "name": "工业时代"},
+    {"era_key": "IX", "era_order": 9, "name": "现代"},
+    {"era_key": "X", "era_order": 10, "name": "世界帝国"}
+]
