@@ -28,4 +28,27 @@ class ExceptionRenderTest extends TestCase
         $res->assertStatus(404);
         $res->assertJson(['success' => false, 'error' => 'NOT_FOUND']);
     }
+
+    public function test_request_id_propagates_to_error_response(): void
+    {
+        $res = $this->getJson('/api/_boom', ['X-Request-ID' => 'fixed-err-id-123']);
+
+        $res->assertStatus(500);
+        $res->assertJson(['requestId' => 'fixed-err-id-123']);
+        $res->assertHeader('X-Request-ID', 'fixed-err-id-123');
+    }
+
+    public function test_http_exception_preserves_status_and_hides_detail(): void
+    {
+        $res = $this->getJson('/api/_forbidden');
+        $res->assertStatus(403);
+        $res->assertJson(['success' => false, 'error' => 'FORBIDDEN']);
+    }
+
+    public function test_csrf_mismatch_maps_to_419(): void
+    {
+        $res = $this->getJson('/api/_csrf');
+        $res->assertStatus(419);
+        $res->assertJson(['success' => false, 'error' => 'CSRF_TOKEN_MISMATCH']);
+    }
 }

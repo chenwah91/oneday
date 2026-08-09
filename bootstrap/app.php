@@ -41,6 +41,28 @@ return Application::configure(basePath: dirname(__DIR__))
                 return \App\Support\ApiResponse::fail(\App\Support\ErrorCode::TOO_MANY_REQUESTS, 429);
             }
 
+            // CSRF 校验失败:TokenMismatchException 不实现 HttpExceptionInterface,需单独判断
+            if ($e instanceof \Illuminate\Session\TokenMismatchException) {
+                return \App\Support\ApiResponse::fail(\App\Support\ErrorCode::CSRF_TOKEN_MISMATCH, 419);
+            }
+
+            // 其余 HTTP 异常:保留原始状态码,仅 5xx 写日志(普通 4xx 客户端错误不记录)
+            if ($e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                $status = $e->getStatusCode();
+                $code = match ($status) {
+                    403 => \App\Support\ErrorCode::FORBIDDEN,
+                    405 => \App\Support\ErrorCode::METHOD_NOT_ALLOWED,
+                    // 419:Laravel 在到达此处前已将 TokenMismatchException 转换为普通 HttpException(见 Handler::prepareException),
+                    // 故这里按状态码兜底识别为 CSRF 错误
+                    419 => \App\Support\ErrorCode::CSRF_TOKEN_MISMATCH,
+                    default => \App\Support\ErrorCode::HTTP_ERROR,
+                };
+                if ($status >= 500) {
+                    \Illuminate\Support\Facades\Log::error($e->getMessage(), ['exception' => $e]);
+                }
+                return \App\Support\ApiResponse::fail($code, $status);
+            }
+
             // 其余未知异常:写日志,对外只给稳定错误码(生产隐藏细节)
             \Illuminate\Support\Facades\Log::error($e->getMessage(), ['exception' => $e]);
 
