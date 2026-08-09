@@ -12,6 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(\App\Http\Middleware\EnsureRequestId::class);
+        $middleware->alias(['admin' => \App\Http\Middleware\EnsureAdmin::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {

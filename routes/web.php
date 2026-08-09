@@ -56,6 +56,12 @@ Route::prefix('api')->group(function () {
     });
 });
 
+// 管理后台:仅 admin 角色可访问
+Route::prefix('api/admin')->middleware(['auth:web', 'admin', 'throttle:api'])->group(function () {
+    // 玩家列表:占位实现,Task 2 替换为真实控制器
+    Route::get('/players', fn () => ApiResponse::ok(['data' => ['players' => []]]));
+});
+
 // 仅测试环境:用于验证异常渲染,绝不在生产暴露
 if (app()->environment('testing')) {
     Route::get('/api/_boom', function () {

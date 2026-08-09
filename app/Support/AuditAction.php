@@ -17,4 +17,8 @@ final class AuditAction
 
     // 安全:越权操作被拒
     public const SECURITY_AUTHORIZATION_FAILED = 'SECURITY.AUTHORIZATION_FAILED';
+
+    // 管理后台
+    public const ADMIN_LOGIN = 'ADMIN.LOGIN';
+    public const ADMIN_CONFIG_CHANGE = 'ADMIN.CONFIG_CHANGE';
 }
