@@ -7,6 +7,7 @@ use App\Models\City;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
+use App\Support\Idempotency;
 use Illuminate\Support\Facades\DB;
 
 // 建造:完整安全链(幂等/Revision/占地/上限/资源/事务/审计)
@@ -14,9 +15,12 @@ class BuildService
 {
     public static function build(City $city, string $buildingId, int $x, int $y, ?string $idempotencyKey, ?int $expectedRevision): array
     {
-        // 幂等:同一 user+key 已处理则直接成功返回(不重复扣建)
+        // 请求指纹:只含业务参数,不含 expectedRevision(重试时 revision 可能已变)
+        $requestHash = Idempotency::hash(AuditAction::BUILDING_BUILD, ['buildingId' => $buildingId, 'x' => $x, 'y' => $y]);
+
+        // 幂等:同一 user+key+action+参数已处理则直接成功返回(不重复扣建);key 被复用则 409
         if ($idempotencyKey !== null) {
-            $existing = DB::table('idempotency_keys')->where('user_id', $city->user_id)->where('key', $idempotencyKey)->first();
+            $existing = Idempotency::check((int) $city->user_id, $idempotencyKey, AuditAction::BUILDING_BUILD, $requestHash);
             if ($existing) {
                 return self::snapshotDiff($city->fresh());
             }
@@ -32,12 +36,12 @@ class BuildService
         }
         $cost = json_decode($lvl->cost_json, true) ?: [];
 
-        return DB::transaction(function () use ($city, $def, $buildingId, $x, $y, $cost, $idempotencyKey, $expectedRevision) {
+        return DB::transaction(function () use ($city, $def, $buildingId, $x, $y, $cost, $idempotencyKey, $expectedRevision, $requestHash) {
             $locked = DB::table('cities')->where('id', $city->id)->lockForUpdate()->first();
 
             // 幂等:锁后重新校验,关闭"锁前检查、锁后写入"之间的并发窗口(TOCTOU)
             if ($idempotencyKey !== null) {
-                $existing = DB::table('idempotency_keys')->where('user_id', $city->user_id)->where('key', $idempotencyKey)->first();
+                $existing = Idempotency::check((int) $city->user_id, $idempotencyKey, AuditAction::BUILDING_BUILD, $requestHash);
                 if ($existing) {
                     return self::snapshotDiff($city->fresh());
                 }
@@ -109,10 +113,7 @@ class BuildService
             DB::table('cities')->where('id', $city->id)->update(['revision' => $newRevision]);
 
             if ($idempotencyKey !== null) {
-                DB::table('idempotency_keys')->insert([
-                    'user_id' => $city->user_id, 'key' => $idempotencyKey, 'action' => AuditAction::BUILDING_BUILD,
-                    'response_status' => 200, 'created_at' => now(),
-                ]);
+                Idempotency::store((int) $city->user_id, (int) $city->id, $idempotencyKey, AuditAction::BUILDING_BUILD, $requestHash);
             }
 
             AuditLogger::record(AuditAction::BUILDING_BUILD, 'success', [

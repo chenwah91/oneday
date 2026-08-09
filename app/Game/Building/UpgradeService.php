@@ -7,6 +7,7 @@ use App\Models\City;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
+use App\Support\Idempotency;
 use Illuminate\Support\Facades\DB;
 
 // 升级:L1→L2→L3,即时生效;严格所有权校验
@@ -28,16 +29,28 @@ class UpgradeService
             throw new GameRuleException(ErrorCode::FORBIDDEN, 403);
         }
 
-        // 幂等:同一 user+key 已处理则直接成功返回(不重复扣费/升级),与 BuildService 对齐
+        // 请求指纹:只含业务参数,不含 expectedRevision(重试时 revision 可能已变)
+        $requestHash = Idempotency::hash(AuditAction::BUILDING_UPGRADE, ['instanceId' => $instanceId]);
+
+        // 幂等:同一 user+key+action+参数已处理则直接成功返回(不重复扣费/升级),与 BuildService 对齐;key 被复用则 409
         if ($idempotencyKey !== null) {
-            $existing = DB::table('idempotency_keys')->where('user_id', $city->user_id)->where('key', $idempotencyKey)->first();
+            $existing = Idempotency::check((int) $city->user_id, $idempotencyKey, AuditAction::BUILDING_UPGRADE, $requestHash);
             if ($existing) {
                 return self::snapshot($city->fresh(), $instanceId);
             }
         }
 
-        return DB::transaction(function () use ($city, $instanceId, $expectedRevision, $idempotencyKey) {
+        return DB::transaction(function () use ($city, $instanceId, $expectedRevision, $idempotencyKey, $requestHash) {
             $locked = DB::table('cities')->where('id', $city->id)->lockForUpdate()->first();
+
+            // 幂等:锁后重新校验,关闭"锁前检查、锁后写入"之间的并发窗口(TOCTOU),与 BuildService 对齐
+            if ($idempotencyKey !== null) {
+                $existing = Idempotency::check((int) $city->user_id, $idempotencyKey, AuditAction::BUILDING_UPGRADE, $requestHash);
+                if ($existing) {
+                    return self::snapshot($city->fresh(), $instanceId);
+                }
+            }
+
             if ($expectedRevision !== null && (int) $locked->revision !== $expectedRevision) {
                 throw new GameRuleException(ErrorCode::REVISION_CONFLICT, 409);
             }
@@ -94,10 +107,7 @@ class UpgradeService
             DB::table('cities')->where('id', $city->id)->update(['revision' => $newRevision]);
 
             if ($idempotencyKey !== null) {
-                DB::table('idempotency_keys')->insert([
-                    'user_id' => $city->user_id, 'key' => $idempotencyKey, 'action' => AuditAction::BUILDING_UPGRADE,
-                    'response_status' => 200, 'created_at' => now(),
-                ]);
+                Idempotency::store((int) $city->user_id, (int) $city->id, $idempotencyKey, AuditAction::BUILDING_UPGRADE, $requestHash);
             }
 
             AuditLogger::record(AuditAction::BUILDING_UPGRADE, 'success', [

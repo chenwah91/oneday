@@ -26,4 +26,7 @@ final class ErrorCode
     public const LAND_OCCUPIED = 'LAND_OCCUPIED';
     public const REVISION_CONFLICT = 'REVISION_CONFLICT';
     public const INVALID_BUILDING = 'INVALID_BUILDING';
+
+    // 幂等:同一 key 被复用到不同操作或不同参数上(409)
+    public const IDEMPOTENCY_KEY_REUSED = 'IDEMPOTENCY_KEY_REUSED';
 }

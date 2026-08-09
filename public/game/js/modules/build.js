@@ -12,6 +12,7 @@ const ERROR_MESSAGES = {
     BUILDING_LIMIT_REACHED: '已达数量上限',
     INVALID_BUILDING: '无效的建筑类型',
     REVISION_CONFLICT: '数据已更新,请重试',
+    IDEMPOTENCY_KEY_REUSED: '操作重复提交,请刷新后重试',
 };
 
 let placement = null; // { buildingId, footprint, name } | null,非 null 即"放置模式"

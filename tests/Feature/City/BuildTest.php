@@ -63,12 +63,59 @@ class BuildTest extends TestCase
     public function test_build_is_idempotent(): void
     {
         $u = $this->actingUser();
+        $city = City::where('user_id', $u->id)->first();
+        $wood = fn () => (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '木材')->value('amount');
+        $before = $wood();
+
         $body = ['buildingId' => 'F02', 'x' => 5, 'y' => 5, 'idempotencyKey' => 'fixed-key-1'];
         $this->actingAs($u)->postJson('/api/city/build', $body)->assertOk();
         $this->actingAs($u)->postJson('/api/city/build', $body)->assertOk(); // 重复不再扣/不再建
-        $city = City::where('user_id', $u->id)->first();
         $count = DB::table('city_building_instances')->where('city_id', $city->id)->where('x', 5)->where('y', 5)->count();
         $this->assertSame(1, $count);
+        $this->assertSame($before - 20, $wood()); // 木材只扣一次(F02 建造花费 20)
+
+        // 幂等键落库:city_id / request_hash / expires_at 都要写入
+        $row = DB::table('idempotency_keys')->where('user_id', $u->id)->where('key', 'fixed-key-1')->first();
+        $this->assertSame((int) $city->id, (int) $row->city_id);
+        $this->assertNotNull($row->request_hash);
+        $this->assertSame(64, strlen($row->request_hash));
+        $this->assertNotNull($row->expires_at);
+    }
+
+    public function test_same_key_reused_for_another_action_is_rejected(): void
+    {
+        $u = $this->actingUser();
+        $city = City::where('user_id', $u->id)->first();
+        $key = 'cross-action-key-1';
+
+        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 2, 'y' => 2, 'idempotencyKey' => $key])->assertOk();
+        $instanceId = (int) DB::table('city_building_instances')->where('city_id', $city->id)->value('id');
+        $wood = fn () => (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '木材')->value('amount');
+        $money = fn () => (float) DB::table('cities')->where('id', $city->id)->value('money');
+        [$woodBefore, $moneyBefore] = [$wood(), $money()];
+
+        // 同一 key 换成 upgrade:必须 409,不能静默返回"成功"而什么都没做
+        $this->actingAs($u)->postJson('/api/city/upgrade', ['instanceId' => $instanceId, 'idempotencyKey' => $key])
+            ->assertStatus(409)->assertJson(['error' => 'IDEMPOTENCY_KEY_REUSED']);
+
+        $this->assertSame(1, (int) DB::table('city_building_instances')->where('id', $instanceId)->value('level')); // 没升级
+        $this->assertSame($woodBefore, $wood()); // 没扣资源
+        $this->assertSame($moneyBefore, $money());
+    }
+
+    public function test_same_key_with_different_params_is_rejected(): void
+    {
+        $u = $this->actingUser();
+        $city = City::where('user_id', $u->id)->first();
+        $key = 'same-key-diff-params-1';
+
+        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 2, 'y' => 2, 'idempotencyKey' => $key])->assertOk();
+        // 同 key 同 action,但坐标不同 → 请求指纹不一致,拒绝
+        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 8, 'y' => 8, 'idempotencyKey' => $key])
+            ->assertStatus(409)->assertJson(['error' => 'IDEMPOTENCY_KEY_REUSED']);
+
+        $this->assertSame(1, DB::table('city_building_instances')->where('city_id', $city->id)->count());
+        $this->assertDatabaseMissing('city_building_instances', ['city_id' => $city->id, 'x' => 8, 'y' => 8]);
     }
 
     public function test_build_revision_conflict(): void
