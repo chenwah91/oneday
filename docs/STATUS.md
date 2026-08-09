@@ -1,7 +1,7 @@
 # 当前进度快照
 
 > 最后更新:2026-08-10(晚)
-> 用途:关闭会话后直接读这份就能续上。数值权威 `docs/templates/v3.1.md`;架构 `/CLAUDE.md`;安全 `/SECURITY.md`;计划索引 `docs/superpowers/plans/README.md`。
+> 用途:关闭会话后直接读这份就能续上。**数值权威 `docs/templates/v3.2.md`(2026-08-10 用户定稿,取代 v3.1)**;架构 `/CLAUDE.md`;安全 `/SECURITY.md`;计划索引 `docs/superpowers/plans/README.md`;M2 清单 `docs/superpowers/plans/2026-08-10-m2-backlog.md`。
 
 ---
 
