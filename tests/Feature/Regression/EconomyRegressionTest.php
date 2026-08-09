@@ -43,26 +43,26 @@ class EconomyRegressionTest extends TestCase
         // 城 A:一次性结算 600s
         Carbon::setTestNow($base);
         $cA = $this->cityWithFarm('deltaA');
-        $foodA0 = (float) CityResource::where('city_id', $cA->id)->where('resource_id', '粮食')->value('amount');
+        $foodA0 = (float) CityResource::where('city_id', $cA->id)->where('resource_id', 'food')->value('amount');
         Carbon::setTestNow($base->copy()->addSeconds(600));
         SimulationService::simulate($cA->fresh());
-        $foodA1 = (float) CityResource::where('city_id', $cA->id)->where('resource_id', '粮食')->value('amount');
+        $foodA1 = (float) CityResource::where('city_id', $cA->id)->where('resource_id', 'food')->value('amount');
 
         // 城 B:分两段 300s + 300s 结算
         Carbon::setTestNow($base);
         $cB = $this->cityWithFarm('deltaB');
-        $foodB0 = (float) CityResource::where('city_id', $cB->id)->where('resource_id', '粮食')->value('amount');
+        $foodB0 = (float) CityResource::where('city_id', $cB->id)->where('resource_id', 'food')->value('amount');
         Carbon::setTestNow($base->copy()->addSeconds(300));
         SimulationService::simulate($cB->fresh());
         Carbon::setTestNow($base->copy()->addSeconds(600));
         SimulationService::simulate($cB->fresh());
-        $foodB1 = (float) CityResource::where('city_id', $cB->id)->where('resource_id', '粮食')->value('amount');
+        $foodB1 = (float) CityResource::where('city_id', $cB->id)->where('resource_id', 'food')->value('amount');
 
         $this->assertEqualsWithDelta($foodA1 - $foodA0, $foodB1 - $foodB0, 0.01, '600s 单次结算净变化应与 300+300 分段结算一致');
 
         // 同一 now 再结算一次(elapsed=0),应无变化(幂等)
         SimulationService::simulate($cB->fresh());
-        $foodB2 = (float) CityResource::where('city_id', $cB->id)->where('resource_id', '粮食')->value('amount');
+        $foodB2 = (float) CityResource::where('city_id', $cB->id)->where('resource_id', 'food')->value('amount');
         $this->assertEqualsWithDelta($foodB1, $foodB2, 0.01, '无经过时间再结算不变');
     }
 
@@ -102,12 +102,12 @@ class EconomyRegressionTest extends TestCase
     public function test_food_conservation_10min(): void
     {
         $city = $this->cityWithFarm('conserver');
-        $foodBefore = (float) CityResource::where('city_id', $city->id)->where('resource_id', '粮食')->value('amount');
+        $foodBefore = (float) CityResource::where('city_id', $city->id)->where('resource_id', 'food')->value('amount');
         $city->update(['last_simulated_at' => now()->subSeconds(600)]);
         SimulationService::simulate($city->fresh());
-        $foodAfter = (float) CityResource::where('city_id', $city->id)->where('resource_id', '粮食')->value('amount');
-        // 10 分钟:F02 产 14/min × 10 − 人口10×0.1×10 = 140 − 10 = 130(未触顶前;起始 300~500,+130 < 1000)
-        $this->assertEqualsWithDelta($foodBefore + 130, $foodAfter, 0.5);
+        $foodAfter = (float) CityResource::where('city_id', $city->id)->where('resource_id', 'food')->value('amount');
+        // 10 分钟:F02 产 14/min × 10 − 人口10×0.03×10 = 140 − 3 = 137(未触顶前;起始 300~500,+137 < 1000)
+        $this->assertEqualsWithDelta($foodBefore + 137, $foodAfter, 0.5);
     }
 
     // ---- M1 缺陷 0.2:建造/升级/拆除必须在锁内先跑 Time Delta 结算 ----
@@ -122,8 +122,8 @@ class EconomyRegressionTest extends TestCase
         $city = CityFactory::createForUser($u);
         // E02 木炭窑:每分钟吃 木材 6(净速率为负),城里没有产木材的建筑
         CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'E02', 'level' => 1, 'x' => 1, 'y' => 1, 'status' => 'active']);
-        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '木材')->update(['amount' => 30]);
-        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '石料')->update(['amount' => 1000]);
+        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->update(['amount' => 30]);
+        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'stone')->update(['amount' => 1000]);
         DB::table('cities')->where('id', $city->id)->update(['money' => 1000]);
 
         // 10 分钟吃掉 60 木材,只有 30 → 结算后木材必然为 0
@@ -137,7 +137,7 @@ class EconomyRegressionTest extends TestCase
         // 建造失败时整个事务回滚(结算写入一并回滚,last_simulated_at 未推进,不会丢时间);
         // 再走一次只读快照结算,木材落到 0 —— 证明那 30 木材确实已被消耗殆尽、不可用于建造
         $this->actingAs($u)->getJson('/api/city')->assertOk();
-        $wood = (float) CityResource::where('city_id', $city->id)->where('resource_id', '木材')->value('amount');
+        $wood = (float) CityResource::where('city_id', $city->id)->where('resource_id', 'wood')->value('amount');
         $this->assertSame(0.0, $wood, '结算后木材应为 0,而非旧快照的 30');
     }
 
@@ -172,22 +172,22 @@ class EconomyRegressionTest extends TestCase
 
         $u = User::create(['username' => 'noretro', 'name' => 'noretro', 'email' => 'noretro@x.com', 'password' => 'password123']);
         $city = CityFactory::createForUser($u);
-        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '木材')->update(['amount' => 1000]);
-        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '石料')->update(['amount' => 1000]);
-        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '粮食')->update(['amount' => 400]);
+        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->update(['amount' => 1000]);
+        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'stone')->update(['amount' => 1000]);
+        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'food')->update(['amount' => 400]);
         DB::table('cities')->where('id', $city->id)->update(['money' => 1000]);
 
-        // 前 10 分钟城里没有农田:只有人口吃粮 10×0.1×10 = 10,粮食 400 → 390
+        // 前 10 分钟城里没有农田:只有人口吃粮 10×0.03×10 = 3,粮食 400 → 397
         Carbon::setTestNow($base->copy()->addMinutes(10));
         $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 2, 'y' => 2])->assertOk();
 
-        $food = (float) CityResource::where('city_id', $city->id)->where('resource_id', '粮食')->value('amount');
-        $this->assertEqualsWithDelta(390, $food, 0.01, '建造时应按"建造前的建筑集合"结算');
+        $food = (float) CityResource::where('city_id', $city->id)->where('resource_id', 'food')->value('amount');
+        $this->assertEqualsWithDelta(397, $food, 0.01, '建造时应按"建造前的建筑集合"结算');
 
         // 同一时刻(经过 0 秒)再取快照:新农田不得倒补建成之前的 10 分钟产量
         $this->actingAs($u)->getJson('/api/city')->assertOk();
-        $foodAfterSnapshot = (float) CityResource::where('city_id', $city->id)->where('resource_id', '粮食')->value('amount');
-        $this->assertEqualsWithDelta(390, $foodAfterSnapshot, 0.01, '新建筑不得追溯生产建成前的时段');
+        $foodAfterSnapshot = (float) CityResource::where('city_id', $city->id)->where('resource_id', 'food')->value('amount');
+        $this->assertEqualsWithDelta(397, $foodAfterSnapshot, 0.01, '新建筑不得追溯生产建成前的时段');
     }
 
     // ---- M1 缺陷 0.3:离线结算时长封顶 12h ----
@@ -212,11 +212,11 @@ class EconomyRegressionTest extends TestCase
         $this->assertSame(43200, $simA['elapsedSeconds'], '48h 离线应被封顶到 12h');
         $this->assertSame(43200, $simB['elapsedSeconds']);
 
-        $foodA = (float) CityResource::where('city_id', $cA->id)->where('resource_id', '粮食')->value('amount');
-        $foodB = (float) CityResource::where('city_id', $cB->id)->where('resource_id', '粮食')->value('amount');
+        $foodA = (float) CityResource::where('city_id', $cA->id)->where('resource_id', 'food')->value('amount');
+        $foodB = (float) CityResource::where('city_id', $cB->id)->where('resource_id', 'food')->value('amount');
         $this->assertEqualsWithDelta($foodB, $foodA, 0.01, '48h 的产出应与 12h 相同');
-        // 粮食净速率 = 14 − 139×0.1 = 0.1/min,12h(720min)产 72:400 → 472
-        $this->assertEqualsWithDelta(472, $foodA, 0.01);
+        // 粮食净速率 = 14 − 450×0.03(=13.5) = 0.5/min,12h(720min)产 360:400 → 760
+        $this->assertEqualsWithDelta(760, $foodA, 0.01);
 
         $moneyA = (float) DB::table('cities')->where('id', $cA->id)->value('money');
         $moneyB = (float) DB::table('cities')->where('id', $cB->id)->value('money');
@@ -229,11 +229,12 @@ class EconomyRegressionTest extends TestCase
         $this->assertSame($base->copy()->addHours(48)->format('Y-m-d H:i:s'), $lastA->format('Y-m-d H:i:s'));
     }
 
-    // 封顶用例的统一初值:人口 139 让粮食净速率恰为 +0.1/min,12h 只产 72,不会触到 1000 仓储上限
+    // 封顶用例的统一初值:人口 450 让粮食净速率恰为 +0.5/min(14 − 450×0.03),
+    // 12h 只产 360,加上起始 400 = 760,不会触到 1000 仓储上限
     private function normalizeForCapTest(City $city): void
     {
-        DB::table('cities')->where('id', $city->id)->update(['population' => 139, 'money' => 100000]);
-        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '粮食')->update(['amount' => 400]);
+        DB::table('cities')->where('id', $city->id)->update(['population' => 450, 'money' => 100000]);
+        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'food')->update(['amount' => 400]);
     }
 
     // ---- M1 缺陷:加工建筑缺料照样出货(凭空造成品)→ 保守库存满足率 ----
@@ -251,8 +252,8 @@ class EconomyRegressionTest extends TestCase
         Carbon::setTestNow($base->copy()->addMinutes(10));
         SimulationService::simulate($city->fresh());
 
-        $this->assertSame(0.0, $this->amountOf($city, '面粉'), '缺料时不得凭空造出面粉');
-        $this->assertSame(0.0, $this->amountOf($city, '粮食'), '粮食停在 0,不为负');
+        $this->assertSame(0.0, $this->amountOf($city, 'flour'), '缺料时不得凭空造出面粉');
+        $this->assertSame(0.0, $this->amountOf($city, 'food'), '粮食停在 0,不为负');
         // 维护 资金 2/min × 10min = 20:建筑闲置也照付维护
         $this->assertEqualsWithDelta(10000 - 20, $this->moneyOf($city), 0.01, '维护资金不受满足率影响');
     }
@@ -268,8 +269,8 @@ class EconomyRegressionTest extends TestCase
         SimulationService::simulate($city->fresh());
 
         // recipeRate = 50/100 = 0.5 → 面粉 8×0.5×10 = 40,粮食 10×0.5×10 = 50 全部吃光
-        $this->assertEqualsWithDelta(40, $this->amountOf($city, '面粉'), 0.01, '面粉应按满足率 0.5 打折');
-        $this->assertEqualsWithDelta(0, $this->amountOf($city, '粮食'), 0.01, '粮食恰好耗尽');
+        $this->assertEqualsWithDelta(40, $this->amountOf($city, 'flour'), 0.01, '面粉应按满足率 0.5 打折');
+        $this->assertEqualsWithDelta(0, $this->amountOf($city, 'food'), 0.01, '粮食恰好耗尽');
     }
 
     // 多栋共享同一原料:需求经 demand 汇总,总消耗不得超过库存
@@ -284,8 +285,8 @@ class EconomyRegressionTest extends TestCase
 
         // 总需求 2×10×10 = 200,库存 100 → 每栋 recipeRate = 0.5
         // 面粉合计 2×8×0.5×10 = 80;粮食合计消耗 2×10×0.5×10 = 100,恰好耗尽且绝不超扣
-        $this->assertEqualsWithDelta(80, $this->amountOf($city, '面粉'), 0.01, '两栋磨坊合计产 80 面粉');
-        $this->assertEqualsWithDelta(0, $this->amountOf($city, '粮食'), 0.01, '共享库存被恰好耗尽,不超扣');
+        $this->assertEqualsWithDelta(80, $this->amountOf($city, 'flour'), 0.01, '两栋磨坊合计产 80 面粉');
+        $this->assertEqualsWithDelta(0, $this->amountOf($city, 'food'), 0.01, '共享库存被恰好耗尽,不超扣');
     }
 
     // 料充足:满足率为 1,数值与"未打折"的正确路径完全一致
@@ -298,8 +299,8 @@ class EconomyRegressionTest extends TestCase
         Carbon::setTestNow($base->copy()->addMinutes(10));
         SimulationService::simulate($city->fresh());
 
-        $this->assertEqualsWithDelta(80, $this->amountOf($city, '面粉'), 0.01, '料足时面粉 8/min × 10min');
-        $this->assertEqualsWithDelta(900, $this->amountOf($city, '粮食'), 0.01, '料足时粮食 10/min × 10min');
+        $this->assertEqualsWithDelta(80, $this->amountOf($city, 'flour'), 0.01, '料足时面粉 8/min × 10min');
+        $this->assertEqualsWithDelta(900, $this->amountOf($city, 'food'), 0.01, '料足时粮食 10/min × 10min');
     }
 
     // 加工建筑用例的统一初值:只摆 N 座 P01 磨坊,人口 0(排除人口吃粮),资金 10000,粮食指定
@@ -312,7 +313,7 @@ class EconomyRegressionTest extends TestCase
             CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'P01', 'level' => 1, 'x' => 1 + $i * 4, 'y' => 1, 'status' => 'active']);
         }
         DB::table('cities')->where('id', $city->id)->update(['population' => 0, 'money' => 10000]);
-        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '粮食')->update(['amount' => $food]);
+        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'food')->update(['amount' => $food]);
         return $city;
     }
 

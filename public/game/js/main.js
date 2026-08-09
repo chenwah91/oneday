@@ -9,10 +9,14 @@ import { render as renderBuildings, setBuildingClickHandler, setBuildingsInterac
 import { mountBuildPanel } from './ui/build-panel.js';
 import { mountBuildingPanel, openBuildingPanel, closeBuildingPanel } from './ui/building-panel.js';
 import { initBuildModule, handleTileClick, onPlacementChange, getPlacement } from './modules/build.js';
+import { loadResourceNames } from './modules/resources.js';
 
 const app = document.getElementById('app');
 
 async function bootApp() {
+    // 资源 code → 中文显示名:HUD/面板挂载前必须先就位(内部已容错,失败时退回显示 code)
+    await loadResourceNames();
+
     const data = await api.get('/api/city');
     setState({ city: data.city });
     app.innerHTML = '<div id="hud"></div><div id="stage"></div><div id="panel"></div>';

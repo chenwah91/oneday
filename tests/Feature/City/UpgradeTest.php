@@ -39,7 +39,7 @@ class UpgradeTest extends TestCase
     public function test_upgrade_is_idempotent(): void
     {
         [$u, $city, $id] = $this->makeUserWithFarm('upgrader2');
-        $wood = fn () => (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '木材')->value('amount');
+        $wood = fn () => (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->value('amount');
         $before = $wood();
 
         // F02 L1→L2 花费:木材12/石料3/资金8

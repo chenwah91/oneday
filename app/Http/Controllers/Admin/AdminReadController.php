@@ -5,13 +5,29 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Support\ApiResponse;
 use App\Support\ErrorCode;
+use App\Support\Role;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-// 后台只读:玩家 / 城市 / 审计
+// 后台只读:当前管理员 / 玩家 / 城市 / 审计
 class AdminReadController extends Controller
 {
+    // 当前管理员身份:username/role/permissions。
+    // 供后台前端按权限显隐按钮(前端显隐只是体验优化,真正的拦截始终在 EnsureAdmin 中间件)
+    public function me(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $role = is_string($user->role) ? $user->role : null;
+
+        return ApiResponse::ok(['data' => [
+            'id'          => $user->id,
+            'username'    => $user->username,
+            'role'        => $role,
+            'permissions' => Role::permissionsFor($role),
+        ]]);
+    }
+
     // 玩家列表:联查城市 id,仅输出安全字段(不含 password)
     public function players(): JsonResponse
     {

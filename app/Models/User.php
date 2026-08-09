@@ -54,4 +54,20 @@ class User extends Authenticatable
     {
         return $this->hasOne(\App\Models\City::class);
     }
+
+    // ---------- 角色 / 权限(CLAUDE §63,权限表见 App\Support\Role) ----------
+    // ⚠️ role 绝不能加入上面的 $fillable:一旦可批量赋值,注册/更新接口带个 role 字段就是自助提权。
+    // 写 role 的唯一合法路径是 forceFill(见 admin:promote 命令)。
+
+    // 是否具备某权限(未知角色一律 false,Fail Closed)
+    public function hasPermission(string $permission): bool
+    {
+        return \App\Support\Role::allows(is_string($this->role) ? $this->role : null, $permission);
+    }
+
+    // 是否为后台人员(support 及以上)
+    public function isStaff(): bool
+    {
+        return \App\Support\Role::isStaff(is_string($this->role) ? $this->role : null);
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Game\Building;
 
+use App\Game\Resource\ResourceCode;
 use App\Game\Simulation\SimulationService;
 use App\Models\City;
 use App\Support\AuditAction;
@@ -77,16 +78,16 @@ class UpgradeService
             }
             $cost = json_decode($lvl->cost_json, true) ?: [];
 
-            // 资源足额:一律用结算后的最新余额(资金单列在 cities.money)
+            // 资源足额:一律用结算后的最新余额(资金 money 单列在 cities.money)
             foreach ($cost as $res => $amt) {
-                $have = $res === '资金' ? (float) $sim['money'] : (float) ($sim['resources'][$res] ?? 0);
+                $have = $res === ResourceCode::MONEY ? (float) $sim['money'] : (float) ($sim['resources'][$res] ?? 0);
                 if ($have < $amt) { throw new GameRuleException(ErrorCode::INSUFFICIENT_RESOURCE, 422); }
             }
 
             // 扣资源
             $delta = [];
             foreach ($cost as $res => $amt) {
-                if ($res === '资金') { DB::table('cities')->where('id', $city->id)->decrement('money', $amt); }
+                if ($res === ResourceCode::MONEY) { DB::table('cities')->where('id', $city->id)->decrement('money', $amt); }
                 else { DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', $res)->decrement('amount', $amt); }
                 $delta[$res] = -$amt;
             }

@@ -2,6 +2,7 @@
 
 namespace App\Game\City;
 
+use App\Game\Definition\GameDataVersion;
 use App\Game\Simulation\SimConstants;
 use App\Models\City;
 use App\Models\CityResource;
@@ -31,6 +32,10 @@ class CityFactory
                 'map_width'         => SimConstants::MAP_W,
                 'map_height'        => SimConstants::MAP_H,
             ]);
+
+            // 记下这座城「以哪一版数值开局」(§64):以后数值改版了,还能解释老城当初的开局资源是怎么来的。
+            // game_data_version 不在 City::$fillable 里(它不是玩家/请求能决定的字段),所以用 forceFill 显式写入。
+            $city->forceFill(['game_data_version' => GameDataVersion::current()])->save();
 
             $rows = [];
             $summary = [];

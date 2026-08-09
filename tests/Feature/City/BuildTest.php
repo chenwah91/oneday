@@ -20,8 +20,8 @@ class BuildTest extends TestCase
         $u = User::create(['username' => 'builder', 'name' => 'builder', 'email' => 'b@b.com', 'password' => 'password123']);
         $city = CityFactory::createForUser($u);
         // 给足资源以便建造 F02(木材20/石料5/资金12)
-        DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => '木材'], ['amount' => 1000]);
-        DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => '石料'], ['amount' => 1000]);
+        DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => 'wood'], ['amount' => 1000]);
+        DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => 'stone'], ['amount' => 1000]);
         return $u;
     }
 
@@ -35,7 +35,7 @@ class BuildTest extends TestCase
         $city = City::where('user_id', $u->id)->first();
         $this->assertSame(1, (int) $city->revision);
         $this->assertDatabaseHas('city_building_instances', ['city_id' => $city->id, 'building_id' => 'F02', 'x' => 2, 'y' => 2]);
-        $wood = (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '木材')->value('amount');
+        $wood = (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->value('amount');
         $this->assertSame(980.0, $wood); // 1000 - 20
         $this->assertSame('BUILDING.BUILD', DB::table('audit_logs')->latest('id')->first()->action);
     }
@@ -64,7 +64,7 @@ class BuildTest extends TestCase
     {
         $u = $this->actingUser();
         $city = City::where('user_id', $u->id)->first();
-        $wood = fn () => (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '木材')->value('amount');
+        $wood = fn () => (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->value('amount');
         $before = $wood();
 
         $body = ['buildingId' => 'F02', 'x' => 5, 'y' => 5, 'idempotencyKey' => 'fixed-key-1'];
@@ -90,7 +90,7 @@ class BuildTest extends TestCase
 
         $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 2, 'y' => 2, 'idempotencyKey' => $key])->assertOk();
         $instanceId = (int) DB::table('city_building_instances')->where('city_id', $city->id)->value('id');
-        $wood = fn () => (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '木材')->value('amount');
+        $wood = fn () => (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->value('amount');
         $money = fn () => (float) DB::table('cities')->where('id', $city->id)->value('money');
         [$woodBefore, $moneyBefore] = [$wood(), $money()];
 

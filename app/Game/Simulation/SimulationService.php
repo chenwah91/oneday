@@ -2,6 +2,7 @@
 
 namespace App\Game\Simulation;
 
+use App\Game\Resource\ResourceCode;
 use App\Models\City;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
@@ -106,9 +107,9 @@ class SimulationService
             foreach (json_decode($lv->output_json ?: '[]', true) as $o) {
                 $res = $o['resource']; $r = (float) $o['rate_per_min'];
                 // 容量类产出不进 grossOut:它不是"每分钟入库的资源",在这里就提取成全城容量累计
-                if ($res === '仓储容量') { $storageCap += $r; continue; }
-                if ($res === '人口容量') { $populationCap += $r; continue; }
-                if (in_array($res, SimConstants::CAPACITY_OUTPUTS, true)) { continue; } // 其他容量:M1 不结算
+                if ($res === ResourceCode::STORAGE_CAPACITY) { $storageCap += $r; continue; }
+                if ($res === ResourceCode::POPULATION_CAPACITY) { $populationCap += $r; continue; }
+                if (ResourceCode::isCapacity($res)) { continue; } // 其他容量:M1 不结算
                 $grossOut[$res] = ($grossOut[$res] ?? 0) + $r;
             }
 
@@ -128,7 +129,7 @@ class SimulationService
         // 维护:粮食与资金都不进配方,不受乘区与满足率影响(建筑闲置也照付)
         // 维护粮食计入粮食支出;缺粮时仍由下面落库处的 max(0,…) 夹住
         foreach ($units as $u) {
-            if ($u['maintFood'] > 0) { $ratePerMin['粮食'] = ($ratePerMin['粮食'] ?? 0) - $u['maintFood']; }
+            if ($u['maintFood'] > 0) { $ratePerMin[ResourceCode::FOOD] = ($ratePerMin[ResourceCode::FOOD] ?? 0) - $u['maintFood']; }
             $maintenanceMoneyPerMin += $u['maintMoney'];
         }
 
@@ -181,7 +182,7 @@ class SimulationService
         }
 
         // 人口粮食消耗(人口取自锁到的城市行,不依赖事务外的 Eloquent 模型)
-        $ratePerMin['粮食'] = ($ratePerMin['粮食'] ?? 0) - (int) $lockedCity->population * SimConstants::FOOD_PER_CAPITA_PER_MIN;
+        $ratePerMin[ResourceCode::FOOD] = ($ratePerMin[ResourceCode::FOOD] ?? 0) - (int) $lockedCity->population * SimConstants::FOOD_PER_CAPITA_PER_MIN;
 
         // elapsed == 0:跳过写库,但速率/容量仍照常算出返回
         if ($elapsed > 0) {

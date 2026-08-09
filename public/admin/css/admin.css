@@ -272,6 +272,20 @@ html, body {
     font-weight: 600;
 }
 
+/* 顶栏当前角色徽标 */
+.role-badge {
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid #333c4a;
+    background: rgba(91, 141, 239, 0.12);
+    color: #a9c2ff;
+    font-size: 12px;
+}
+
+.role-badge:empty {
+    display: none;
+}
+
 .status-success {
     color: #4cd97b;
 }

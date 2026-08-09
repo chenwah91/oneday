@@ -2,11 +2,12 @@
 import { api } from '../core/api.js';
 import { state, setState } from '../core/state.js';
 import { selectBuilding, cancelPlacement, onPlacementChange, getPlacement } from '../modules/build.js';
+import { loadResourceNames, resourceName } from '../modules/resources.js';
 
-// 成本紧凑展示,如 "木材20 石料5"
+// 成本紧凑展示,如 "木材20 石料5"(cost 的键是资源 code,显示时翻成中文名)
 function formatCost(cost) {
     return Object.entries(cost || {})
-        .map(([res, amt]) => res + amt)
+        .map(([code, amt]) => resourceName(code) + amt)
         .join(' ');
 }
 
@@ -14,6 +15,9 @@ function formatCost(cost) {
 export async function mountBuildPanel(el) {
     el.innerHTML = '';
     el.classList.add('build-panel');
+
+    // 成本要显示中文资源名,先确保 code→名称表已就位(已缓存则直接返回)
+    await loadResourceNames();
 
     if (!state.definitions) {
         const data = await api.get('/api/definitions/buildings');

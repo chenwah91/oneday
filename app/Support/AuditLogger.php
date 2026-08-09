@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Game\Definition\GameDataVersion;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -32,6 +33,9 @@ final class AuditLogger
             'reason_code'          => $attrs['reason_code'] ?? null,
             'ip_address'           => $request?->ip(),
             'user_agent_hash'      => $ua ? hash('sha256', $ua) : null,
+            // 数值版本(§65):半年后靠它回答「这条记录发生时用的是哪一版数值」。
+            // current() 带每请求缓存,一次请求写 N 条审计也只查一次 game_data_versions
+            'game_data_version'    => $attrs['game_data_version'] ?? GameDataVersion::current(),
             'before_json'          => isset($attrs['before_json']) ? json_encode($attrs['before_json'], JSON_UNESCAPED_UNICODE) : null,
             'after_json'           => isset($attrs['after_json']) ? json_encode($attrs['after_json'], JSON_UNESCAPED_UNICODE) : null,
             'delta_json'           => isset($attrs['delta_json']) ? json_encode($attrs['delta_json'], JSON_UNESCAPED_UNICODE) : null,

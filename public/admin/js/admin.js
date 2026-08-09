@@ -61,6 +61,7 @@ const el = (id) => document.getElementById(id);
 
 const topbar = el('topbar');
 const currentUserEl = el('current-user');
+const currentRoleEl = el('current-role');
 const logoutBtn = el('logout-btn');
 
 const loginView = el('login-view');
@@ -102,6 +103,32 @@ function showView(name) {
     topbar.classList.toggle('hidden', name === 'login');
 }
 
+// ---------- 当前管理员身份 ----------
+// 角色 -> 中文标签(CLAUDE §63 五级角色)
+const ROLE_LABELS = {
+    player: '玩家',
+    support: '客服',
+    game_master: '游戏管理员',
+    admin: '管理员',
+    super_admin: '超级管理员',
+};
+
+// 当前登录管理员的角色与权限。权限清单先存起来,按权限显隐按钮留待下一波后台 UI 使用;
+// 注意:前端显隐只是体验优化,真正的拦截始终在服务器端 EnsureAdmin 中间件
+let currentRole = null;
+let currentPermissions = [];
+
+async function loadMe() {
+    const data = await api.get('/api/admin/me');
+    currentRole = data.role || null;
+    currentPermissions = data.permissions || [];
+    currentRoleEl.textContent = currentRole
+        ? `当前角色:${ROLE_LABELS[currentRole] || currentRole}`
+        : '';
+    // 鼠标悬停可看到本账号实际拥有的权限,便于自查为何某操作被拒
+    currentRoleEl.title = currentPermissions.length ? ('权限:' + currentPermissions.join(', ')) : '';
+}
+
 // ---------- 玩家列表 ----------
 function escapeHtml(s) {
     return String(s ?? '').replace(/[&<>"']/g, (c) => ({
@@ -119,7 +146,7 @@ async function loadPlayers() {
                 <td>${p.id}</td>
                 <td>${escapeHtml(p.username)}</td>
                 <td>${escapeHtml(p.email)}</td>
-                <td class="${p.role === 'admin' ? 'role-admin' : ''}">${escapeHtml(p.role)}</td>
+                <td class="${p.role && p.role !== 'player' ? 'role-admin' : ''}" title="${escapeHtml(ROLE_LABELS[p.role] || '')}">${escapeHtml(p.role)}</td>
                 <td>${p.cityId ?? '-'}</td>
             </tr>
         `).join('');
@@ -234,6 +261,16 @@ defForm.addEventListener('submit', async (e) => {
 
 // ---------- 登录 / 登出 ----------
 async function loadDashboard() {
+    // 先取当前管理员身份:403 表示该账号根本不是后台人员,直接给无权限视图
+    try {
+        await loadMe();
+    } catch (err) {
+        if (err.status === 403) {
+            showView('denied');
+            return;
+        }
+        // 非权限问题(网络/服务器错误)不阻塞看板,仅角色徽标留空
+    }
     try {
         await loadPlayers();
     } catch (err) {
@@ -282,6 +319,10 @@ logoutBtn.addEventListener('click', async () => {
     }
     topbar.classList.add('hidden');
     currentUserEl.textContent = '';
+    currentRoleEl.textContent = '';
+    currentRoleEl.title = '';
+    currentRole = null;
+    currentPermissions = [];
     loginUsername.value = '';
     loginPassword.value = '';
     showView('login');

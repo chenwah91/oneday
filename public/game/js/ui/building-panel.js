@@ -9,12 +9,9 @@ import { notifySuccess, notifyError } from './notification.js';
 import { render as renderBuildings } from '../renderer/buildings.js';
 import { updateHud } from './hud.js';
 import { fmt } from '../utils/format.js';
+import { resourceName, isCapacity } from '../modules/resources.js';
 
 const MAX_LEVEL = 3; // 与后端 UpgradeService 一致:L1→L2→L3
-
-// 容量类产出:数值是一次性容量而非每分钟速率,展示时不加 "/分"
-// (仅用于文案,与 SimConstants::CAPACITY_OUTPUTS 对应)
-const CAPACITY_OUTPUTS = ['人口容量', '仓储容量', '治理容量', '运输容量', '国防值', '贸易容量', '金融容量', '医疗容量'];
 
 // 升级语境下的错误码文案覆盖:后端满级复用了 BUILDING_LIMIT_REACHED,这里译成"已达最高等级"
 const UPGRADE_ERRORS = { BUILDING_LIMIT_REACHED: '已达最高等级' };
@@ -49,13 +46,14 @@ function isSynced(b) {
 }
 
 // 产出展示:定义接口目前只回传 L1 的 output(数组 [{resource, rate_per_min}])
+// resource 是英文 code,显示时翻成中文名;容量类不是每分钟速率,不加 "/分"
 function formatOutput(output) {
     if (!Array.isArray(output) || output.length === 0) return '';
     return output.map((o) => {
-        const res = o && o.resource;
+        const code = o && o.resource;
         const rate = o && o.rate_per_min;
-        if (!res) return '';
-        return res + ' ' + fmt(rate) + (CAPACITY_OUTPUTS.indexOf(res) >= 0 ? '' : '/分');
+        if (!code) return '';
+        return resourceName(code) + ' ' + fmt(rate) + (isCapacity(code) ? '' : '/分');
     }).filter(Boolean).join('  ');
 }
 

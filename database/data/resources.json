@@ -1,247 +1,278 @@
 [
     {
-        "resource_id": "资金",
+        "resource_id": "money",
         "name": "资金",
+        "rs_code": "RS024",
         "category": "货币",
         "first_era": "I",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "木材",
+        "resource_id": "wood",
         "name": "木材",
+        "rs_code": "RS003",
         "category": "原料",
         "first_era": "I",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "浆果",
+        "resource_id": "berries",
         "name": "浆果",
+        "rs_code": "RS002",
         "category": "食物",
         "first_era": "I",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "燃料",
+        "resource_id": "fuel",
         "name": "燃料",
+        "rs_code": "RS019",
         "category": "能源",
         "first_era": "I",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "石料",
+        "resource_id": "stone",
         "name": "石料",
+        "rs_code": "RS004",
         "category": "原料",
         "first_era": "II",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "面粉",
+        "resource_id": "flour",
         "name": "面粉",
+        "rs_code": "RS007",
         "category": "加工品",
         "first_era": "II",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "粮食",
+        "resource_id": "food",
         "name": "粮食",
+        "rs_code": "RS001",
         "category": "食物",
         "first_era": "II",
         "is_population_consumable": true,
         "is_strategic": false
     },
     {
-        "resource_id": "面包",
+        "resource_id": "bread",
         "name": "面包",
+        "rs_code": "RS008",
         "category": "食物",
         "first_era": "II",
         "is_population_consumable": true,
         "is_strategic": false
     },
     {
-        "resource_id": "铜",
+        "resource_id": "copper",
         "name": "铜",
+        "rs_code": "RS009",
         "category": "原料",
         "first_era": "III",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "锡",
+        "resource_id": "tin",
         "name": "锡",
+        "rs_code": "RS010",
         "category": "原料",
         "first_era": "III",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "黏土",
+        "resource_id": "clay",
         "name": "黏土",
+        "rs_code": "RS005",
         "category": "原料",
         "first_era": "III",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "青铜",
+        "resource_id": "bronze",
         "name": "青铜",
+        "rs_code": "RS011",
         "category": "加工品",
         "first_era": "III",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "砖",
+        "resource_id": "brick",
         "name": "砖",
+        "rs_code": "RS014",
         "category": "加工品",
         "first_era": "III",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "知识",
+        "resource_id": "knowledge",
         "name": "知识",
+        "rs_code": "RS023",
         "category": "知识",
         "first_era": "III",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "铁",
+        "resource_id": "iron",
         "name": "铁",
+        "rs_code": "RS012",
         "category": "原料",
         "first_era": "IV",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "煤炭",
+        "resource_id": "coal",
         "name": "煤炭",
+        "rs_code": "RS013",
         "category": "原料",
         "first_era": "IV",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "铁制工具",
+        "resource_id": "iron_tools",
         "name": "铁制工具",
+        "rs_code": null,
         "category": "加工品",
         "first_era": "IV",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "砂石",
+        "resource_id": "sand_gravel",
         "name": "砂石",
+        "rs_code": "RS006",
         "category": "原料",
         "first_era": "VII",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "玻璃",
+        "resource_id": "glass",
         "name": "玻璃",
+        "rs_code": "RS015",
         "category": "加工品",
         "first_era": "VII",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "钢铁",
+        "resource_id": "steel",
         "name": "钢铁",
+        "rs_code": "RS016",
         "category": "加工品",
         "first_era": "VIII",
         "is_population_consumable": false,
         "is_strategic": true
     },
     {
-        "resource_id": "机械",
+        "resource_id": "machinery",
         "name": "机械",
+        "rs_code": "RS020",
         "category": "加工品",
         "first_era": "VIII",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "电力",
+        "resource_id": "electricity",
         "name": "电力",
+        "rs_code": "RS017",
         "category": "能源",
         "first_era": "VIII",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "石油",
+        "resource_id": "oil",
         "name": "石油",
+        "rs_code": "RS018",
         "category": "原料",
         "first_era": "IX",
         "is_population_consumable": false,
         "is_strategic": true
     },
     {
-        "resource_id": "水泥",
+        "resource_id": "cement",
         "name": "水泥",
+        "rs_code": null,
         "category": "加工品",
         "first_era": "IX",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "电子元件",
+        "resource_id": "electronic_components",
         "name": "电子元件",
+        "rs_code": "RS022",
         "category": "加工品",
         "first_era": "IX",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "塑料",
+        "resource_id": "plastic",
         "name": "塑料",
+        "rs_code": "RS021",
         "category": "加工品",
         "first_era": "IX",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "加工食品",
+        "resource_id": "processed_food",
         "name": "加工食品",
+        "rs_code": null,
         "category": "食物",
         "first_era": "IX",
         "is_population_consumable": true,
         "is_strategic": false
     },
     {
-        "resource_id": "药品",
+        "resource_id": "medicine",
         "name": "药品",
+        "rs_code": null,
         "category": "食物",
         "first_era": "IX",
         "is_population_consumable": false,
         "is_strategic": false
     },
     {
-        "resource_id": "稀有金属",
+        "resource_id": "rare_metals",
         "name": "稀有金属",
+        "rs_code": "RS025",
         "category": "原料",
         "first_era": "X",
         "is_population_consumable": false,
         "is_strategic": true
     },
     {
-        "resource_id": "先进材料",
+        "resource_id": "advanced_materials",
         "name": "先进材料",
+        "rs_code": "RS026",
         "category": "加工品",
         "first_era": "X",
         "is_population_consumable": false,
         "is_strategic": true
     },
     {
-        "resource_id": "高品质粮食",
+        "resource_id": "high_quality_food",
         "name": "高品质粮食",
+        "rs_code": null,
         "category": "食物",
         "first_era": "X",
         "is_population_consumable": true,

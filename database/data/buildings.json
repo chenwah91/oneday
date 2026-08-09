@@ -12,13 +12,13 @@
         "base_build_seconds": 32,
         "tech_id": "TECH_I_CIV",
         "cost": {
-            "木材": 12,
-            "资金": 8
+            "wood": 12,
+            "money": 8
         },
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 18
             }
         ],
@@ -43,13 +43,13 @@
         "base_build_seconds": 38,
         "tech_id": "TECH_I_SUST",
         "cost": {
-            "木材": 10,
-            "资金": 6
+            "wood": 10,
+            "money": 6
         },
         "input": [],
         "output": [
             {
-                "resource": "浆果",
+                "resource": "berries",
                 "rate_per_min": 8
             }
         ],
@@ -74,13 +74,13 @@
         "base_build_seconds": 39,
         "tech_id": "TECH_I_LOG",
         "cost": {
-            "木材": 15,
-            "资金": 10
+            "wood": 15,
+            "money": 10
         },
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 150
             }
         ],
@@ -105,14 +105,14 @@
         "base_build_seconds": 65,
         "tech_id": "TECH_I_CIV",
         "cost": {
-            "木材": 20,
-            "石料": 12,
-            "资金": 25
+            "wood": 20,
+            "stone": 12,
+            "money": 25
         },
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 80
             }
         ],
@@ -137,14 +137,14 @@
         "base_build_seconds": 53,
         "tech_id": "TECH_I_DEF",
         "cost": {
-            "木材": 18,
-            "石料": 15,
-            "资金": 15
+            "wood": 18,
+            "stone": 15,
+            "money": 15
         },
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 25
             }
         ],
@@ -169,14 +169,14 @@
         "base_build_seconds": 44,
         "tech_id": "TECH_II_CIV",
         "cost": {
-            "木材": 24,
-            "石料": 10,
-            "资金": 16
+            "wood": 24,
+            "stone": 10,
+            "money": 16
         },
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 30
             }
         ],
@@ -201,14 +201,14 @@
         "base_build_seconds": 51,
         "tech_id": "TECH_II_SUST",
         "cost": {
-            "木材": 20,
-            "石料": 5,
-            "资金": 12
+            "wood": 20,
+            "stone": 5,
+            "money": 12
         },
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 14
             }
         ],
@@ -233,14 +233,14 @@
         "base_build_seconds": 53,
         "tech_id": "TECH_II_LOG",
         "cost": {
-            "木材": 30,
-            "石料": 7,
-            "资金": 20
+            "wood": 30,
+            "stone": 7,
+            "money": 20
         },
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 600
             }
         ],
@@ -265,14 +265,14 @@
         "base_build_seconds": 31,
         "tech_id": "TECH_II_LOG",
         "cost": {
-            "木材": 10,
-            "石料": 16,
-            "资金": 14
+            "wood": 10,
+            "stone": 16,
+            "money": 14
         },
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 140
             }
         ],
@@ -297,14 +297,14 @@
         "base_build_seconds": 85,
         "tech_id": "TECH_II_CIV",
         "cost": {
-            "木材": 40,
-            "石料": 24,
-            "资金": 50
+            "wood": 40,
+            "stone": 24,
+            "money": 50
         },
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 320
             }
         ],
@@ -329,14 +329,14 @@
         "base_build_seconds": 71,
         "tech_id": "TECH_II_DEF",
         "cost": {
-            "木材": 36,
-            "石料": 30,
-            "资金": 30
+            "wood": 36,
+            "stone": 30,
+            "money": 30
         },
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 100
             }
         ],
@@ -361,15 +361,15 @@
         "base_build_seconds": 56,
         "tech_id": "TECH_III_CIV",
         "cost": {
-            "木材": 36,
-            "石料": 20,
-            "砖": 8,
-            "资金": 24
+            "wood": 36,
+            "stone": 20,
+            "brick": 8,
+            "money": 24
         },
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 42
             }
         ],
@@ -394,15 +394,15 @@
         "base_build_seconds": 64,
         "tech_id": "TECH_III_SUST",
         "cost": {
-            "木材": 30,
-            "石料": 10,
-            "砖": 4,
-            "资金": 18
+            "wood": 30,
+            "stone": 10,
+            "brick": 4,
+            "money": 18
         },
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 20
             }
         ],
@@ -427,15 +427,15 @@
         "base_build_seconds": 67,
         "tech_id": "TECH_III_LOG",
         "cost": {
-            "木材": 45,
-            "石料": 14,
-            "砖": 7,
-            "资金": 30
+            "wood": 45,
+            "stone": 14,
+            "brick": 7,
+            "money": 30
         },
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 1350
             }
         ],
@@ -460,15 +460,15 @@
         "base_build_seconds": 39,
         "tech_id": "TECH_III_LOG",
         "cost": {
-            "木材": 15,
-            "石料": 24,
-            "砖": 5,
-            "资金": 21
+            "wood": 15,
+            "stone": 24,
+            "brick": 5,
+            "money": 21
         },
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 315
             }
         ],
@@ -493,15 +493,15 @@
         "base_build_seconds": 105,
         "tech_id": "TECH_III_CIV",
         "cost": {
-            "木材": 60,
-            "石料": 36,
-            "砖": 10,
-            "资金": 75
+            "wood": 60,
+            "stone": 36,
+            "brick": 10,
+            "money": 75
         },
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 720
             }
         ],
@@ -526,15 +526,15 @@
         "base_build_seconds": 89,
         "tech_id": "TECH_III_DEF",
         "cost": {
-            "木材": 54,
-            "石料": 45,
-            "青铜": 6,
-            "资金": 45
+            "wood": 54,
+            "stone": 45,
+            "bronze": 6,
+            "money": 45
         },
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 225
             }
         ],
@@ -559,16 +559,16 @@
         "base_build_seconds": 68,
         "tech_id": "TECH_IV_CIV",
         "cost": {
-            "木材": 48,
-            "石料": 30,
-            "砖": 16,
-            "铁": 4,
-            "资金": 32
+            "wood": 48,
+            "stone": 30,
+            "brick": 16,
+            "iron": 4,
+            "money": 32
         },
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 54
             }
         ],
@@ -593,16 +593,16 @@
         "base_build_seconds": 77,
         "tech_id": "TECH_IV_SUST",
         "cost": {
-            "木材": 40,
-            "石料": 15,
-            "砖": 8,
-            "铁": 3,
-            "资金": 24
+            "wood": 40,
+            "stone": 15,
+            "brick": 8,
+            "iron": 3,
+            "money": 24
         },
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 30
             }
         ],
@@ -627,15 +627,15 @@
         "base_build_seconds": 81,
         "tech_id": "TECH_IV_LOG",
         "cost": {
-            "木材": 60,
-            "石料": 21,
-            "砖": 14,
-            "资金": 40
+            "wood": 60,
+            "stone": 21,
+            "brick": 14,
+            "money": 40
         },
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 2400
             }
         ],
@@ -660,16 +660,16 @@
         "base_build_seconds": 47,
         "tech_id": "TECH_IV_LOG",
         "cost": {
-            "木材": 20,
-            "石料": 32,
-            "砖": 10,
-            "铁": 3,
-            "资金": 28
+            "wood": 20,
+            "stone": 32,
+            "brick": 10,
+            "iron": 3,
+            "money": 28
         },
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 560
             }
         ],
@@ -694,16 +694,16 @@
         "base_build_seconds": 125,
         "tech_id": "TECH_IV_CIV",
         "cost": {
-            "木材": 80,
-            "石料": 48,
-            "砖": 20,
-            "铁": 4,
-            "资金": 100
+            "wood": 80,
+            "stone": 48,
+            "brick": 20,
+            "iron": 4,
+            "money": 100
         },
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 1280
             }
         ],
@@ -728,16 +728,16 @@
         "base_build_seconds": 107,
         "tech_id": "TECH_IV_DEF",
         "cost": {
-            "木材": 72,
-            "石料": 60,
-            "青铜": 12,
-            "铁": 8,
-            "资金": 60
+            "wood": 72,
+            "stone": 60,
+            "bronze": 12,
+            "iron": 8,
+            "money": 60
         },
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 400
             }
         ],
@@ -762,16 +762,16 @@
         "base_build_seconds": 80,
         "tech_id": "TECH_V_CIV",
         "cost": {
-            "木材": 60,
-            "石料": 40,
-            "砖": 24,
-            "铁": 8,
-            "资金": 40
+            "wood": 60,
+            "stone": 40,
+            "brick": 24,
+            "iron": 8,
+            "money": 40
         },
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 66
             }
         ],
@@ -796,16 +796,16 @@
         "base_build_seconds": 90,
         "tech_id": "TECH_V_SUST",
         "cost": {
-            "木材": 50,
-            "石料": 20,
-            "砖": 12,
-            "铁": 6,
-            "资金": 30
+            "wood": 50,
+            "stone": 20,
+            "brick": 12,
+            "iron": 6,
+            "money": 30
         },
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 42
             }
         ],
@@ -830,15 +830,15 @@
         "base_build_seconds": 95,
         "tech_id": "TECH_V_LOG",
         "cost": {
-            "木材": 75,
-            "石料": 28,
-            "砖": 21,
-            "资金": 50
+            "wood": 75,
+            "stone": 28,
+            "brick": 21,
+            "money": 50
         },
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 3750
             }
         ],
@@ -863,16 +863,16 @@
         "base_build_seconds": 55,
         "tech_id": "TECH_V_LOG",
         "cost": {
-            "木材": 25,
-            "石料": 40,
-            "砖": 15,
-            "铁": 6,
-            "资金": 35
+            "wood": 25,
+            "stone": 40,
+            "brick": 15,
+            "iron": 6,
+            "money": 35
         },
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 875
             }
         ],
@@ -897,16 +897,16 @@
         "base_build_seconds": 145,
         "tech_id": "TECH_V_CIV",
         "cost": {
-            "木材": 100,
-            "石料": 60,
-            "砖": 30,
-            "铁": 8,
-            "资金": 125
+            "wood": 100,
+            "stone": 60,
+            "brick": 30,
+            "iron": 8,
+            "money": 125
         },
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 2000
             }
         ],
@@ -931,16 +931,16 @@
         "base_build_seconds": 125,
         "tech_id": "TECH_V_DEF",
         "cost": {
-            "木材": 90,
-            "石料": 75,
-            "青铜": 18,
-            "铁": 16,
-            "资金": 75
+            "wood": 90,
+            "stone": 75,
+            "bronze": 18,
+            "iron": 16,
+            "money": 75
         },
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 625
             }
         ],
@@ -965,16 +965,16 @@
         "base_build_seconds": 92,
         "tech_id": "TECH_VI_CIV",
         "cost": {
-            "木材": 72,
-            "石料": 50,
-            "砖": 32,
-            "铁": 12,
-            "资金": 48
+            "wood": 72,
+            "stone": 50,
+            "brick": 32,
+            "iron": 12,
+            "money": 48
         },
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 78
             }
         ],
@@ -999,16 +999,16 @@
         "base_build_seconds": 103,
         "tech_id": "TECH_VI_SUST",
         "cost": {
-            "木材": 60,
-            "石料": 25,
-            "砖": 16,
-            "铁": 9,
-            "资金": 36
+            "wood": 60,
+            "stone": 25,
+            "brick": 16,
+            "iron": 9,
+            "money": 36
         },
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 55
             }
         ],
@@ -1033,15 +1033,15 @@
         "base_build_seconds": 109,
         "tech_id": "TECH_VI_LOG",
         "cost": {
-            "木材": 90,
-            "石料": 35,
-            "砖": 28,
-            "资金": 60
+            "wood": 90,
+            "stone": 35,
+            "brick": 28,
+            "money": 60
         },
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 5400
             }
         ],
@@ -1066,16 +1066,16 @@
         "base_build_seconds": 63,
         "tech_id": "TECH_VI_LOG",
         "cost": {
-            "木材": 30,
-            "石料": 48,
-            "砖": 20,
-            "铁": 9,
-            "资金": 42
+            "wood": 30,
+            "stone": 48,
+            "brick": 20,
+            "iron": 9,
+            "money": 42
         },
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 1260
             }
         ],
@@ -1100,16 +1100,16 @@
         "base_build_seconds": 165,
         "tech_id": "TECH_VI_CIV",
         "cost": {
-            "木材": 120,
-            "石料": 72,
-            "砖": 40,
-            "铁": 12,
-            "资金": 150
+            "wood": 120,
+            "stone": 72,
+            "brick": 40,
+            "iron": 12,
+            "money": 150
         },
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 2880
             }
         ],
@@ -1134,16 +1134,16 @@
         "base_build_seconds": 143,
         "tech_id": "TECH_VI_DEF",
         "cost": {
-            "木材": 108,
-            "石料": 90,
-            "青铜": 24,
-            "铁": 24,
-            "资金": 90
+            "wood": 108,
+            "stone": 90,
+            "bronze": 24,
+            "iron": 24,
+            "money": 90
         },
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 900
             }
         ],
@@ -1168,16 +1168,16 @@
         "base_build_seconds": 104,
         "tech_id": "TECH_VII_CIV",
         "cost": {
-            "木材": 84,
-            "石料": 60,
-            "砖": 40,
-            "铁": 16,
-            "资金": 56
+            "wood": 84,
+            "stone": 60,
+            "brick": 40,
+            "iron": 16,
+            "money": 56
         },
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 90
             }
         ],
@@ -1202,16 +1202,16 @@
         "base_build_seconds": 116,
         "tech_id": "TECH_VII_SUST",
         "cost": {
-            "木材": 70,
-            "石料": 30,
-            "砖": 20,
-            "铁": 12,
-            "资金": 42
+            "wood": 70,
+            "stone": 30,
+            "brick": 20,
+            "iron": 12,
+            "money": 42
         },
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 75
             }
         ],
@@ -1236,15 +1236,15 @@
         "base_build_seconds": 123,
         "tech_id": "TECH_VII_LOG",
         "cost": {
-            "木材": 105,
-            "石料": 42,
-            "砖": 35,
-            "资金": 70
+            "wood": 105,
+            "stone": 42,
+            "brick": 35,
+            "money": 70
         },
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 7350
             }
         ],
@@ -1269,16 +1269,16 @@
         "base_build_seconds": 71,
         "tech_id": "TECH_VII_LOG",
         "cost": {
-            "木材": 35,
-            "石料": 56,
-            "砖": 25,
-            "铁": 12,
-            "资金": 49
+            "wood": 35,
+            "stone": 56,
+            "brick": 25,
+            "iron": 12,
+            "money": 49
         },
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 1715
             }
         ],
@@ -1303,16 +1303,16 @@
         "base_build_seconds": 185,
         "tech_id": "TECH_VII_CIV",
         "cost": {
-            "木材": 140,
-            "石料": 84,
-            "砖": 50,
-            "铁": 16,
-            "资金": 175
+            "wood": 140,
+            "stone": 84,
+            "brick": 50,
+            "iron": 16,
+            "money": 175
         },
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 3920
             }
         ],
@@ -1337,17 +1337,17 @@
         "base_build_seconds": 161,
         "tech_id": "TECH_VII_DEF",
         "cost": {
-            "木材": 126,
-            "石料": 105,
-            "青铜": 30,
-            "铁": 32,
-            "煤炭": 5,
-            "资金": 105
+            "wood": 126,
+            "stone": 105,
+            "bronze": 30,
+            "iron": 32,
+            "coal": 5,
+            "money": 105
         },
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 1225
             }
         ],
@@ -1372,17 +1372,17 @@
         "base_build_seconds": 116,
         "tech_id": "TECH_VIII_CIV",
         "cost": {
-            "木材": 96,
-            "石料": 70,
-            "砖": 48,
-            "铁": 20,
-            "钢铁": 8,
-            "资金": 64
+            "wood": 96,
+            "stone": 70,
+            "brick": 48,
+            "iron": 20,
+            "steel": 8,
+            "money": 64
         },
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 102
             }
         ],
@@ -1407,27 +1407,27 @@
         "base_build_seconds": 129,
         "tech_id": "TECH_VIII_SUST",
         "cost": {
-            "木材": 80,
-            "石料": 35,
-            "砖": 24,
-            "铁": 15,
-            "煤炭": 6,
-            "钢铁": 10,
-            "资金": 48
+            "wood": 80,
+            "stone": 35,
+            "brick": 24,
+            "iron": 15,
+            "coal": 6,
+            "steel": 10,
+            "money": 48
         },
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 11
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 4
             }
         ],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 110
             }
         ],
@@ -1452,16 +1452,16 @@
         "base_build_seconds": 137,
         "tech_id": "TECH_VIII_LOG",
         "cost": {
-            "木材": 120,
-            "石料": 49,
-            "砖": 42,
-            "钢铁": 15,
-            "资金": 80
+            "wood": 120,
+            "stone": 49,
+            "brick": 42,
+            "steel": 15,
+            "money": 80
         },
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 9600
             }
         ],
@@ -1486,18 +1486,18 @@
         "base_build_seconds": 79,
         "tech_id": "TECH_VIII_LOG",
         "cost": {
-            "木材": 40,
-            "石料": 64,
-            "砖": 30,
-            "铁": 15,
-            "煤炭": 8,
-            "钢铁": 15,
-            "资金": 56
+            "wood": 40,
+            "stone": 64,
+            "brick": 30,
+            "iron": 15,
+            "coal": 8,
+            "steel": 15,
+            "money": 56
         },
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 2240
             }
         ],
@@ -1522,17 +1522,17 @@
         "base_build_seconds": 205,
         "tech_id": "TECH_VIII_CIV",
         "cost": {
-            "木材": 160,
-            "石料": 96,
-            "砖": 60,
-            "铁": 20,
-            "钢铁": 15,
-            "资金": 200
+            "wood": 160,
+            "stone": 96,
+            "brick": 60,
+            "iron": 20,
+            "steel": 15,
+            "money": 200
         },
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 5120
             }
         ],
@@ -1557,18 +1557,18 @@
         "base_build_seconds": 179,
         "tech_id": "TECH_VIII_DEF",
         "cost": {
-            "木材": 144,
-            "石料": 120,
-            "青铜": 36,
-            "铁": 40,
-            "煤炭": 10,
-            "钢铁": 20,
-            "资金": 120
+            "wood": 144,
+            "stone": 120,
+            "bronze": 36,
+            "iron": 40,
+            "coal": 10,
+            "steel": 20,
+            "money": 120
         },
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 1600
             }
         ],
@@ -1593,19 +1593,19 @@
         "base_build_seconds": 128,
         "tech_id": "TECH_IX_CIV",
         "cost": {
-            "木材": 108,
-            "石料": 80,
-            "砖": 56,
-            "铁": 24,
-            "钢铁": 16,
-            "玻璃": 8,
-            "水泥": 10,
-            "资金": 72
+            "wood": 108,
+            "stone": 80,
+            "brick": 56,
+            "iron": 24,
+            "steel": 16,
+            "glass": 8,
+            "cement": 10,
+            "money": 72
         },
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 114
             }
         ],
@@ -1630,29 +1630,29 @@
         "base_build_seconds": 142,
         "tech_id": "TECH_IX_SUST",
         "cost": {
-            "木材": 90,
-            "石料": 40,
-            "砖": 28,
-            "铁": 18,
-            "煤炭": 6,
-            "钢铁": 20,
-            "水泥": 8,
-            "电子元件": 5,
-            "资金": 54
+            "wood": 90,
+            "stone": 40,
+            "brick": 28,
+            "iron": 18,
+            "coal": 6,
+            "steel": 20,
+            "cement": 8,
+            "electronic_components": 5,
+            "money": 54
         },
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 12
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 8
             }
         ],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 160
             }
         ],
@@ -1677,17 +1677,17 @@
         "base_build_seconds": 151,
         "tech_id": "TECH_IX_LOG",
         "cost": {
-            "木材": 135,
-            "石料": 56,
-            "砖": 49,
-            "钢铁": 30,
-            "电子元件": 6,
-            "资金": 90
+            "wood": 135,
+            "stone": 56,
+            "brick": 49,
+            "steel": 30,
+            "electronic_components": 6,
+            "money": 90
         },
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 12150
             }
         ],
@@ -1712,19 +1712,19 @@
         "base_build_seconds": 87,
         "tech_id": "TECH_IX_LOG",
         "cost": {
-            "木材": 45,
-            "石料": 72,
-            "砖": 35,
-            "铁": 18,
-            "煤炭": 8,
-            "钢铁": 30,
-            "水泥": 20,
-            "资金": 63
+            "wood": 45,
+            "stone": 72,
+            "brick": 35,
+            "iron": 18,
+            "coal": 8,
+            "steel": 30,
+            "cement": 20,
+            "money": 63
         },
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 2835
             }
         ],
@@ -1749,19 +1749,19 @@
         "base_build_seconds": 225,
         "tech_id": "TECH_IX_CIV",
         "cost": {
-            "木材": 180,
-            "石料": 108,
-            "砖": 70,
-            "铁": 24,
-            "钢铁": 30,
-            "玻璃": 10,
-            "电子元件": 8,
-            "资金": 225
+            "wood": 180,
+            "stone": 108,
+            "brick": 70,
+            "iron": 24,
+            "steel": 30,
+            "glass": 10,
+            "electronic_components": 8,
+            "money": 225
         },
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 6480
             }
         ],
@@ -1786,20 +1786,20 @@
         "base_build_seconds": 197,
         "tech_id": "TECH_IX_DEF",
         "cost": {
-            "木材": 162,
-            "石料": 135,
-            "青铜": 42,
-            "铁": 48,
-            "煤炭": 15,
-            "钢铁": 40,
-            "水泥": 20,
-            "电子元件": 10,
-            "资金": 135
+            "wood": 162,
+            "stone": 135,
+            "bronze": 42,
+            "iron": 48,
+            "coal": 15,
+            "steel": 40,
+            "cement": 20,
+            "electronic_components": 10,
+            "money": 135
         },
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 2025
             }
         ],
@@ -1824,21 +1824,21 @@
         "base_build_seconds": 140,
         "tech_id": "TECH_X_CIV",
         "cost": {
-            "木材": 120,
-            "石料": 90,
-            "砖": 64,
-            "铁": 28,
-            "钢铁": 24,
-            "玻璃": 16,
-            "水泥": 20,
-            "电子元件": 5,
-            "稀有金属": 2,
-            "资金": 80
+            "wood": 120,
+            "stone": 90,
+            "brick": 64,
+            "iron": 28,
+            "steel": 24,
+            "glass": 16,
+            "cement": 20,
+            "electronic_components": 5,
+            "rare_metals": 2,
+            "money": 80
         },
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 126
             }
         ],
@@ -1863,29 +1863,29 @@
         "base_build_seconds": 155,
         "tech_id": "TECH_X_SUST",
         "cost": {
-            "木材": 100,
-            "石料": 45,
-            "砖": 32,
-            "铁": 21,
-            "煤炭": 6,
-            "钢铁": 30,
-            "水泥": 16,
-            "电子元件": 10,
-            "资金": 60
+            "wood": 100,
+            "stone": 45,
+            "brick": 32,
+            "iron": 21,
+            "coal": 6,
+            "steel": 30,
+            "cement": 16,
+            "electronic_components": 10,
+            "money": 60
         },
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 13
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 12
             }
         ],
         "output": [
             {
-                "resource": "高品质粮食",
+                "resource": "high_quality_food",
                 "rate_per_min": 240
             }
         ],
@@ -1910,17 +1910,17 @@
         "base_build_seconds": 165,
         "tech_id": "TECH_X_LOG",
         "cost": {
-            "木材": 150,
-            "石料": 63,
-            "砖": 56,
-            "钢铁": 45,
-            "电子元件": 12,
-            "资金": 100
+            "wood": 150,
+            "stone": 63,
+            "brick": 56,
+            "steel": 45,
+            "electronic_components": 12,
+            "money": 100
         },
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 15000
             }
         ],
@@ -1945,20 +1945,20 @@
         "base_build_seconds": 95,
         "tech_id": "TECH_X_LOG",
         "cost": {
-            "木材": 50,
-            "石料": 80,
-            "砖": 40,
-            "铁": 21,
-            "煤炭": 8,
-            "钢铁": 45,
-            "水泥": 40,
-            "电子元件": 10,
-            "资金": 70
+            "wood": 50,
+            "stone": 80,
+            "brick": 40,
+            "iron": 21,
+            "coal": 8,
+            "steel": 45,
+            "cement": 40,
+            "electronic_components": 10,
+            "money": 70
         },
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 3500
             }
         ],
@@ -1983,19 +1983,19 @@
         "base_build_seconds": 245,
         "tech_id": "TECH_X_CIV",
         "cost": {
-            "木材": 200,
-            "石料": 120,
-            "砖": 80,
-            "铁": 28,
-            "钢铁": 45,
-            "玻璃": 20,
-            "电子元件": 16,
-            "资金": 250
+            "wood": 200,
+            "stone": 120,
+            "brick": 80,
+            "iron": 28,
+            "steel": 45,
+            "glass": 20,
+            "electronic_components": 16,
+            "money": 250
         },
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 8000
             }
         ],
@@ -2020,21 +2020,21 @@
         "base_build_seconds": 215,
         "tech_id": "TECH_X_DEF",
         "cost": {
-            "木材": 180,
-            "石料": 150,
-            "青铜": 48,
-            "铁": 56,
-            "煤炭": 20,
-            "钢铁": 60,
-            "水泥": 40,
-            "电子元件": 20,
-            "稀有金属": 5,
-            "资金": 150
+            "wood": 180,
+            "stone": 150,
+            "bronze": 48,
+            "iron": 56,
+            "coal": 20,
+            "steel": 60,
+            "cement": 40,
+            "electronic_components": 20,
+            "rare_metals": 5,
+            "money": 150
         },
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 2500
             }
         ],
@@ -2059,12 +2059,12 @@
         "base_build_seconds": 30,
         "tech_id": "TECH_I_IND",
         "cost": {
-            "木材": 15
+            "wood": 15
         },
         "input": [],
         "output": [
             {
-                "resource": "木材",
+                "resource": "wood",
                 "rate_per_min": 10
             }
         ],
@@ -2089,13 +2089,13 @@
         "base_build_seconds": 55,
         "tech_id": "TECH_II_IND",
         "cost": {
-            "木材": 35,
-            "石料": 10
+            "wood": 35,
+            "stone": 10
         },
         "input": [],
         "output": [
             {
-                "resource": "石料",
+                "resource": "stone",
                 "rate_per_min": 12
             }
         ],
@@ -2120,13 +2120,13 @@
         "base_build_seconds": 70,
         "tech_id": "TECH_III_IND",
         "cost": {
-            "木材": 45,
-            "石料": 30
+            "wood": 45,
+            "stone": 30
         },
         "input": [],
         "output": [
             {
-                "resource": "铜",
+                "resource": "copper",
                 "rate_per_min": 7
             }
         ],
@@ -2151,13 +2151,13 @@
         "base_build_seconds": 75,
         "tech_id": "TECH_III_IND",
         "cost": {
-            "木材": 50,
-            "石料": 35
+            "wood": 50,
+            "stone": 35
         },
         "input": [],
         "output": [
             {
-                "resource": "锡",
+                "resource": "tin",
                 "rate_per_min": 4
             }
         ],
@@ -2182,14 +2182,14 @@
         "base_build_seconds": 90,
         "tech_id": "TECH_IV_IND",
         "cost": {
-            "木材": 60,
-            "石料": 50,
-            "铁": 5
+            "wood": 60,
+            "stone": 50,
+            "iron": 5
         },
         "input": [],
         "output": [
             {
-                "resource": "铁",
+                "resource": "iron",
                 "rate_per_min": 10
             }
         ],
@@ -2214,14 +2214,14 @@
         "base_build_seconds": 90,
         "tech_id": "TECH_IV_IND",
         "cost": {
-            "木材": 60,
-            "石料": 45,
-            "铁": 5
+            "wood": 60,
+            "stone": 45,
+            "iron": 5
         },
         "input": [],
         "output": [
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 10
             }
         ],
@@ -2246,14 +2246,14 @@
         "base_build_seconds": 140,
         "tech_id": "TECH_IX_IND",
         "cost": {
-            "钢铁": 45,
-            "水泥": 35,
-            "资金": 120
+            "steel": 45,
+            "cement": 35,
+            "money": 120
         },
         "input": [],
         "output": [
             {
-                "resource": "石油",
+                "resource": "oil",
                 "rate_per_min": 18
             }
         ],
@@ -2278,20 +2278,20 @@
         "base_build_seconds": 240,
         "tech_id": "TECH_X_IND",
         "cost": {
-            "钢铁": 120,
-            "水泥": 80,
-            "电子元件": 30,
-            "资金": 400
+            "steel": 120,
+            "cement": 80,
+            "electronic_components": 30,
+            "money": 400
         },
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 20
             }
         ],
         "output": [
             {
-                "resource": "稀有金属",
+                "resource": "rare_metals",
                 "rate_per_min": 6
             }
         ],
@@ -2316,18 +2316,18 @@
         "base_build_seconds": 50,
         "tech_id": "TECH_II_IND",
         "cost": {
-            "木材": 35,
-            "石料": 15
+            "wood": 35,
+            "stone": 15
         },
         "input": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 10
             }
         ],
         "output": [
             {
-                "resource": "面粉",
+                "resource": "flour",
                 "rate_per_min": 8
             }
         ],
@@ -2352,18 +2352,18 @@
         "base_build_seconds": 55,
         "tech_id": "TECH_II_IND",
         "cost": {
-            "木材": 30,
-            "石料": 20
+            "wood": 30,
+            "stone": 20
         },
         "input": [
             {
-                "resource": "面粉",
+                "resource": "flour",
                 "rate_per_min": 7
             }
         ],
         "output": [
             {
-                "resource": "面包",
+                "resource": "bread",
                 "rate_per_min": 6
             }
         ],
@@ -2388,24 +2388,24 @@
         "base_build_seconds": 80,
         "tech_id": "TECH_III_IND",
         "cost": {
-            "木材": 40,
-            "石料": 30,
-            "铜": 10,
-            "锡": 5
+            "wood": 40,
+            "stone": 30,
+            "copper": 10,
+            "tin": 5
         },
         "input": [
             {
-                "resource": "铜",
+                "resource": "copper",
                 "rate_per_min": 5
             },
             {
-                "resource": "锡",
+                "resource": "tin",
                 "rate_per_min": 2
             }
         ],
         "output": [
             {
-                "resource": "青铜",
+                "resource": "bronze",
                 "rate_per_min": 6
             }
         ],
@@ -2430,23 +2430,23 @@
         "base_build_seconds": 65,
         "tech_id": "TECH_III_IND",
         "cost": {
-            "木材": 40,
-            "石料": 20,
-            "黏土": 20
+            "wood": 40,
+            "stone": 20,
+            "clay": 20
         },
         "input": [
             {
-                "resource": "黏土",
+                "resource": "clay",
                 "rate_per_min": 10
             },
             {
-                "resource": "木材",
+                "resource": "wood",
                 "rate_per_min": 2
             }
         ],
         "output": [
             {
-                "resource": "砖",
+                "resource": "brick",
                 "rate_per_min": 12
             }
         ],
@@ -2471,23 +2471,23 @@
         "base_build_seconds": 90,
         "tech_id": "TECH_IV_IND",
         "cost": {
-            "木材": 45,
-            "石料": 40,
-            "铁": 20
+            "wood": 45,
+            "stone": 40,
+            "iron": 20
         },
         "input": [
             {
-                "resource": "铁",
+                "resource": "iron",
                 "rate_per_min": 7
             },
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 2
             }
         ],
         "output": [
             {
-                "resource": "铁制工具",
+                "resource": "iron_tools",
                 "rate_per_min": 5
             }
         ],
@@ -2512,24 +2512,24 @@
         "base_build_seconds": 120,
         "tech_id": "TECH_VII_IND",
         "cost": {
-            "石料": 70,
-            "砖": 50,
-            "铁": 15,
-            "资金": 80
+            "stone": 70,
+            "brick": 50,
+            "iron": 15,
+            "money": 80
         },
         "input": [
             {
-                "resource": "砂石",
+                "resource": "sand_gravel",
                 "rate_per_min": 10
             },
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 5
             }
         ],
         "output": [
             {
-                "resource": "玻璃",
+                "resource": "glass",
                 "rate_per_min": 8
             }
         ],
@@ -2554,24 +2554,24 @@
         "base_build_seconds": 210,
         "tech_id": "TECH_VIII_IND",
         "cost": {
-            "砖": 80,
-            "铁": 60,
-            "煤炭": 40,
-            "资金": 150
+            "brick": 80,
+            "iron": 60,
+            "coal": 40,
+            "money": 150
         },
         "input": [
             {
-                "resource": "铁",
+                "resource": "iron",
                 "rate_per_min": 18
             },
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 15
             }
         ],
         "output": [
             {
-                "resource": "钢铁",
+                "resource": "steel",
                 "rate_per_min": 14
             }
         ],
@@ -2596,23 +2596,23 @@
         "base_build_seconds": 230,
         "tech_id": "TECH_VIII_IND",
         "cost": {
-            "钢铁": 60,
-            "玻璃": 20,
-            "资金": 220
+            "steel": 60,
+            "glass": 20,
+            "money": 220
         },
         "input": [
             {
-                "resource": "钢铁",
+                "resource": "steel",
                 "rate_per_min": 14
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 15
             }
         ],
         "output": [
             {
-                "resource": "机械",
+                "resource": "machinery",
                 "rate_per_min": 6
             }
         ],
@@ -2637,24 +2637,24 @@
         "base_build_seconds": 190,
         "tech_id": "TECH_IX_IND",
         "cost": {
-            "钢铁": 40,
-            "玻璃": 30,
-            "水泥": 50,
-            "资金": 200
+            "steel": 40,
+            "glass": 30,
+            "cement": 50,
+            "money": 200
         },
         "input": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 35
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 18
             }
         ],
         "output": [
             {
-                "resource": "加工食品",
+                "resource": "processed_food",
                 "rate_per_min": 28
             }
         ],
@@ -2679,27 +2679,27 @@
         "base_build_seconds": 220,
         "tech_id": "TECH_IX_IND",
         "cost": {
-            "钢铁": 80,
-            "水泥": 60,
-            "资金": 300
+            "steel": 80,
+            "cement": 60,
+            "money": 300
         },
         "input": [
             {
-                "resource": "石油",
+                "resource": "oil",
                 "rate_per_min": 22
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 15
             }
         ],
         "output": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 16
             },
             {
-                "resource": "塑料",
+                "resource": "plastic",
                 "rate_per_min": 7
             }
         ],
@@ -2724,25 +2724,25 @@
         "base_build_seconds": 320,
         "tech_id": "TECH_X_IND",
         "cost": {
-            "钢铁": 150,
-            "玻璃": 80,
-            "水泥": 100,
-            "电子元件": 40,
-            "资金": 700
+            "steel": 150,
+            "glass": 80,
+            "cement": 100,
+            "electronic_components": 40,
+            "money": 700
         },
         "input": [
             {
-                "resource": "稀有金属",
+                "resource": "rare_metals",
                 "rate_per_min": 8
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 45
             }
         ],
         "output": [
             {
-                "resource": "先进材料",
+                "resource": "advanced_materials",
                 "rate_per_min": 10
             }
         ],
@@ -2767,12 +2767,12 @@
         "base_build_seconds": 20,
         "tech_id": "TECH_I_IND",
         "cost": {
-            "木材": 20
+            "wood": 20
         },
         "input": [],
         "output": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 4
             }
         ],
@@ -2797,18 +2797,18 @@
         "base_build_seconds": 60,
         "tech_id": "TECH_III_IND",
         "cost": {
-            "木材": 40,
-            "石料": 20
+            "wood": 40,
+            "stone": 20
         },
         "input": [
             {
-                "resource": "木材",
+                "resource": "wood",
                 "rate_per_min": 6
             }
         ],
         "output": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 5
             }
         ],
@@ -2833,19 +2833,19 @@
         "base_build_seconds": 220,
         "tech_id": "TECH_VIII_IND",
         "cost": {
-            "砖": 80,
-            "钢铁": 70,
-            "资金": 250
+            "brick": 80,
+            "steel": 70,
+            "money": 250
         },
         "input": [
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 28
             }
         ],
         "output": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 110
             }
         ],
@@ -2870,20 +2870,20 @@
         "base_build_seconds": 210,
         "tech_id": "TECH_IX_IND",
         "cost": {
-            "钢铁": 80,
-            "水泥": 70,
-            "电子元件": 20,
-            "资金": 350
+            "steel": 80,
+            "cement": 70,
+            "electronic_components": 20,
+            "money": 350
         },
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 22
             }
         ],
         "output": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 160
             }
         ],
@@ -2908,20 +2908,20 @@
         "base_build_seconds": 360,
         "tech_id": "TECH_X_IND",
         "cost": {
-            "钢铁": 180,
-            "电子元件": 60,
-            "稀有金属": 25,
-            "资金": 900
+            "steel": 180,
+            "electronic_components": 60,
+            "rare_metals": 25,
+            "money": 900
         },
         "input": [
             {
-                "resource": "先进材料",
+                "resource": "advanced_materials",
                 "rate_per_min": 4
             }
         ],
         "output": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 350
             }
         ],
@@ -2946,14 +2946,14 @@
         "base_build_seconds": 70,
         "tech_id": "TECH_II_CIV",
         "cost": {
-            "木材": 50,
-            "石料": 20,
-            "资金": 40
+            "wood": 50,
+            "stone": 20,
+            "money": 40
         },
         "input": [],
         "output": [
             {
-                "resource": "贸易容量",
+                "resource": "trade_capacity",
                 "rate_per_min": 100
             }
         ],
@@ -2978,15 +2978,15 @@
         "base_build_seconds": 130,
         "tech_id": "TECH_V_CIV",
         "cost": {
-            "石料": 100,
-            "砖": 80,
-            "铁": 20,
-            "资金": 150
+            "stone": 100,
+            "brick": 80,
+            "iron": 20,
+            "money": 150
         },
         "input": [],
         "output": [
             {
-                "resource": "贸易容量",
+                "resource": "trade_capacity",
                 "rate_per_min": 450
             }
         ],
@@ -3011,14 +3011,14 @@
         "base_build_seconds": 180,
         "tech_id": "TECH_VII_CIV",
         "cost": {
-            "石料": 120,
-            "玻璃": 30,
-            "资金": 350
+            "stone": 120,
+            "glass": 30,
+            "money": 350
         },
         "input": [],
         "output": [
             {
-                "resource": "金融容量",
+                "resource": "finance_capacity",
                 "rate_per_min": 800
             }
         ],
@@ -3043,21 +3043,21 @@
         "base_build_seconds": 280,
         "tech_id": "TECH_IX_CIV",
         "cost": {
-            "钢铁": 100,
-            "玻璃": 80,
-            "水泥": 80,
-            "电子元件": 25,
-            "资金": 800
+            "steel": 100,
+            "glass": 80,
+            "cement": 80,
+            "electronic_components": 25,
+            "money": 800
         },
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 20
             }
         ],
         "output": [
             {
-                "resource": "贸易容量",
+                "resource": "trade_capacity",
                 "rate_per_min": 3000
             }
         ],
@@ -3082,14 +3082,14 @@
         "base_build_seconds": 100,
         "tech_id": "TECH_III_CIV",
         "cost": {
-            "木材": 70,
-            "石料": 50,
-            "资金": 80
+            "wood": 70,
+            "stone": 50,
+            "money": 80
         },
         "input": [],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 3
             }
         ],
@@ -3114,14 +3114,14 @@
         "base_build_seconds": 160,
         "tech_id": "TECH_V_CIV",
         "cost": {
-            "石料": 120,
-            "砖": 80,
-            "资金": 180
+            "stone": 120,
+            "brick": 80,
+            "money": 180
         },
         "input": [],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 8
             }
         ],
@@ -3146,15 +3146,15 @@
         "base_build_seconds": 210,
         "tech_id": "TECH_VI_CIV",
         "cost": {
-            "石料": 160,
-            "砖": 100,
-            "玻璃": 20,
-            "资金": 300
+            "stone": 160,
+            "brick": 100,
+            "glass": 20,
+            "money": 300
         },
         "input": [],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 14
             }
         ],
@@ -3179,21 +3179,21 @@
         "base_build_seconds": 280,
         "tech_id": "TECH_IX_CIV",
         "cost": {
-            "钢铁": 100,
-            "玻璃": 80,
-            "水泥": 60,
-            "电子元件": 35,
-            "资金": 600
+            "steel": 100,
+            "glass": 80,
+            "cement": 60,
+            "electronic_components": 35,
+            "money": 600
         },
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 25
             }
         ],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 24
             }
         ],
@@ -3218,25 +3218,25 @@
         "base_build_seconds": 400,
         "tech_id": "TECH_X_CIV",
         "cost": {
-            "钢铁": 180,
-            "玻璃": 100,
-            "电子元件": 80,
-            "稀有金属": 20,
-            "资金": 1200
+            "steel": 180,
+            "glass": 100,
+            "electronic_components": 80,
+            "rare_metals": 20,
+            "money": 1200
         },
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 70
             },
             {
-                "resource": "先进材料",
+                "resource": "advanced_materials",
                 "rate_per_min": 3
             }
         ],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 50
             }
         ],
@@ -3261,14 +3261,14 @@
         "base_build_seconds": 120,
         "tech_id": "TECH_V_CIV",
         "cost": {
-            "木材": 60,
-            "石料": 50,
-            "资金": 100
+            "wood": 60,
+            "stone": 50,
+            "money": 100
         },
         "input": [],
         "output": [
             {
-                "resource": "医疗容量",
+                "resource": "medical_capacity",
                 "rate_per_min": 120
             }
         ],
@@ -3293,25 +3293,25 @@
         "base_build_seconds": 230,
         "tech_id": "TECH_IX_CIV",
         "cost": {
-            "钢铁": 70,
-            "玻璃": 50,
-            "水泥": 60,
-            "电子元件": 20,
-            "资金": 450
+            "steel": 70,
+            "glass": 50,
+            "cement": 60,
+            "electronic_components": 20,
+            "money": 450
         },
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 18
             },
             {
-                "resource": "药品",
+                "resource": "medicine",
                 "rate_per_min": 3
             }
         ],
         "output": [
             {
-                "resource": "医疗容量",
+                "resource": "medical_capacity",
                 "rate_per_min": 1000
             }
         ],

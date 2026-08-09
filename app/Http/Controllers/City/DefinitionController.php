@@ -7,9 +7,28 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
-// 定义只读:可建建筑列表(带 L1 成本/产出)
+// 定义只读:可建建筑列表(带 L1 成本/产出)、资源定义(code → 中文显示名)
 class DefinitionController extends Controller
 {
+    // 资源定义:前端把 resource code 翻成中文显示名的唯一来源
+    // (资源主键是英文 code,中文名只存在 resource_definition.name,见 docs/templates/resource-code-map.md)
+    public function resources(): JsonResponse
+    {
+        $rows = DB::table('resource_definition')
+            ->select('resource_id', 'name', 'rs_code', 'category', 'first_era')
+            ->orderBy('resource_id')
+            ->get()
+            ->map(fn ($r) => [
+                'code'     => $r->resource_id,
+                'name'     => $r->name,
+                'rsCode'   => $r->rs_code,
+                'category' => $r->category,
+                'era'      => $r->first_era,
+            ])->all();
+
+        return ApiResponse::ok(['data' => ['resources' => $rows]]);
+    }
+
     public function buildings(): JsonResponse
     {
         $defs = DB::table('building_definition as bd')

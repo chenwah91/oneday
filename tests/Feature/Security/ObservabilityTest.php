@@ -25,8 +25,8 @@ class ObservabilityTest extends TestCase
     {
         $u = User::create(['username' => $name, 'name' => $name, 'email' => $name.'@o.com', 'password' => 'password123']);
         $city = CityFactory::createForUser($u);
-        DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => '木材'], ['amount' => 1000]);
-        DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => '石料'], ['amount' => 1000]);
+        DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => 'wood'], ['amount' => 1000]);
+        DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => 'stone'], ['amount' => 1000]);
 
         return $u;
     }
@@ -87,7 +87,7 @@ class ObservabilityTest extends TestCase
         $this->assertSame((int) $u->id, (int) $rows[0]->user_id);
         $this->assertNotNull($rows[0]->city_id);
         // 初始资源摘要进 metadata,便于回查「这号开局给了多少」
-        $this->assertStringContainsString('木材', (string) $rows[0]->metadata_json);
+        $this->assertStringContainsString('wood', (string) $rows[0]->metadata_json);
     }
 
     // G12:业务异常改由全局 render 输出后,响应体结构必须与旧的 Controller try/catch 完全一致

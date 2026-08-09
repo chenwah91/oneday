@@ -20,7 +20,7 @@ class OnboardingTest extends TestCase
         $user = User::where('username', 'cityfounder')->first();
         $this->assertDatabaseHas('cities', ['user_id' => $user->id]);
         $city = $user->city ?? \App\Models\City::where('user_id', $user->id)->first();
-        $this->assertGreaterThanOrEqual(200, (float) $city->resources()->where('resource_id', '木材')->value('amount'));
+        $this->assertGreaterThanOrEqual(200, (float) $city->resources()->where('resource_id', 'wood')->value('amount'));
         $this->assertSame(10, $city->population);
     }
 }

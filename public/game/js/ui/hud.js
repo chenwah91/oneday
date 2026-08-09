@@ -1,8 +1,11 @@
-// 顶部 HUD:资源(木材/石料/粮食)+ 资金 + 人口/容量 + 粮食速率 + revision
+// 顶部 HUD:资源(wood/stone/food)+ 资金 + 人口/容量 + 粮食速率 + revision
+// 资源用英文 code 索引,显示文字一律走 resourceName(code)
 import { fmt } from '../utils/format.js';
+import { resourceName } from '../modules/resources.js';
 
-const RESOURCE_ICONS = { '木材': '🪵', '石料': '🪨', '粮食': '🌾' };
-const RESOURCE_ORDER = ['木材', '石料', '粮食'];
+const RESOURCE_ICONS = { wood: '🪵', stone: '🪨', food: '🌾' };
+const RESOURCE_ORDER = ['wood', 'stone', 'food']; // 显示顺序:木材 / 石料 / 粮食(与改造前一致)
+const FOOD = 'food';
 
 let refs = null;
 
@@ -32,13 +35,13 @@ export function mountHud(el) {
     bar.className = 'hud-bar';
 
     const resourceEls = {};
-    RESOURCE_ORDER.forEach((key) => {
-        resourceEls[key] = makeItem(bar, 'hud-resource', key, RESOURCE_ICONS[key] || '📦');
+    RESOURCE_ORDER.forEach((code) => {
+        resourceEls[code] = makeItem(bar, 'hud-resource', resourceName(code), RESOURCE_ICONS[code] || '📦');
     });
 
-    const moneyVal = makeItem(bar, 'hud-money', '资金', '💰');
+    const moneyVal = makeItem(bar, 'hud-money', resourceName('money'), '💰');
     const popVal = makeItem(bar, 'hud-population', '人口 / 容量', '👤');
-    const rateVal = makeItem(bar, 'hud-rate', '粮食速率(每分钟)', '📈');
+    const rateVal = makeItem(bar, 'hud-rate', resourceName(FOOD) + '速率(每分钟)', '📈');
 
     const revItem = document.createElement('div');
     revItem.className = 'hud-item hud-revision';
@@ -56,14 +59,14 @@ export function updateHud(city) {
     if (!refs || !city) return;
 
     const resources = city.resources || {};
-    RESOURCE_ORDER.forEach((key) => {
-        refs.resourceEls[key].textContent = fmt(resources[key]);
+    RESOURCE_ORDER.forEach((code) => {
+        refs.resourceEls[code].textContent = fmt(resources[code]);
     });
 
     refs.moneyVal.textContent = fmt(city.money);
     refs.popVal.textContent = fmt(city.population) + ' / ' + fmt(city.populationCapacity);
 
-    const rate = (city.ratesPerMin && city.ratesPerMin['粮食']) || 0;
+    const rate = (city.ratesPerMin && city.ratesPerMin[FOOD]) || 0;
     const sign = rate > 0 ? '+' : '';
     refs.rateVal.textContent = sign + fmt(rate) + '/分';
 

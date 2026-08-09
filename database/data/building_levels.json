@@ -4,15 +4,15 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 12,
-            "资金": 8
+            "wood": 12,
+            "money": 8
         },
         "duration_seconds": 32,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 18
             }
         ],
@@ -33,15 +33,15 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 8,
-            "资金": 5
+            "wood": 8,
+            "money": 5
         },
         "duration_seconds": 18,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 24.3
             }
         ],
@@ -62,15 +62,15 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 12,
-            "资金": 8
+            "wood": 12,
+            "money": 8
         },
         "duration_seconds": 26,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 32.4
             }
         ],
@@ -91,15 +91,15 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 10,
-            "资金": 6
+            "wood": 10,
+            "money": 6
         },
         "duration_seconds": 38,
         "worker_required": 3,
         "input": [],
         "output": [
             {
-                "resource": "浆果",
+                "resource": "berries",
                 "rate_per_min": 8
             }
         ],
@@ -120,15 +120,15 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 6,
-            "资金": 4
+            "wood": 6,
+            "money": 4
         },
         "duration_seconds": 21,
         "worker_required": 4,
         "input": [],
         "output": [
             {
-                "resource": "浆果",
+                "resource": "berries",
                 "rate_per_min": 10.8
             }
         ],
@@ -149,15 +149,15 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 10,
-            "资金": 6
+            "wood": 10,
+            "money": 6
         },
         "duration_seconds": 31,
         "worker_required": 4,
         "input": [],
         "output": [
             {
-                "resource": "浆果",
+                "resource": "berries",
                 "rate_per_min": 14.4
             }
         ],
@@ -178,15 +178,15 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 15,
-            "资金": 10
+            "wood": 15,
+            "money": 10
         },
         "duration_seconds": 39,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 150
             }
         ],
@@ -207,15 +207,15 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 9,
-            "资金": 6
+            "wood": 9,
+            "money": 6
         },
         "duration_seconds": 22,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 202.5
             }
         ],
@@ -236,15 +236,15 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 15,
-            "资金": 10
+            "wood": 15,
+            "money": 10
         },
         "duration_seconds": 32,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 270
             }
         ],
@@ -265,16 +265,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 20,
-            "石料": 12,
-            "资金": 25
+            "wood": 20,
+            "stone": 12,
+            "money": 25
         },
         "duration_seconds": 65,
         "worker_required": 5,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 80
             }
         ],
@@ -295,16 +295,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 12,
-            "石料": 8,
-            "资金": 15
+            "wood": 12,
+            "stone": 8,
+            "money": 15
         },
         "duration_seconds": 36,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 108
             }
         ],
@@ -325,16 +325,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 20,
-            "石料": 12,
-            "资金": 25
+            "wood": 20,
+            "stone": 12,
+            "money": 25
         },
         "duration_seconds": 52,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 144
             }
         ],
@@ -355,16 +355,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 18,
-            "石料": 15,
-            "资金": 15
+            "wood": 18,
+            "stone": 15,
+            "money": 15
         },
         "duration_seconds": 53,
         "worker_required": 4,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 25
             }
         ],
@@ -385,16 +385,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 11,
-            "石料": 9,
-            "资金": 9
+            "wood": 11,
+            "stone": 9,
+            "money": 9
         },
         "duration_seconds": 30,
         "worker_required": 5,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 33.75
             }
         ],
@@ -415,16 +415,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 18,
-            "石料": 15,
-            "资金": 15
+            "wood": 18,
+            "stone": 15,
+            "money": 15
         },
         "duration_seconds": 43,
         "worker_required": 5,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 45
             }
         ],
@@ -445,16 +445,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 24,
-            "石料": 10,
-            "资金": 16
+            "wood": 24,
+            "stone": 10,
+            "money": 16
         },
         "duration_seconds": 44,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 30
             }
         ],
@@ -475,16 +475,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 15,
-            "石料": 6,
-            "资金": 10
+            "wood": 15,
+            "stone": 6,
+            "money": 10
         },
         "duration_seconds": 25,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 40.5
             }
         ],
@@ -505,16 +505,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 24,
-            "石料": 10,
-            "资金": 16
+            "wood": 24,
+            "stone": 10,
+            "money": 16
         },
         "duration_seconds": 36,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 54
             }
         ],
@@ -535,16 +535,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 20,
-            "石料": 5,
-            "资金": 12
+            "wood": 20,
+            "stone": 5,
+            "money": 12
         },
         "duration_seconds": 51,
         "worker_required": 4,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 14
             }
         ],
@@ -565,16 +565,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 12,
-            "石料": 3,
-            "资金": 8
+            "wood": 12,
+            "stone": 3,
+            "money": 8
         },
         "duration_seconds": 29,
         "worker_required": 5,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 18.9
             }
         ],
@@ -595,16 +595,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 20,
-            "石料": 5,
-            "资金": 12
+            "wood": 20,
+            "stone": 5,
+            "money": 12
         },
         "duration_seconds": 41,
         "worker_required": 5,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 25.2
             }
         ],
@@ -625,16 +625,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 30,
-            "石料": 7,
-            "资金": 20
+            "wood": 30,
+            "stone": 7,
+            "money": 20
         },
         "duration_seconds": 53,
         "worker_required": 1,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 600
             }
         ],
@@ -655,16 +655,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 18,
-            "石料": 5,
-            "资金": 12
+            "wood": 18,
+            "stone": 5,
+            "money": 12
         },
         "duration_seconds": 30,
         "worker_required": 2,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 810
             }
         ],
@@ -685,16 +685,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 30,
-            "石料": 7,
-            "资金": 20
+            "wood": 30,
+            "stone": 7,
+            "money": 20
         },
         "duration_seconds": 43,
         "worker_required": 2,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 1080
             }
         ],
@@ -715,16 +715,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 10,
-            "石料": 16,
-            "资金": 14
+            "wood": 10,
+            "stone": 16,
+            "money": 14
         },
         "duration_seconds": 31,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 140
             }
         ],
@@ -745,16 +745,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 6,
-            "石料": 10,
-            "资金": 9
+            "wood": 6,
+            "stone": 10,
+            "money": 9
         },
         "duration_seconds": 18,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 189
             }
         ],
@@ -775,16 +775,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 10,
-            "石料": 16,
-            "资金": 14
+            "wood": 10,
+            "stone": 16,
+            "money": 14
         },
         "duration_seconds": 25,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 252
             }
         ],
@@ -805,16 +805,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 40,
-            "石料": 24,
-            "资金": 50
+            "wood": 40,
+            "stone": 24,
+            "money": 50
         },
         "duration_seconds": 85,
         "worker_required": 8,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 320
             }
         ],
@@ -835,16 +835,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 24,
-            "石料": 15,
-            "资金": 30
+            "wood": 24,
+            "stone": 15,
+            "money": 30
         },
         "duration_seconds": 47,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 432
             }
         ],
@@ -865,16 +865,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 40,
-            "石料": 24,
-            "资金": 50
+            "wood": 40,
+            "stone": 24,
+            "money": 50
         },
         "duration_seconds": 68,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 576
             }
         ],
@@ -895,16 +895,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 36,
-            "石料": 30,
-            "资金": 30
+            "wood": 36,
+            "stone": 30,
+            "money": 30
         },
         "duration_seconds": 71,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 100
             }
         ],
@@ -925,16 +925,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 22,
-            "石料": 18,
-            "资金": 18
+            "wood": 22,
+            "stone": 18,
+            "money": 18
         },
         "duration_seconds": 40,
         "worker_required": 7,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 135
             }
         ],
@@ -955,16 +955,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 36,
-            "石料": 30,
-            "资金": 30
+            "wood": 36,
+            "stone": 30,
+            "money": 30
         },
         "duration_seconds": 57,
         "worker_required": 7,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 180
             }
         ],
@@ -985,17 +985,17 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 36,
-            "石料": 20,
-            "砖": 8,
-            "资金": 24
+            "wood": 36,
+            "stone": 20,
+            "brick": 8,
+            "money": 24
         },
         "duration_seconds": 56,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 42
             }
         ],
@@ -1016,17 +1016,17 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 22,
-            "石料": 12,
-            "砖": 5,
-            "资金": 15
+            "wood": 22,
+            "stone": 12,
+            "brick": 5,
+            "money": 15
         },
         "duration_seconds": 31,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 56.7
             }
         ],
@@ -1047,17 +1047,17 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 36,
-            "石料": 20,
-            "砖": 8,
-            "资金": 24
+            "wood": 36,
+            "stone": 20,
+            "brick": 8,
+            "money": 24
         },
         "duration_seconds": 45,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 75.6
             }
         ],
@@ -1078,17 +1078,17 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 30,
-            "石料": 10,
-            "砖": 4,
-            "资金": 18
+            "wood": 30,
+            "stone": 10,
+            "brick": 4,
+            "money": 18
         },
         "duration_seconds": 64,
         "worker_required": 5,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 20
             }
         ],
@@ -1109,17 +1109,17 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 18,
-            "石料": 6,
-            "砖": 3,
-            "资金": 11
+            "wood": 18,
+            "stone": 6,
+            "brick": 3,
+            "money": 11
         },
         "duration_seconds": 36,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 27
             }
         ],
@@ -1140,17 +1140,17 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 30,
-            "石料": 10,
-            "砖": 4,
-            "资金": 18
+            "wood": 30,
+            "stone": 10,
+            "brick": 4,
+            "money": 18
         },
         "duration_seconds": 52,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 36
             }
         ],
@@ -1171,17 +1171,17 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 45,
-            "石料": 14,
-            "砖": 7,
-            "资金": 30
+            "wood": 45,
+            "stone": 14,
+            "brick": 7,
+            "money": 30
         },
         "duration_seconds": 67,
         "worker_required": 2,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 1350
             }
         ],
@@ -1202,17 +1202,17 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 27,
-            "石料": 9,
-            "砖": 5,
-            "资金": 18
+            "wood": 27,
+            "stone": 9,
+            "brick": 5,
+            "money": 18
         },
         "duration_seconds": 37,
         "worker_required": 3,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 1822.5
             }
         ],
@@ -1233,17 +1233,17 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 45,
-            "石料": 14,
-            "砖": 7,
-            "资金": 30
+            "wood": 45,
+            "stone": 14,
+            "brick": 7,
+            "money": 30
         },
         "duration_seconds": 54,
         "worker_required": 3,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 2430
             }
         ],
@@ -1264,17 +1264,17 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 15,
-            "石料": 24,
-            "砖": 5,
-            "资金": 21
+            "wood": 15,
+            "stone": 24,
+            "brick": 5,
+            "money": 21
         },
         "duration_seconds": 39,
         "worker_required": 1,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 315
             }
         ],
@@ -1295,17 +1295,17 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 9,
-            "石料": 15,
-            "砖": 3,
-            "资金": 13
+            "wood": 9,
+            "stone": 15,
+            "brick": 3,
+            "money": 13
         },
         "duration_seconds": 22,
         "worker_required": 2,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 425.25
             }
         ],
@@ -1326,17 +1326,17 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 15,
-            "石料": 24,
-            "砖": 5,
-            "资金": 21
+            "wood": 15,
+            "stone": 24,
+            "brick": 5,
+            "money": 21
         },
         "duration_seconds": 32,
         "worker_required": 2,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 567
             }
         ],
@@ -1357,17 +1357,17 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 60,
-            "石料": 36,
-            "砖": 10,
-            "资金": 75
+            "wood": 60,
+            "stone": 36,
+            "brick": 10,
+            "money": 75
         },
         "duration_seconds": 105,
         "worker_required": 11,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 720
             }
         ],
@@ -1388,17 +1388,17 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 36,
-            "石料": 22,
-            "砖": 6,
-            "资金": 45
+            "wood": 36,
+            "stone": 22,
+            "brick": 6,
+            "money": 45
         },
         "duration_seconds": 58,
         "worker_required": 12,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 972
             }
         ],
@@ -1419,17 +1419,17 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 60,
-            "石料": 36,
-            "砖": 10,
-            "资金": 75
+            "wood": 60,
+            "stone": 36,
+            "brick": 10,
+            "money": 75
         },
         "duration_seconds": 84,
         "worker_required": 13,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 1296
             }
         ],
@@ -1450,17 +1450,17 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 54,
-            "石料": 45,
-            "青铜": 6,
-            "资金": 45
+            "wood": 54,
+            "stone": 45,
+            "bronze": 6,
+            "money": 45
         },
         "duration_seconds": 89,
         "worker_required": 8,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 225
             }
         ],
@@ -1481,17 +1481,17 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 33,
-            "石料": 27,
-            "青铜": 4,
-            "资金": 27
+            "wood": 33,
+            "stone": 27,
+            "bronze": 4,
+            "money": 27
         },
         "duration_seconds": 49,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 303.75
             }
         ],
@@ -1512,17 +1512,17 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 54,
-            "石料": 45,
-            "青铜": 6,
-            "资金": 45
+            "wood": 54,
+            "stone": 45,
+            "bronze": 6,
+            "money": 45
         },
         "duration_seconds": 72,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 405
             }
         ],
@@ -1543,18 +1543,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 48,
-            "石料": 30,
-            "砖": 16,
-            "铁": 4,
-            "资金": 32
+            "wood": 48,
+            "stone": 30,
+            "brick": 16,
+            "iron": 4,
+            "money": 32
         },
         "duration_seconds": 68,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 54
             }
         ],
@@ -1575,18 +1575,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 29,
-            "石料": 18,
-            "砖": 10,
-            "铁": 3,
-            "资金": 20
+            "wood": 29,
+            "stone": 18,
+            "brick": 10,
+            "iron": 3,
+            "money": 20
         },
         "duration_seconds": 38,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 72.9
             }
         ],
@@ -1607,18 +1607,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 48,
-            "石料": 30,
-            "砖": 16,
-            "铁": 4,
-            "资金": 32
+            "wood": 48,
+            "stone": 30,
+            "brick": 16,
+            "iron": 4,
+            "money": 32
         },
         "duration_seconds": 55,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 97.2
             }
         ],
@@ -1639,18 +1639,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 40,
-            "石料": 15,
-            "砖": 8,
-            "铁": 3,
-            "资金": 24
+            "wood": 40,
+            "stone": 15,
+            "brick": 8,
+            "iron": 3,
+            "money": 24
         },
         "duration_seconds": 77,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 30
             }
         ],
@@ -1671,18 +1671,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 24,
-            "石料": 9,
-            "砖": 5,
-            "铁": 2,
-            "资金": 15
+            "wood": 24,
+            "stone": 9,
+            "brick": 5,
+            "iron": 2,
+            "money": 15
         },
         "duration_seconds": 43,
         "worker_required": 7,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 40.5
             }
         ],
@@ -1703,18 +1703,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 40,
-            "石料": 15,
-            "砖": 8,
-            "铁": 3,
-            "资金": 24
+            "wood": 40,
+            "stone": 15,
+            "brick": 8,
+            "iron": 3,
+            "money": 24
         },
         "duration_seconds": 62,
         "worker_required": 7,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 54
             }
         ],
@@ -1735,17 +1735,17 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 60,
-            "石料": 21,
-            "砖": 14,
-            "资金": 40
+            "wood": 60,
+            "stone": 21,
+            "brick": 14,
+            "money": 40
         },
         "duration_seconds": 81,
         "worker_required": 3,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 2400
             }
         ],
@@ -1766,17 +1766,17 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 36,
-            "石料": 13,
-            "砖": 9,
-            "资金": 24
+            "wood": 36,
+            "stone": 13,
+            "brick": 9,
+            "money": 24
         },
         "duration_seconds": 45,
         "worker_required": 4,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 3240
             }
         ],
@@ -1797,17 +1797,17 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 60,
-            "石料": 21,
-            "砖": 14,
-            "资金": 40
+            "wood": 60,
+            "stone": 21,
+            "brick": 14,
+            "money": 40
         },
         "duration_seconds": 65,
         "worker_required": 4,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 4320
             }
         ],
@@ -1828,18 +1828,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 20,
-            "石料": 32,
-            "砖": 10,
-            "铁": 3,
-            "资金": 28
+            "wood": 20,
+            "stone": 32,
+            "brick": 10,
+            "iron": 3,
+            "money": 28
         },
         "duration_seconds": 47,
         "worker_required": 2,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 560
             }
         ],
@@ -1860,18 +1860,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 12,
-            "石料": 20,
-            "砖": 6,
-            "铁": 2,
-            "资金": 17
+            "wood": 12,
+            "stone": 20,
+            "brick": 6,
+            "iron": 2,
+            "money": 17
         },
         "duration_seconds": 26,
         "worker_required": 3,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 756
             }
         ],
@@ -1892,18 +1892,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 20,
-            "石料": 32,
-            "砖": 10,
-            "铁": 3,
-            "资金": 28
+            "wood": 20,
+            "stone": 32,
+            "brick": 10,
+            "iron": 3,
+            "money": 28
         },
         "duration_seconds": 38,
         "worker_required": 3,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 1008
             }
         ],
@@ -1924,18 +1924,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 80,
-            "石料": 48,
-            "砖": 20,
-            "铁": 4,
-            "资金": 100
+            "wood": 80,
+            "stone": 48,
+            "brick": 20,
+            "iron": 4,
+            "money": 100
         },
         "duration_seconds": 125,
         "worker_required": 14,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 1280
             }
         ],
@@ -1956,18 +1956,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 48,
-            "石料": 29,
-            "砖": 12,
-            "铁": 3,
-            "资金": 60
+            "wood": 48,
+            "stone": 29,
+            "brick": 12,
+            "iron": 3,
+            "money": 60
         },
         "duration_seconds": 69,
         "worker_required": 15,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 1728
             }
         ],
@@ -1988,18 +1988,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 80,
-            "石料": 48,
-            "砖": 20,
-            "铁": 4,
-            "资金": 100
+            "wood": 80,
+            "stone": 48,
+            "brick": 20,
+            "iron": 4,
+            "money": 100
         },
         "duration_seconds": 100,
         "worker_required": 16,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 2304
             }
         ],
@@ -2020,18 +2020,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 72,
-            "石料": 60,
-            "青铜": 12,
-            "铁": 8,
-            "资金": 60
+            "wood": 72,
+            "stone": 60,
+            "bronze": 12,
+            "iron": 8,
+            "money": 60
         },
         "duration_seconds": 107,
         "worker_required": 10,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 400
             }
         ],
@@ -2052,18 +2052,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 44,
-            "石料": 36,
-            "青铜": 8,
-            "铁": 5,
-            "资金": 36
+            "wood": 44,
+            "stone": 36,
+            "bronze": 8,
+            "iron": 5,
+            "money": 36
         },
         "duration_seconds": 59,
         "worker_required": 11,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 540
             }
         ],
@@ -2084,18 +2084,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 72,
-            "石料": 60,
-            "青铜": 12,
-            "铁": 8,
-            "资金": 60
+            "wood": 72,
+            "stone": 60,
+            "bronze": 12,
+            "iron": 8,
+            "money": 60
         },
         "duration_seconds": 86,
         "worker_required": 11,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 720
             }
         ],
@@ -2116,18 +2116,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 60,
-            "石料": 40,
-            "砖": 24,
-            "铁": 8,
-            "资金": 40
+            "wood": 60,
+            "stone": 40,
+            "brick": 24,
+            "iron": 8,
+            "money": 40
         },
         "duration_seconds": 80,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 66
             }
         ],
@@ -2148,18 +2148,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 36,
-            "石料": 24,
-            "砖": 15,
-            "铁": 5,
-            "资金": 24
+            "wood": 36,
+            "stone": 24,
+            "brick": 15,
+            "iron": 5,
+            "money": 24
         },
         "duration_seconds": 44,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 89.1
             }
         ],
@@ -2180,18 +2180,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 60,
-            "石料": 40,
-            "砖": 24,
-            "铁": 8,
-            "资金": 40
+            "wood": 60,
+            "stone": 40,
+            "brick": 24,
+            "iron": 8,
+            "money": 40
         },
         "duration_seconds": 64,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 118.8
             }
         ],
@@ -2212,18 +2212,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 50,
-            "石料": 20,
-            "砖": 12,
-            "铁": 6,
-            "资金": 30
+            "wood": 50,
+            "stone": 20,
+            "brick": 12,
+            "iron": 6,
+            "money": 30
         },
         "duration_seconds": 90,
         "worker_required": 7,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 42
             }
         ],
@@ -2244,18 +2244,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 30,
-            "石料": 12,
-            "砖": 8,
-            "铁": 4,
-            "资金": 18
+            "wood": 30,
+            "stone": 12,
+            "brick": 8,
+            "iron": 4,
+            "money": 18
         },
         "duration_seconds": 50,
         "worker_required": 8,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 56.7
             }
         ],
@@ -2276,18 +2276,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 50,
-            "石料": 20,
-            "砖": 12,
-            "铁": 6,
-            "资金": 30
+            "wood": 50,
+            "stone": 20,
+            "brick": 12,
+            "iron": 6,
+            "money": 30
         },
         "duration_seconds": 72,
         "worker_required": 8,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 75.6
             }
         ],
@@ -2308,17 +2308,17 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 75,
-            "石料": 28,
-            "砖": 21,
-            "资金": 50
+            "wood": 75,
+            "stone": 28,
+            "brick": 21,
+            "money": 50
         },
         "duration_seconds": 95,
         "worker_required": 4,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 3750
             }
         ],
@@ -2339,17 +2339,17 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 45,
-            "石料": 17,
-            "砖": 13,
-            "资金": 30
+            "wood": 45,
+            "stone": 17,
+            "brick": 13,
+            "money": 30
         },
         "duration_seconds": 53,
         "worker_required": 5,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 5062.5
             }
         ],
@@ -2370,17 +2370,17 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 75,
-            "石料": 28,
-            "砖": 21,
-            "资金": 50
+            "wood": 75,
+            "stone": 28,
+            "brick": 21,
+            "money": 50
         },
         "duration_seconds": 76,
         "worker_required": 5,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 6750
             }
         ],
@@ -2401,18 +2401,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 25,
-            "石料": 40,
-            "砖": 15,
-            "铁": 6,
-            "资金": 35
+            "wood": 25,
+            "stone": 40,
+            "brick": 15,
+            "iron": 6,
+            "money": 35
         },
         "duration_seconds": 55,
         "worker_required": 3,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 875
             }
         ],
@@ -2433,18 +2433,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 15,
-            "石料": 24,
-            "砖": 9,
-            "铁": 4,
-            "资金": 21
+            "wood": 15,
+            "stone": 24,
+            "brick": 9,
+            "iron": 4,
+            "money": 21
         },
         "duration_seconds": 31,
         "worker_required": 4,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 1181.25
             }
         ],
@@ -2465,18 +2465,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 25,
-            "石料": 40,
-            "砖": 15,
-            "铁": 6,
-            "资金": 35
+            "wood": 25,
+            "stone": 40,
+            "brick": 15,
+            "iron": 6,
+            "money": 35
         },
         "duration_seconds": 44,
         "worker_required": 4,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 1575
             }
         ],
@@ -2497,18 +2497,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 100,
-            "石料": 60,
-            "砖": 30,
-            "铁": 8,
-            "资金": 125
+            "wood": 100,
+            "stone": 60,
+            "brick": 30,
+            "iron": 8,
+            "money": 125
         },
         "duration_seconds": 145,
         "worker_required": 17,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 2000
             }
         ],
@@ -2529,18 +2529,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 60,
-            "石料": 36,
-            "砖": 18,
-            "铁": 5,
-            "资金": 75
+            "wood": 60,
+            "stone": 36,
+            "brick": 18,
+            "iron": 5,
+            "money": 75
         },
         "duration_seconds": 80,
         "worker_required": 18,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 2700
             }
         ],
@@ -2561,18 +2561,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 100,
-            "石料": 60,
-            "砖": 30,
-            "铁": 8,
-            "资金": 125
+            "wood": 100,
+            "stone": 60,
+            "brick": 30,
+            "iron": 8,
+            "money": 125
         },
         "duration_seconds": 116,
         "worker_required": 19,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 3600
             }
         ],
@@ -2593,18 +2593,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 90,
-            "石料": 75,
-            "青铜": 18,
-            "铁": 16,
-            "资金": 75
+            "wood": 90,
+            "stone": 75,
+            "bronze": 18,
+            "iron": 16,
+            "money": 75
         },
         "duration_seconds": 125,
         "worker_required": 12,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 625
             }
         ],
@@ -2625,18 +2625,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 54,
-            "石料": 45,
-            "青铜": 11,
-            "铁": 10,
-            "资金": 45
+            "wood": 54,
+            "stone": 45,
+            "bronze": 11,
+            "iron": 10,
+            "money": 45
         },
         "duration_seconds": 69,
         "worker_required": 13,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 843.75
             }
         ],
@@ -2657,18 +2657,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 90,
-            "石料": 75,
-            "青铜": 18,
-            "铁": 16,
-            "资金": 75
+            "wood": 90,
+            "stone": 75,
+            "bronze": 18,
+            "iron": 16,
+            "money": 75
         },
         "duration_seconds": 100,
         "worker_required": 14,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 1125
             }
         ],
@@ -2689,18 +2689,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 72,
-            "石料": 50,
-            "砖": 32,
-            "铁": 12,
-            "资金": 48
+            "wood": 72,
+            "stone": 50,
+            "brick": 32,
+            "iron": 12,
+            "money": 48
         },
         "duration_seconds": 92,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 78
             }
         ],
@@ -2721,18 +2721,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 44,
-            "石料": 30,
-            "砖": 20,
-            "铁": 8,
-            "资金": 29
+            "wood": 44,
+            "stone": 30,
+            "brick": 20,
+            "iron": 8,
+            "money": 29
         },
         "duration_seconds": 51,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 105.3
             }
         ],
@@ -2753,18 +2753,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 72,
-            "石料": 50,
-            "砖": 32,
-            "铁": 12,
-            "资金": 48
+            "wood": 72,
+            "stone": 50,
+            "brick": 32,
+            "iron": 12,
+            "money": 48
         },
         "duration_seconds": 74,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 140.4
             }
         ],
@@ -2785,18 +2785,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 60,
-            "石料": 25,
-            "砖": 16,
-            "铁": 9,
-            "资金": 36
+            "wood": 60,
+            "stone": 25,
+            "brick": 16,
+            "iron": 9,
+            "money": 36
         },
         "duration_seconds": 103,
         "worker_required": 8,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 55
             }
         ],
@@ -2817,18 +2817,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 36,
-            "石料": 15,
-            "砖": 10,
-            "铁": 6,
-            "资金": 22
+            "wood": 36,
+            "stone": 15,
+            "brick": 10,
+            "iron": 6,
+            "money": 22
         },
         "duration_seconds": 57,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 74.25
             }
         ],
@@ -2849,18 +2849,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 60,
-            "石料": 25,
-            "砖": 16,
-            "铁": 9,
-            "资金": 36
+            "wood": 60,
+            "stone": 25,
+            "brick": 16,
+            "iron": 9,
+            "money": 36
         },
         "duration_seconds": 83,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 99
             }
         ],
@@ -2881,17 +2881,17 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 90,
-            "石料": 35,
-            "砖": 28,
-            "资金": 60
+            "wood": 90,
+            "stone": 35,
+            "brick": 28,
+            "money": 60
         },
         "duration_seconds": 109,
         "worker_required": 5,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 5400
             }
         ],
@@ -2912,17 +2912,17 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 54,
-            "石料": 21,
-            "砖": 17,
-            "资金": 36
+            "wood": 54,
+            "stone": 21,
+            "brick": 17,
+            "money": 36
         },
         "duration_seconds": 60,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 7290
             }
         ],
@@ -2943,17 +2943,17 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 90,
-            "石料": 35,
-            "砖": 28,
-            "资金": 60
+            "wood": 90,
+            "stone": 35,
+            "brick": 28,
+            "money": 60
         },
         "duration_seconds": 88,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 9720
             }
         ],
@@ -2974,18 +2974,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 30,
-            "石料": 48,
-            "砖": 20,
-            "铁": 9,
-            "资金": 42
+            "wood": 30,
+            "stone": 48,
+            "brick": 20,
+            "iron": 9,
+            "money": 42
         },
         "duration_seconds": 63,
         "worker_required": 4,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 1260
             }
         ],
@@ -3006,18 +3006,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 18,
-            "石料": 29,
-            "砖": 12,
-            "铁": 6,
-            "资金": 26
+            "wood": 18,
+            "stone": 29,
+            "brick": 12,
+            "iron": 6,
+            "money": 26
         },
         "duration_seconds": 35,
         "worker_required": 5,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 1701
             }
         ],
@@ -3038,18 +3038,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 30,
-            "石料": 48,
-            "砖": 20,
-            "铁": 9,
-            "资金": 42
+            "wood": 30,
+            "stone": 48,
+            "brick": 20,
+            "iron": 9,
+            "money": 42
         },
         "duration_seconds": 51,
         "worker_required": 5,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 2268
             }
         ],
@@ -3070,18 +3070,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 120,
-            "石料": 72,
-            "砖": 40,
-            "铁": 12,
-            "资金": 150
+            "wood": 120,
+            "stone": 72,
+            "brick": 40,
+            "iron": 12,
+            "money": 150
         },
         "duration_seconds": 165,
         "worker_required": 20,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 2880
             }
         ],
@@ -3102,18 +3102,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 72,
-            "石料": 44,
-            "砖": 24,
-            "铁": 8,
-            "资金": 90
+            "wood": 72,
+            "stone": 44,
+            "brick": 24,
+            "iron": 8,
+            "money": 90
         },
         "duration_seconds": 91,
         "worker_required": 21,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 3888
             }
         ],
@@ -3134,18 +3134,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 120,
-            "石料": 72,
-            "砖": 40,
-            "铁": 12,
-            "资金": 150
+            "wood": 120,
+            "stone": 72,
+            "brick": 40,
+            "iron": 12,
+            "money": 150
         },
         "duration_seconds": 132,
         "worker_required": 22,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 5184
             }
         ],
@@ -3166,18 +3166,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 108,
-            "石料": 90,
-            "青铜": 24,
-            "铁": 24,
-            "资金": 90
+            "wood": 108,
+            "stone": 90,
+            "bronze": 24,
+            "iron": 24,
+            "money": 90
         },
         "duration_seconds": 143,
         "worker_required": 14,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 900
             }
         ],
@@ -3198,18 +3198,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 65,
-            "石料": 54,
-            "青铜": 15,
-            "铁": 15,
-            "资金": 54
+            "wood": 65,
+            "stone": 54,
+            "bronze": 15,
+            "iron": 15,
+            "money": 54
         },
         "duration_seconds": 79,
         "worker_required": 15,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 1215
             }
         ],
@@ -3230,18 +3230,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 108,
-            "石料": 90,
-            "青铜": 24,
-            "铁": 24,
-            "资金": 90
+            "wood": 108,
+            "stone": 90,
+            "bronze": 24,
+            "iron": 24,
+            "money": 90
         },
         "duration_seconds": 115,
         "worker_required": 16,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 1620
             }
         ],
@@ -3262,18 +3262,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 84,
-            "石料": 60,
-            "砖": 40,
-            "铁": 16,
-            "资金": 56
+            "wood": 84,
+            "stone": 60,
+            "brick": 40,
+            "iron": 16,
+            "money": 56
         },
         "duration_seconds": 104,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 90
             }
         ],
@@ -3294,18 +3294,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 51,
-            "石料": 36,
-            "砖": 24,
-            "铁": 10,
-            "资金": 34
+            "wood": 51,
+            "stone": 36,
+            "brick": 24,
+            "iron": 10,
+            "money": 34
         },
         "duration_seconds": 58,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 121.5
             }
         ],
@@ -3326,18 +3326,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 84,
-            "石料": 60,
-            "砖": 40,
-            "铁": 16,
-            "资金": 56
+            "wood": 84,
+            "stone": 60,
+            "brick": 40,
+            "iron": 16,
+            "money": 56
         },
         "duration_seconds": 84,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 162
             }
         ],
@@ -3358,18 +3358,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 70,
-            "石料": 30,
-            "砖": 20,
-            "铁": 12,
-            "资金": 42
+            "wood": 70,
+            "stone": 30,
+            "brick": 20,
+            "iron": 12,
+            "money": 42
         },
         "duration_seconds": 116,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 75
             }
         ],
@@ -3390,18 +3390,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 42,
-            "石料": 18,
-            "砖": 12,
-            "铁": 8,
-            "资金": 26
+            "wood": 42,
+            "stone": 18,
+            "brick": 12,
+            "iron": 8,
+            "money": 26
         },
         "duration_seconds": 64,
         "worker_required": 10,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 101.25
             }
         ],
@@ -3422,18 +3422,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 70,
-            "石料": 30,
-            "砖": 20,
-            "铁": 12,
-            "资金": 42
+            "wood": 70,
+            "stone": 30,
+            "brick": 20,
+            "iron": 12,
+            "money": 42
         },
         "duration_seconds": 93,
         "worker_required": 10,
         "input": [],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 135
             }
         ],
@@ -3454,17 +3454,17 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 105,
-            "石料": 42,
-            "砖": 35,
-            "资金": 70
+            "wood": 105,
+            "stone": 42,
+            "brick": 35,
+            "money": 70
         },
         "duration_seconds": 123,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 7350
             }
         ],
@@ -3485,17 +3485,17 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 63,
-            "石料": 26,
-            "砖": 21,
-            "资金": 42
+            "wood": 63,
+            "stone": 26,
+            "brick": 21,
+            "money": 42
         },
         "duration_seconds": 68,
         "worker_required": 7,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 9922.5
             }
         ],
@@ -3516,17 +3516,17 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 105,
-            "石料": 42,
-            "砖": 35,
-            "资金": 70
+            "wood": 105,
+            "stone": 42,
+            "brick": 35,
+            "money": 70
         },
         "duration_seconds": 99,
         "worker_required": 7,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 13230
             }
         ],
@@ -3547,18 +3547,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 35,
-            "石料": 56,
-            "砖": 25,
-            "铁": 12,
-            "资金": 49
+            "wood": 35,
+            "stone": 56,
+            "brick": 25,
+            "iron": 12,
+            "money": 49
         },
         "duration_seconds": 71,
         "worker_required": 5,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 1715
             }
         ],
@@ -3579,18 +3579,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 21,
-            "石料": 34,
-            "砖": 15,
-            "铁": 8,
-            "资金": 30
+            "wood": 21,
+            "stone": 34,
+            "brick": 15,
+            "iron": 8,
+            "money": 30
         },
         "duration_seconds": 40,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 2315.25
             }
         ],
@@ -3611,18 +3611,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 35,
-            "石料": 56,
-            "砖": 25,
-            "铁": 12,
-            "资金": 49
+            "wood": 35,
+            "stone": 56,
+            "brick": 25,
+            "iron": 12,
+            "money": 49
         },
         "duration_seconds": 57,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 3087
             }
         ],
@@ -3643,18 +3643,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 140,
-            "石料": 84,
-            "砖": 50,
-            "铁": 16,
-            "资金": 175
+            "wood": 140,
+            "stone": 84,
+            "brick": 50,
+            "iron": 16,
+            "money": 175
         },
         "duration_seconds": 185,
         "worker_required": 23,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 3920
             }
         ],
@@ -3675,18 +3675,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 84,
-            "石料": 51,
-            "砖": 30,
-            "铁": 10,
-            "资金": 105
+            "wood": 84,
+            "stone": 51,
+            "brick": 30,
+            "iron": 10,
+            "money": 105
         },
         "duration_seconds": 102,
         "worker_required": 25,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 5292
             }
         ],
@@ -3707,18 +3707,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 140,
-            "石料": 84,
-            "砖": 50,
-            "铁": 16,
-            "资金": 175
+            "wood": 140,
+            "stone": 84,
+            "brick": 50,
+            "iron": 16,
+            "money": 175
         },
         "duration_seconds": 148,
         "worker_required": 26,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 7056
             }
         ],
@@ -3739,19 +3739,19 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 126,
-            "石料": 105,
-            "青铜": 30,
-            "铁": 32,
-            "煤炭": 5,
-            "资金": 105
+            "wood": 126,
+            "stone": 105,
+            "bronze": 30,
+            "iron": 32,
+            "coal": 5,
+            "money": 105
         },
         "duration_seconds": 161,
         "worker_required": 16,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 1225
             }
         ],
@@ -3772,19 +3772,19 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 76,
-            "石料": 63,
-            "青铜": 18,
-            "铁": 20,
-            "煤炭": 3,
-            "资金": 63
+            "wood": 76,
+            "stone": 63,
+            "bronze": 18,
+            "iron": 20,
+            "coal": 3,
+            "money": 63
         },
         "duration_seconds": 89,
         "worker_required": 17,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 1653.75
             }
         ],
@@ -3805,19 +3805,19 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 126,
-            "石料": 105,
-            "青铜": 30,
-            "铁": 32,
-            "煤炭": 5,
-            "资金": 105
+            "wood": 126,
+            "stone": 105,
+            "bronze": 30,
+            "iron": 32,
+            "coal": 5,
+            "money": 105
         },
         "duration_seconds": 129,
         "worker_required": 18,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 2205
             }
         ],
@@ -3838,19 +3838,19 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 96,
-            "石料": 70,
-            "砖": 48,
-            "铁": 20,
-            "钢铁": 8,
-            "资金": 64
+            "wood": 96,
+            "stone": 70,
+            "brick": 48,
+            "iron": 20,
+            "steel": 8,
+            "money": 64
         },
         "duration_seconds": 116,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 102
             }
         ],
@@ -3871,19 +3871,19 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 58,
-            "石料": 42,
-            "砖": 29,
-            "铁": 12,
-            "钢铁": 5,
-            "资金": 39
+            "wood": 58,
+            "stone": 42,
+            "brick": 29,
+            "iron": 12,
+            "steel": 5,
+            "money": 39
         },
         "duration_seconds": 64,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 137.7
             }
         ],
@@ -3904,19 +3904,19 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 96,
-            "石料": 70,
-            "砖": 48,
-            "铁": 20,
-            "钢铁": 8,
-            "资金": 64
+            "wood": 96,
+            "stone": 70,
+            "brick": 48,
+            "iron": 20,
+            "steel": 8,
+            "money": 64
         },
         "duration_seconds": 93,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 183.6
             }
         ],
@@ -3937,29 +3937,29 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 80,
-            "石料": 35,
-            "砖": 24,
-            "铁": 15,
-            "煤炭": 6,
-            "钢铁": 10,
-            "资金": 48
+            "wood": 80,
+            "stone": 35,
+            "brick": 24,
+            "iron": 15,
+            "coal": 6,
+            "steel": 10,
+            "money": 48
         },
         "duration_seconds": 129,
         "worker_required": 10,
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 11
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 4
             }
         ],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 110
             }
         ],
@@ -3980,29 +3980,29 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 48,
-            "石料": 21,
-            "砖": 15,
-            "铁": 9,
-            "煤炭": 4,
-            "钢铁": 6,
-            "资金": 29
+            "wood": 48,
+            "stone": 21,
+            "brick": 15,
+            "iron": 9,
+            "coal": 4,
+            "steel": 6,
+            "money": 29
         },
         "duration_seconds": 71,
         "worker_required": 11,
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 12.98
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 4.72
             }
         ],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 148.5
             }
         ],
@@ -4023,29 +4023,29 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 80,
-            "石料": 35,
-            "砖": 24,
-            "铁": 15,
-            "煤炭": 6,
-            "钢铁": 10,
-            "资金": 48
+            "wood": 80,
+            "stone": 35,
+            "brick": 24,
+            "iron": 15,
+            "coal": 6,
+            "steel": 10,
+            "money": 48
         },
         "duration_seconds": 104,
         "worker_required": 11,
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 15.95
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 5.8
             }
         ],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 198
             }
         ],
@@ -4066,18 +4066,18 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 120,
-            "石料": 49,
-            "砖": 42,
-            "钢铁": 15,
-            "资金": 80
+            "wood": 120,
+            "stone": 49,
+            "brick": 42,
+            "steel": 15,
+            "money": 80
         },
         "duration_seconds": 137,
         "worker_required": 7,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 9600
             }
         ],
@@ -4098,18 +4098,18 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 72,
-            "石料": 30,
-            "砖": 26,
-            "钢铁": 9,
-            "资金": 48
+            "wood": 72,
+            "stone": 30,
+            "brick": 26,
+            "steel": 9,
+            "money": 48
         },
         "duration_seconds": 76,
         "worker_required": 8,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 12960
             }
         ],
@@ -4130,18 +4130,18 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 120,
-            "石料": 49,
-            "砖": 42,
-            "钢铁": 15,
-            "资金": 80
+            "wood": 120,
+            "stone": 49,
+            "brick": 42,
+            "steel": 15,
+            "money": 80
         },
         "duration_seconds": 110,
         "worker_required": 8,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 17280
             }
         ],
@@ -4162,20 +4162,20 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 40,
-            "石料": 64,
-            "砖": 30,
-            "铁": 15,
-            "煤炭": 8,
-            "钢铁": 15,
-            "资金": 56
+            "wood": 40,
+            "stone": 64,
+            "brick": 30,
+            "iron": 15,
+            "coal": 8,
+            "steel": 15,
+            "money": 56
         },
         "duration_seconds": 79,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 2240
             }
         ],
@@ -4196,20 +4196,20 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 24,
-            "石料": 39,
-            "砖": 18,
-            "铁": 9,
-            "煤炭": 5,
-            "钢铁": 9,
-            "资金": 34
+            "wood": 24,
+            "stone": 39,
+            "brick": 18,
+            "iron": 9,
+            "coal": 5,
+            "steel": 9,
+            "money": 34
         },
         "duration_seconds": 44,
         "worker_required": 7,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 3024
             }
         ],
@@ -4230,20 +4230,20 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 40,
-            "石料": 64,
-            "砖": 30,
-            "铁": 15,
-            "煤炭": 8,
-            "钢铁": 15,
-            "资金": 56
+            "wood": 40,
+            "stone": 64,
+            "brick": 30,
+            "iron": 15,
+            "coal": 8,
+            "steel": 15,
+            "money": 56
         },
         "duration_seconds": 64,
         "worker_required": 7,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 4032
             }
         ],
@@ -4264,19 +4264,19 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 160,
-            "石料": 96,
-            "砖": 60,
-            "铁": 20,
-            "钢铁": 15,
-            "资金": 200
+            "wood": 160,
+            "stone": 96,
+            "brick": 60,
+            "iron": 20,
+            "steel": 15,
+            "money": 200
         },
         "duration_seconds": 205,
         "worker_required": 26,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 5120
             }
         ],
@@ -4297,19 +4297,19 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 96,
-            "石料": 58,
-            "砖": 36,
-            "铁": 12,
-            "钢铁": 9,
-            "资金": 120
+            "wood": 96,
+            "stone": 58,
+            "brick": 36,
+            "iron": 12,
+            "steel": 9,
+            "money": 120
         },
         "duration_seconds": 113,
         "worker_required": 28,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 6912
             }
         ],
@@ -4330,19 +4330,19 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 160,
-            "石料": 96,
-            "砖": 60,
-            "铁": 20,
-            "钢铁": 15,
-            "资金": 200
+            "wood": 160,
+            "stone": 96,
+            "brick": 60,
+            "iron": 20,
+            "steel": 15,
+            "money": 200
         },
         "duration_seconds": 164,
         "worker_required": 29,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 9216
             }
         ],
@@ -4363,20 +4363,20 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 144,
-            "石料": 120,
-            "青铜": 36,
-            "铁": 40,
-            "煤炭": 10,
-            "钢铁": 20,
-            "资金": 120
+            "wood": 144,
+            "stone": 120,
+            "bronze": 36,
+            "iron": 40,
+            "coal": 10,
+            "steel": 20,
+            "money": 120
         },
         "duration_seconds": 179,
         "worker_required": 18,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 1600
             }
         ],
@@ -4397,20 +4397,20 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 87,
-            "石料": 72,
-            "青铜": 22,
-            "铁": 24,
-            "煤炭": 6,
-            "钢铁": 12,
-            "资金": 72
+            "wood": 87,
+            "stone": 72,
+            "bronze": 22,
+            "iron": 24,
+            "coal": 6,
+            "steel": 12,
+            "money": 72
         },
         "duration_seconds": 99,
         "worker_required": 19,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 2160
             }
         ],
@@ -4431,20 +4431,20 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 144,
-            "石料": 120,
-            "青铜": 36,
-            "铁": 40,
-            "煤炭": 10,
-            "钢铁": 20,
-            "资金": 120
+            "wood": 144,
+            "stone": 120,
+            "bronze": 36,
+            "iron": 40,
+            "coal": 10,
+            "steel": 20,
+            "money": 120
         },
         "duration_seconds": 144,
         "worker_required": 20,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 2880
             }
         ],
@@ -4465,21 +4465,21 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 108,
-            "石料": 80,
-            "砖": 56,
-            "铁": 24,
-            "钢铁": 16,
-            "玻璃": 8,
-            "水泥": 10,
-            "资金": 72
+            "wood": 108,
+            "stone": 80,
+            "brick": 56,
+            "iron": 24,
+            "steel": 16,
+            "glass": 8,
+            "cement": 10,
+            "money": 72
         },
         "duration_seconds": 128,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 114
             }
         ],
@@ -4500,21 +4500,21 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 65,
-            "石料": 48,
-            "砖": 34,
-            "铁": 15,
-            "钢铁": 10,
-            "玻璃": 5,
-            "水泥": 6,
-            "资金": 44
+            "wood": 65,
+            "stone": 48,
+            "brick": 34,
+            "iron": 15,
+            "steel": 10,
+            "glass": 5,
+            "cement": 6,
+            "money": 44
         },
         "duration_seconds": 71,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 153.9
             }
         ],
@@ -4535,21 +4535,21 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 108,
-            "石料": 80,
-            "砖": 56,
-            "铁": 24,
-            "钢铁": 16,
-            "玻璃": 8,
-            "水泥": 10,
-            "资金": 72
+            "wood": 108,
+            "stone": 80,
+            "brick": 56,
+            "iron": 24,
+            "steel": 16,
+            "glass": 8,
+            "cement": 10,
+            "money": 72
         },
         "duration_seconds": 103,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 205.2
             }
         ],
@@ -4570,31 +4570,31 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 90,
-            "石料": 40,
-            "砖": 28,
-            "铁": 18,
-            "煤炭": 6,
-            "钢铁": 20,
-            "水泥": 8,
-            "电子元件": 5,
-            "资金": 54
+            "wood": 90,
+            "stone": 40,
+            "brick": 28,
+            "iron": 18,
+            "coal": 6,
+            "steel": 20,
+            "cement": 8,
+            "electronic_components": 5,
+            "money": 54
         },
         "duration_seconds": 142,
         "worker_required": 11,
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 12
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 8
             }
         ],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 160
             }
         ],
@@ -4615,31 +4615,31 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 54,
-            "石料": 24,
-            "砖": 17,
-            "铁": 11,
-            "煤炭": 4,
-            "钢铁": 12,
-            "水泥": 5,
-            "电子元件": 3,
-            "资金": 33
+            "wood": 54,
+            "stone": 24,
+            "brick": 17,
+            "iron": 11,
+            "coal": 4,
+            "steel": 12,
+            "cement": 5,
+            "electronic_components": 3,
+            "money": 33
         },
         "duration_seconds": 79,
         "worker_required": 12,
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 14.16
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 9.44
             }
         ],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 216
             }
         ],
@@ -4660,31 +4660,31 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 90,
-            "石料": 40,
-            "砖": 28,
-            "铁": 18,
-            "煤炭": 6,
-            "钢铁": 20,
-            "水泥": 8,
-            "电子元件": 5,
-            "资金": 54
+            "wood": 90,
+            "stone": 40,
+            "brick": 28,
+            "iron": 18,
+            "coal": 6,
+            "steel": 20,
+            "cement": 8,
+            "electronic_components": 5,
+            "money": 54
         },
         "duration_seconds": 114,
         "worker_required": 13,
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 17.4
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 11.6
             }
         ],
         "output": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 288
             }
         ],
@@ -4705,19 +4705,19 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 135,
-            "石料": 56,
-            "砖": 49,
-            "钢铁": 30,
-            "电子元件": 6,
-            "资金": 90
+            "wood": 135,
+            "stone": 56,
+            "brick": 49,
+            "steel": 30,
+            "electronic_components": 6,
+            "money": 90
         },
         "duration_seconds": 151,
         "worker_required": 8,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 12150
             }
         ],
@@ -4738,19 +4738,19 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 81,
-            "石料": 34,
-            "砖": 30,
-            "钢铁": 18,
-            "电子元件": 4,
-            "资金": 54
+            "wood": 81,
+            "stone": 34,
+            "brick": 30,
+            "steel": 18,
+            "electronic_components": 4,
+            "money": 54
         },
         "duration_seconds": 84,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 16402.5
             }
         ],
@@ -4771,19 +4771,19 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 135,
-            "石料": 56,
-            "砖": 49,
-            "钢铁": 30,
-            "电子元件": 6,
-            "资金": 90
+            "wood": 135,
+            "stone": 56,
+            "brick": 49,
+            "steel": 30,
+            "electronic_components": 6,
+            "money": 90
         },
         "duration_seconds": 121,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 21870
             }
         ],
@@ -4804,21 +4804,21 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 45,
-            "石料": 72,
-            "砖": 35,
-            "铁": 18,
-            "煤炭": 8,
-            "钢铁": 30,
-            "水泥": 20,
-            "资金": 63
+            "wood": 45,
+            "stone": 72,
+            "brick": 35,
+            "iron": 18,
+            "coal": 8,
+            "steel": 30,
+            "cement": 20,
+            "money": 63
         },
         "duration_seconds": 87,
         "worker_required": 7,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 2835
             }
         ],
@@ -4839,21 +4839,21 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 27,
-            "石料": 44,
-            "砖": 21,
-            "铁": 11,
-            "煤炭": 5,
-            "钢铁": 18,
-            "水泥": 12,
-            "资金": 38
+            "wood": 27,
+            "stone": 44,
+            "brick": 21,
+            "iron": 11,
+            "coal": 5,
+            "steel": 18,
+            "cement": 12,
+            "money": 38
         },
         "duration_seconds": 48,
         "worker_required": 8,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 3827.25
             }
         ],
@@ -4874,21 +4874,21 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 45,
-            "石料": 72,
-            "砖": 35,
-            "铁": 18,
-            "煤炭": 8,
-            "钢铁": 30,
-            "水泥": 20,
-            "资金": 63
+            "wood": 45,
+            "stone": 72,
+            "brick": 35,
+            "iron": 18,
+            "coal": 8,
+            "steel": 30,
+            "cement": 20,
+            "money": 63
         },
         "duration_seconds": 70,
         "worker_required": 8,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 5103
             }
         ],
@@ -4909,21 +4909,21 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 180,
-            "石料": 108,
-            "砖": 70,
-            "铁": 24,
-            "钢铁": 30,
-            "玻璃": 10,
-            "电子元件": 8,
-            "资金": 225
+            "wood": 180,
+            "stone": 108,
+            "brick": 70,
+            "iron": 24,
+            "steel": 30,
+            "glass": 10,
+            "electronic_components": 8,
+            "money": 225
         },
         "duration_seconds": 225,
         "worker_required": 29,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 6480
             }
         ],
@@ -4944,21 +4944,21 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 108,
-            "石料": 65,
-            "砖": 42,
-            "铁": 15,
-            "钢铁": 18,
-            "玻璃": 6,
-            "电子元件": 5,
-            "资金": 135
+            "wood": 108,
+            "stone": 65,
+            "brick": 42,
+            "iron": 15,
+            "steel": 18,
+            "glass": 6,
+            "electronic_components": 5,
+            "money": 135
         },
         "duration_seconds": 124,
         "worker_required": 31,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 8748
             }
         ],
@@ -4979,21 +4979,21 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 180,
-            "石料": 108,
-            "砖": 70,
-            "铁": 24,
-            "钢铁": 30,
-            "玻璃": 10,
-            "电子元件": 8,
-            "资金": 225
+            "wood": 180,
+            "stone": 108,
+            "brick": 70,
+            "iron": 24,
+            "steel": 30,
+            "glass": 10,
+            "electronic_components": 8,
+            "money": 225
         },
         "duration_seconds": 180,
         "worker_required": 32,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 11664
             }
         ],
@@ -5014,22 +5014,22 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 162,
-            "石料": 135,
-            "青铜": 42,
-            "铁": 48,
-            "煤炭": 15,
-            "钢铁": 40,
-            "水泥": 20,
-            "电子元件": 10,
-            "资金": 135
+            "wood": 162,
+            "stone": 135,
+            "bronze": 42,
+            "iron": 48,
+            "coal": 15,
+            "steel": 40,
+            "cement": 20,
+            "electronic_components": 10,
+            "money": 135
         },
         "duration_seconds": 197,
         "worker_required": 20,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 2025
             }
         ],
@@ -5050,22 +5050,22 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 98,
-            "石料": 81,
-            "青铜": 26,
-            "铁": 29,
-            "煤炭": 9,
-            "钢铁": 24,
-            "水泥": 12,
-            "电子元件": 6,
-            "资金": 81
+            "wood": 98,
+            "stone": 81,
+            "bronze": 26,
+            "iron": 29,
+            "coal": 9,
+            "steel": 24,
+            "cement": 12,
+            "electronic_components": 6,
+            "money": 81
         },
         "duration_seconds": 109,
         "worker_required": 21,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 2733.75
             }
         ],
@@ -5086,22 +5086,22 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 162,
-            "石料": 135,
-            "青铜": 42,
-            "铁": 48,
-            "煤炭": 15,
-            "钢铁": 40,
-            "水泥": 20,
-            "电子元件": 10,
-            "资金": 135
+            "wood": 162,
+            "stone": 135,
+            "bronze": 42,
+            "iron": 48,
+            "coal": 15,
+            "steel": 40,
+            "cement": 20,
+            "electronic_components": 10,
+            "money": 135
         },
         "duration_seconds": 158,
         "worker_required": 22,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 3645
             }
         ],
@@ -5122,23 +5122,23 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 120,
-            "石料": 90,
-            "砖": 64,
-            "铁": 28,
-            "钢铁": 24,
-            "玻璃": 16,
-            "水泥": 20,
-            "电子元件": 5,
-            "稀有金属": 2,
-            "资金": 80
+            "wood": 120,
+            "stone": 90,
+            "brick": 64,
+            "iron": 28,
+            "steel": 24,
+            "glass": 16,
+            "cement": 20,
+            "electronic_components": 5,
+            "rare_metals": 2,
+            "money": 80
         },
         "duration_seconds": 140,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 126
             }
         ],
@@ -5159,23 +5159,23 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 72,
-            "石料": 54,
-            "砖": 39,
-            "铁": 17,
-            "钢铁": 15,
-            "玻璃": 10,
-            "水泥": 12,
-            "电子元件": 3,
-            "稀有金属": 2,
-            "资金": 48
+            "wood": 72,
+            "stone": 54,
+            "brick": 39,
+            "iron": 17,
+            "steel": 15,
+            "glass": 10,
+            "cement": 12,
+            "electronic_components": 3,
+            "rare_metals": 2,
+            "money": 48
         },
         "duration_seconds": 77,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 170.1
             }
         ],
@@ -5196,23 +5196,23 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 120,
-            "石料": 90,
-            "砖": 64,
-            "铁": 28,
-            "钢铁": 24,
-            "玻璃": 16,
-            "水泥": 20,
-            "电子元件": 5,
-            "稀有金属": 2,
-            "资金": 80
+            "wood": 120,
+            "stone": 90,
+            "brick": 64,
+            "iron": 28,
+            "steel": 24,
+            "glass": 16,
+            "cement": 20,
+            "electronic_components": 5,
+            "rare_metals": 2,
+            "money": 80
         },
         "duration_seconds": 112,
         "worker_required": 0,
         "input": [],
         "output": [
             {
-                "resource": "人口容量",
+                "resource": "population_capacity",
                 "rate_per_min": 226.8
             }
         ],
@@ -5233,31 +5233,31 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 100,
-            "石料": 45,
-            "砖": 32,
-            "铁": 21,
-            "煤炭": 6,
-            "钢铁": 30,
-            "水泥": 16,
-            "电子元件": 10,
-            "资金": 60
+            "wood": 100,
+            "stone": 45,
+            "brick": 32,
+            "iron": 21,
+            "coal": 6,
+            "steel": 30,
+            "cement": 16,
+            "electronic_components": 10,
+            "money": 60
         },
         "duration_seconds": 155,
         "worker_required": 12,
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 13
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 12
             }
         ],
         "output": [
             {
-                "resource": "高品质粮食",
+                "resource": "high_quality_food",
                 "rate_per_min": 240
             }
         ],
@@ -5278,31 +5278,31 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 60,
-            "石料": 27,
-            "砖": 20,
-            "铁": 13,
-            "煤炭": 4,
-            "钢铁": 18,
-            "水泥": 10,
-            "电子元件": 6,
-            "资金": 36
+            "wood": 60,
+            "stone": 27,
+            "brick": 20,
+            "iron": 13,
+            "coal": 4,
+            "steel": 18,
+            "cement": 10,
+            "electronic_components": 6,
+            "money": 36
         },
         "duration_seconds": 86,
         "worker_required": 13,
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 15.34
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 14.16
             }
         ],
         "output": [
             {
-                "resource": "高品质粮食",
+                "resource": "high_quality_food",
                 "rate_per_min": 324
             }
         ],
@@ -5323,31 +5323,31 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 100,
-            "石料": 45,
-            "砖": 32,
-            "铁": 21,
-            "煤炭": 6,
-            "钢铁": 30,
-            "水泥": 16,
-            "电子元件": 10,
-            "资金": 60
+            "wood": 100,
+            "stone": 45,
+            "brick": 32,
+            "iron": 21,
+            "coal": 6,
+            "steel": 30,
+            "cement": 16,
+            "electronic_components": 10,
+            "money": 60
         },
         "duration_seconds": 124,
         "worker_required": 14,
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 18.85
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 17.4
             }
         ],
         "output": [
             {
-                "resource": "高品质粮食",
+                "resource": "high_quality_food",
                 "rate_per_min": 432
             }
         ],
@@ -5368,19 +5368,19 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 150,
-            "石料": 63,
-            "砖": 56,
-            "钢铁": 45,
-            "电子元件": 12,
-            "资金": 100
+            "wood": 150,
+            "stone": 63,
+            "brick": 56,
+            "steel": 45,
+            "electronic_components": 12,
+            "money": 100
         },
         "duration_seconds": 165,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 15000
             }
         ],
@@ -5401,19 +5401,19 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 90,
-            "石料": 38,
-            "砖": 34,
-            "钢铁": 27,
-            "电子元件": 8,
-            "资金": 60
+            "wood": 90,
+            "stone": 38,
+            "brick": 34,
+            "steel": 27,
+            "electronic_components": 8,
+            "money": 60
         },
         "duration_seconds": 91,
         "worker_required": 10,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 20250
             }
         ],
@@ -5434,19 +5434,19 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 150,
-            "石料": 63,
-            "砖": 56,
-            "钢铁": 45,
-            "电子元件": 12,
-            "资金": 100
+            "wood": 150,
+            "stone": 63,
+            "brick": 56,
+            "steel": 45,
+            "electronic_components": 12,
+            "money": 100
         },
         "duration_seconds": 132,
         "worker_required": 10,
         "input": [],
         "output": [
             {
-                "resource": "仓储容量",
+                "resource": "storage_capacity",
                 "rate_per_min": 27000
             }
         ],
@@ -5467,22 +5467,22 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 50,
-            "石料": 80,
-            "砖": 40,
-            "铁": 21,
-            "煤炭": 8,
-            "钢铁": 45,
-            "水泥": 40,
-            "电子元件": 10,
-            "资金": 70
+            "wood": 50,
+            "stone": 80,
+            "brick": 40,
+            "iron": 21,
+            "coal": 8,
+            "steel": 45,
+            "cement": 40,
+            "electronic_components": 10,
+            "money": 70
         },
         "duration_seconds": 95,
         "worker_required": 8,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 3500
             }
         ],
@@ -5503,22 +5503,22 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 30,
-            "石料": 48,
-            "砖": 24,
-            "铁": 13,
-            "煤炭": 5,
-            "钢铁": 27,
-            "水泥": 24,
-            "电子元件": 6,
-            "资金": 42
+            "wood": 30,
+            "stone": 48,
+            "brick": 24,
+            "iron": 13,
+            "coal": 5,
+            "steel": 27,
+            "cement": 24,
+            "electronic_components": 6,
+            "money": 42
         },
         "duration_seconds": 53,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 4725
             }
         ],
@@ -5539,22 +5539,22 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 50,
-            "石料": 80,
-            "砖": 40,
-            "铁": 21,
-            "煤炭": 8,
-            "钢铁": 45,
-            "水泥": 40,
-            "电子元件": 10,
-            "资金": 70
+            "wood": 50,
+            "stone": 80,
+            "brick": 40,
+            "iron": 21,
+            "coal": 8,
+            "steel": 45,
+            "cement": 40,
+            "electronic_components": 10,
+            "money": 70
         },
         "duration_seconds": 76,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "运输容量",
+                "resource": "transport_capacity",
                 "rate_per_min": 6300
             }
         ],
@@ -5575,21 +5575,21 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 200,
-            "石料": 120,
-            "砖": 80,
-            "铁": 28,
-            "钢铁": 45,
-            "玻璃": 20,
-            "电子元件": 16,
-            "资金": 250
+            "wood": 200,
+            "stone": 120,
+            "brick": 80,
+            "iron": 28,
+            "steel": 45,
+            "glass": 20,
+            "electronic_components": 16,
+            "money": 250
         },
         "duration_seconds": 245,
         "worker_required": 32,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 8000
             }
         ],
@@ -5610,21 +5610,21 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 120,
-            "石料": 72,
-            "砖": 48,
-            "铁": 17,
-            "钢铁": 27,
-            "玻璃": 12,
-            "电子元件": 10,
-            "资金": 150
+            "wood": 120,
+            "stone": 72,
+            "brick": 48,
+            "iron": 17,
+            "steel": 27,
+            "glass": 12,
+            "electronic_components": 10,
+            "money": 150
         },
         "duration_seconds": 135,
         "worker_required": 34,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 10800
             }
         ],
@@ -5645,21 +5645,21 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 200,
-            "石料": 120,
-            "砖": 80,
-            "铁": 28,
-            "钢铁": 45,
-            "玻璃": 20,
-            "电子元件": 16,
-            "资金": 250
+            "wood": 200,
+            "stone": 120,
+            "brick": 80,
+            "iron": 28,
+            "steel": 45,
+            "glass": 20,
+            "electronic_components": 16,
+            "money": 250
         },
         "duration_seconds": 196,
         "worker_required": 36,
         "input": [],
         "output": [
             {
-                "resource": "治理容量",
+                "resource": "governance_capacity",
                 "rate_per_min": 14400
             }
         ],
@@ -5680,23 +5680,23 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 180,
-            "石料": 150,
-            "青铜": 48,
-            "铁": 56,
-            "煤炭": 20,
-            "钢铁": 60,
-            "水泥": 40,
-            "电子元件": 20,
-            "稀有金属": 5,
-            "资金": 150
+            "wood": 180,
+            "stone": 150,
+            "bronze": 48,
+            "iron": 56,
+            "coal": 20,
+            "steel": 60,
+            "cement": 40,
+            "electronic_components": 20,
+            "rare_metals": 5,
+            "money": 150
         },
         "duration_seconds": 215,
         "worker_required": 22,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 2500
             }
         ],
@@ -5717,23 +5717,23 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 108,
-            "石料": 90,
-            "青铜": 29,
-            "铁": 34,
-            "煤炭": 12,
-            "钢铁": 36,
-            "水泥": 24,
-            "电子元件": 12,
-            "稀有金属": 3,
-            "资金": 90
+            "wood": 108,
+            "stone": 90,
+            "bronze": 29,
+            "iron": 34,
+            "coal": 12,
+            "steel": 36,
+            "cement": 24,
+            "electronic_components": 12,
+            "rare_metals": 3,
+            "money": 90
         },
         "duration_seconds": 119,
         "worker_required": 24,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 3375
             }
         ],
@@ -5754,23 +5754,23 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 180,
-            "石料": 150,
-            "青铜": 48,
-            "铁": 56,
-            "煤炭": 20,
-            "钢铁": 60,
-            "水泥": 40,
-            "电子元件": 20,
-            "稀有金属": 5,
-            "资金": 150
+            "wood": 180,
+            "stone": 150,
+            "bronze": 48,
+            "iron": 56,
+            "coal": 20,
+            "steel": 60,
+            "cement": 40,
+            "electronic_components": 20,
+            "rare_metals": 5,
+            "money": 150
         },
         "duration_seconds": 172,
         "worker_required": 25,
         "input": [],
         "output": [
             {
-                "resource": "国防值",
+                "resource": "defense_score",
                 "rate_per_min": 4500
             }
         ],
@@ -5791,14 +5791,14 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 15
+            "wood": 15
         },
         "duration_seconds": 30,
         "worker_required": 3,
         "input": [],
         "output": [
             {
-                "resource": "木材",
+                "resource": "wood",
                 "rate_per_min": 10
             }
         ],
@@ -5819,14 +5819,14 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 9
+            "wood": 9
         },
         "duration_seconds": 17,
         "worker_required": 4,
         "input": [],
         "output": [
             {
-                "resource": "木材",
+                "resource": "wood",
                 "rate_per_min": 13.5
             }
         ],
@@ -5847,14 +5847,14 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 15
+            "wood": 15
         },
         "duration_seconds": 24,
         "worker_required": 4,
         "input": [],
         "output": [
             {
-                "resource": "木材",
+                "resource": "wood",
                 "rate_per_min": 18
             }
         ],
@@ -5875,15 +5875,15 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 35,
-            "石料": 10
+            "wood": 35,
+            "stone": 10
         },
         "duration_seconds": 55,
         "worker_required": 5,
         "input": [],
         "output": [
             {
-                "resource": "石料",
+                "resource": "stone",
                 "rate_per_min": 12
             }
         ],
@@ -5904,15 +5904,15 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 21,
-            "石料": 6
+            "wood": 21,
+            "stone": 6
         },
         "duration_seconds": 31,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "石料",
+                "resource": "stone",
                 "rate_per_min": 16.2
             }
         ],
@@ -5933,15 +5933,15 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 35,
-            "石料": 10
+            "wood": 35,
+            "stone": 10
         },
         "duration_seconds": 44,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "石料",
+                "resource": "stone",
                 "rate_per_min": 21.6
             }
         ],
@@ -5962,15 +5962,15 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 45,
-            "石料": 30
+            "wood": 45,
+            "stone": 30
         },
         "duration_seconds": 70,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "铜",
+                "resource": "copper",
                 "rate_per_min": 7
             }
         ],
@@ -5991,15 +5991,15 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 27,
-            "石料": 18
+            "wood": 27,
+            "stone": 18
         },
         "duration_seconds": 39,
         "worker_required": 7,
         "input": [],
         "output": [
             {
-                "resource": "铜",
+                "resource": "copper",
                 "rate_per_min": 9.45
             }
         ],
@@ -6020,15 +6020,15 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 45,
-            "石料": 30
+            "wood": 45,
+            "stone": 30
         },
         "duration_seconds": 56,
         "worker_required": 7,
         "input": [],
         "output": [
             {
-                "resource": "铜",
+                "resource": "copper",
                 "rate_per_min": 12.6
             }
         ],
@@ -6049,15 +6049,15 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 50,
-            "石料": 35
+            "wood": 50,
+            "stone": 35
         },
         "duration_seconds": 75,
         "worker_required": 6,
         "input": [],
         "output": [
             {
-                "resource": "锡",
+                "resource": "tin",
                 "rate_per_min": 4
             }
         ],
@@ -6078,15 +6078,15 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 30,
-            "石料": 21
+            "wood": 30,
+            "stone": 21
         },
         "duration_seconds": 42,
         "worker_required": 7,
         "input": [],
         "output": [
             {
-                "resource": "锡",
+                "resource": "tin",
                 "rate_per_min": 5.4
             }
         ],
@@ -6107,15 +6107,15 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 50,
-            "石料": 35
+            "wood": 50,
+            "stone": 35
         },
         "duration_seconds": 60,
         "worker_required": 7,
         "input": [],
         "output": [
             {
-                "resource": "锡",
+                "resource": "tin",
                 "rate_per_min": 7.2
             }
         ],
@@ -6136,16 +6136,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 60,
-            "石料": 50,
-            "铁": 5
+            "wood": 60,
+            "stone": 50,
+            "iron": 5
         },
         "duration_seconds": 90,
         "worker_required": 8,
         "input": [],
         "output": [
             {
-                "resource": "铁",
+                "resource": "iron",
                 "rate_per_min": 10
             }
         ],
@@ -6166,16 +6166,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 36,
-            "石料": 30,
-            "铁": 3
+            "wood": 36,
+            "stone": 30,
+            "iron": 3
         },
         "duration_seconds": 50,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "铁",
+                "resource": "iron",
                 "rate_per_min": 13.5
             }
         ],
@@ -6196,16 +6196,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 60,
-            "石料": 50,
-            "铁": 5
+            "wood": 60,
+            "stone": 50,
+            "iron": 5
         },
         "duration_seconds": 72,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "铁",
+                "resource": "iron",
                 "rate_per_min": 18
             }
         ],
@@ -6226,16 +6226,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 60,
-            "石料": 45,
-            "铁": 5
+            "wood": 60,
+            "stone": 45,
+            "iron": 5
         },
         "duration_seconds": 90,
         "worker_required": 8,
         "input": [],
         "output": [
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 10
             }
         ],
@@ -6256,16 +6256,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 36,
-            "石料": 27,
-            "铁": 3
+            "wood": 36,
+            "stone": 27,
+            "iron": 3
         },
         "duration_seconds": 50,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 13.5
             }
         ],
@@ -6286,16 +6286,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 60,
-            "石料": 45,
-            "铁": 5
+            "wood": 60,
+            "stone": 45,
+            "iron": 5
         },
         "duration_seconds": 72,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 18
             }
         ],
@@ -6316,16 +6316,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "钢铁": 45,
-            "水泥": 35,
-            "资金": 120
+            "steel": 45,
+            "cement": 35,
+            "money": 120
         },
         "duration_seconds": 140,
         "worker_required": 12,
         "input": [],
         "output": [
             {
-                "resource": "石油",
+                "resource": "oil",
                 "rate_per_min": 18
             }
         ],
@@ -6346,16 +6346,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "钢铁": 27,
-            "水泥": 21,
-            "资金": 72
+            "steel": 27,
+            "cement": 21,
+            "money": 72
         },
         "duration_seconds": 77,
         "worker_required": 13,
         "input": [],
         "output": [
             {
-                "resource": "石油",
+                "resource": "oil",
                 "rate_per_min": 24.3
             }
         ],
@@ -6376,16 +6376,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "钢铁": 45,
-            "水泥": 35,
-            "资金": 120
+            "steel": 45,
+            "cement": 35,
+            "money": 120
         },
         "duration_seconds": 112,
         "worker_required": 14,
         "input": [],
         "output": [
             {
-                "resource": "石油",
+                "resource": "oil",
                 "rate_per_min": 32.4
             }
         ],
@@ -6406,22 +6406,22 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "钢铁": 120,
-            "水泥": 80,
-            "电子元件": 30,
-            "资金": 400
+            "steel": 120,
+            "cement": 80,
+            "electronic_components": 30,
+            "money": 400
         },
         "duration_seconds": 240,
         "worker_required": 20,
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 20
             }
         ],
         "output": [
             {
-                "resource": "稀有金属",
+                "resource": "rare_metals",
                 "rate_per_min": 6
             }
         ],
@@ -6442,22 +6442,22 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "钢铁": 72,
-            "水泥": 48,
-            "电子元件": 18,
-            "资金": 240
+            "steel": 72,
+            "cement": 48,
+            "electronic_components": 18,
+            "money": 240
         },
         "duration_seconds": 132,
         "worker_required": 21,
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 23.6
             }
         ],
         "output": [
             {
-                "resource": "稀有金属",
+                "resource": "rare_metals",
                 "rate_per_min": 8.1
             }
         ],
@@ -6478,22 +6478,22 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "钢铁": 120,
-            "水泥": 80,
-            "电子元件": 30,
-            "资金": 400
+            "steel": 120,
+            "cement": 80,
+            "electronic_components": 30,
+            "money": 400
         },
         "duration_seconds": 192,
         "worker_required": 22,
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 29
             }
         ],
         "output": [
             {
-                "resource": "稀有金属",
+                "resource": "rare_metals",
                 "rate_per_min": 10.8
             }
         ],
@@ -6514,20 +6514,20 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 35,
-            "石料": 15
+            "wood": 35,
+            "stone": 15
         },
         "duration_seconds": 50,
         "worker_required": 3,
         "input": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 10
             }
         ],
         "output": [
             {
-                "resource": "面粉",
+                "resource": "flour",
                 "rate_per_min": 8
             }
         ],
@@ -6548,20 +6548,20 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 21,
-            "石料": 9
+            "wood": 21,
+            "stone": 9
         },
         "duration_seconds": 28,
         "worker_required": 4,
         "input": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 11.8
             }
         ],
         "output": [
             {
-                "resource": "面粉",
+                "resource": "flour",
                 "rate_per_min": 10.8
             }
         ],
@@ -6582,20 +6582,20 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 35,
-            "石料": 15
+            "wood": 35,
+            "stone": 15
         },
         "duration_seconds": 40,
         "worker_required": 4,
         "input": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 14.5
             }
         ],
         "output": [
             {
-                "resource": "面粉",
+                "resource": "flour",
                 "rate_per_min": 14.4
             }
         ],
@@ -6616,20 +6616,20 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 30,
-            "石料": 20
+            "wood": 30,
+            "stone": 20
         },
         "duration_seconds": 55,
         "worker_required": 3,
         "input": [
             {
-                "resource": "面粉",
+                "resource": "flour",
                 "rate_per_min": 7
             }
         ],
         "output": [
             {
-                "resource": "面包",
+                "resource": "bread",
                 "rate_per_min": 6
             }
         ],
@@ -6650,20 +6650,20 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 18,
-            "石料": 12
+            "wood": 18,
+            "stone": 12
         },
         "duration_seconds": 31,
         "worker_required": 4,
         "input": [
             {
-                "resource": "面粉",
+                "resource": "flour",
                 "rate_per_min": 8.26
             }
         ],
         "output": [
             {
-                "resource": "面包",
+                "resource": "bread",
                 "rate_per_min": 8.1
             }
         ],
@@ -6684,20 +6684,20 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 30,
-            "石料": 20
+            "wood": 30,
+            "stone": 20
         },
         "duration_seconds": 44,
         "worker_required": 4,
         "input": [
             {
-                "resource": "面粉",
+                "resource": "flour",
                 "rate_per_min": 10.15
             }
         ],
         "output": [
             {
-                "resource": "面包",
+                "resource": "bread",
                 "rate_per_min": 10.8
             }
         ],
@@ -6718,26 +6718,26 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 40,
-            "石料": 30,
-            "铜": 10,
-            "锡": 5
+            "wood": 40,
+            "stone": 30,
+            "copper": 10,
+            "tin": 5
         },
         "duration_seconds": 80,
         "worker_required": 6,
         "input": [
             {
-                "resource": "铜",
+                "resource": "copper",
                 "rate_per_min": 5
             },
             {
-                "resource": "锡",
+                "resource": "tin",
                 "rate_per_min": 2
             }
         ],
         "output": [
             {
-                "resource": "青铜",
+                "resource": "bronze",
                 "rate_per_min": 6
             }
         ],
@@ -6758,26 +6758,26 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 24,
-            "石料": 18,
-            "铜": 6,
-            "锡": 3
+            "wood": 24,
+            "stone": 18,
+            "copper": 6,
+            "tin": 3
         },
         "duration_seconds": 44,
         "worker_required": 7,
         "input": [
             {
-                "resource": "铜",
+                "resource": "copper",
                 "rate_per_min": 5.9
             },
             {
-                "resource": "锡",
+                "resource": "tin",
                 "rate_per_min": 2.36
             }
         ],
         "output": [
             {
-                "resource": "青铜",
+                "resource": "bronze",
                 "rate_per_min": 8.1
             }
         ],
@@ -6798,26 +6798,26 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 40,
-            "石料": 30,
-            "铜": 10,
-            "锡": 5
+            "wood": 40,
+            "stone": 30,
+            "copper": 10,
+            "tin": 5
         },
         "duration_seconds": 64,
         "worker_required": 7,
         "input": [
             {
-                "resource": "铜",
+                "resource": "copper",
                 "rate_per_min": 7.25
             },
             {
-                "resource": "锡",
+                "resource": "tin",
                 "rate_per_min": 2.9
             }
         ],
         "output": [
             {
-                "resource": "青铜",
+                "resource": "bronze",
                 "rate_per_min": 10.8
             }
         ],
@@ -6838,25 +6838,25 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 40,
-            "石料": 20,
-            "黏土": 20
+            "wood": 40,
+            "stone": 20,
+            "clay": 20
         },
         "duration_seconds": 65,
         "worker_required": 5,
         "input": [
             {
-                "resource": "黏土",
+                "resource": "clay",
                 "rate_per_min": 10
             },
             {
-                "resource": "木材",
+                "resource": "wood",
                 "rate_per_min": 2
             }
         ],
         "output": [
             {
-                "resource": "砖",
+                "resource": "brick",
                 "rate_per_min": 12
             }
         ],
@@ -6877,25 +6877,25 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 24,
-            "石料": 12,
-            "黏土": 12
+            "wood": 24,
+            "stone": 12,
+            "clay": 12
         },
         "duration_seconds": 36,
         "worker_required": 6,
         "input": [
             {
-                "resource": "黏土",
+                "resource": "clay",
                 "rate_per_min": 11.8
             },
             {
-                "resource": "木材",
+                "resource": "wood",
                 "rate_per_min": 2.36
             }
         ],
         "output": [
             {
-                "resource": "砖",
+                "resource": "brick",
                 "rate_per_min": 16.2
             }
         ],
@@ -6916,25 +6916,25 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 40,
-            "石料": 20,
-            "黏土": 20
+            "wood": 40,
+            "stone": 20,
+            "clay": 20
         },
         "duration_seconds": 52,
         "worker_required": 6,
         "input": [
             {
-                "resource": "黏土",
+                "resource": "clay",
                 "rate_per_min": 14.5
             },
             {
-                "resource": "木材",
+                "resource": "wood",
                 "rate_per_min": 2.9
             }
         ],
         "output": [
             {
-                "resource": "砖",
+                "resource": "brick",
                 "rate_per_min": 21.6
             }
         ],
@@ -6955,25 +6955,25 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 45,
-            "石料": 40,
-            "铁": 20
+            "wood": 45,
+            "stone": 40,
+            "iron": 20
         },
         "duration_seconds": 90,
         "worker_required": 6,
         "input": [
             {
-                "resource": "铁",
+                "resource": "iron",
                 "rate_per_min": 7
             },
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 2
             }
         ],
         "output": [
             {
-                "resource": "铁制工具",
+                "resource": "iron_tools",
                 "rate_per_min": 5
             }
         ],
@@ -6994,25 +6994,25 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 27,
-            "石料": 24,
-            "铁": 12
+            "wood": 27,
+            "stone": 24,
+            "iron": 12
         },
         "duration_seconds": 50,
         "worker_required": 7,
         "input": [
             {
-                "resource": "铁",
+                "resource": "iron",
                 "rate_per_min": 8.26
             },
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 2.36
             }
         ],
         "output": [
             {
-                "resource": "铁制工具",
+                "resource": "iron_tools",
                 "rate_per_min": 6.75
             }
         ],
@@ -7033,25 +7033,25 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 45,
-            "石料": 40,
-            "铁": 20
+            "wood": 45,
+            "stone": 40,
+            "iron": 20
         },
         "duration_seconds": 72,
         "worker_required": 7,
         "input": [
             {
-                "resource": "铁",
+                "resource": "iron",
                 "rate_per_min": 10.15
             },
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 2.9
             }
         ],
         "output": [
             {
-                "resource": "铁制工具",
+                "resource": "iron_tools",
                 "rate_per_min": 9
             }
         ],
@@ -7072,26 +7072,26 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "石料": 70,
-            "砖": 50,
-            "铁": 15,
-            "资金": 80
+            "stone": 70,
+            "brick": 50,
+            "iron": 15,
+            "money": 80
         },
         "duration_seconds": 120,
         "worker_required": 10,
         "input": [
             {
-                "resource": "砂石",
+                "resource": "sand_gravel",
                 "rate_per_min": 10
             },
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 5
             }
         ],
         "output": [
             {
-                "resource": "玻璃",
+                "resource": "glass",
                 "rate_per_min": 8
             }
         ],
@@ -7112,26 +7112,26 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "石料": 42,
-            "砖": 30,
-            "铁": 9,
-            "资金": 48
+            "stone": 42,
+            "brick": 30,
+            "iron": 9,
+            "money": 48
         },
         "duration_seconds": 66,
         "worker_required": 11,
         "input": [
             {
-                "resource": "砂石",
+                "resource": "sand_gravel",
                 "rate_per_min": 11.8
             },
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 5.9
             }
         ],
         "output": [
             {
-                "resource": "玻璃",
+                "resource": "glass",
                 "rate_per_min": 10.8
             }
         ],
@@ -7152,26 +7152,26 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "石料": 70,
-            "砖": 50,
-            "铁": 15,
-            "资金": 80
+            "stone": 70,
+            "brick": 50,
+            "iron": 15,
+            "money": 80
         },
         "duration_seconds": 96,
         "worker_required": 11,
         "input": [
             {
-                "resource": "砂石",
+                "resource": "sand_gravel",
                 "rate_per_min": 14.5
             },
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 7.25
             }
         ],
         "output": [
             {
-                "resource": "玻璃",
+                "resource": "glass",
                 "rate_per_min": 14.4
             }
         ],
@@ -7192,26 +7192,26 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "砖": 80,
-            "铁": 60,
-            "煤炭": 40,
-            "资金": 150
+            "brick": 80,
+            "iron": 60,
+            "coal": 40,
+            "money": 150
         },
         "duration_seconds": 210,
         "worker_required": 25,
         "input": [
             {
-                "resource": "铁",
+                "resource": "iron",
                 "rate_per_min": 18
             },
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 15
             }
         ],
         "output": [
             {
-                "resource": "钢铁",
+                "resource": "steel",
                 "rate_per_min": 14
             }
         ],
@@ -7232,26 +7232,26 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "砖": 48,
-            "铁": 36,
-            "煤炭": 24,
-            "资金": 90
+            "brick": 48,
+            "iron": 36,
+            "coal": 24,
+            "money": 90
         },
         "duration_seconds": 116,
         "worker_required": 27,
         "input": [
             {
-                "resource": "铁",
+                "resource": "iron",
                 "rate_per_min": 21.24
             },
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 17.7
             }
         ],
         "output": [
             {
-                "resource": "钢铁",
+                "resource": "steel",
                 "rate_per_min": 18.9
             }
         ],
@@ -7272,26 +7272,26 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "砖": 80,
-            "铁": 60,
-            "煤炭": 40,
-            "资金": 150
+            "brick": 80,
+            "iron": 60,
+            "coal": 40,
+            "money": 150
         },
         "duration_seconds": 168,
         "worker_required": 28,
         "input": [
             {
-                "resource": "铁",
+                "resource": "iron",
                 "rate_per_min": 26.1
             },
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 21.75
             }
         ],
         "output": [
             {
-                "resource": "钢铁",
+                "resource": "steel",
                 "rate_per_min": 25.2
             }
         ],
@@ -7312,25 +7312,25 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "钢铁": 60,
-            "玻璃": 20,
-            "资金": 220
+            "steel": 60,
+            "glass": 20,
+            "money": 220
         },
         "duration_seconds": 230,
         "worker_required": 30,
         "input": [
             {
-                "resource": "钢铁",
+                "resource": "steel",
                 "rate_per_min": 14
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 15
             }
         ],
         "output": [
             {
-                "resource": "机械",
+                "resource": "machinery",
                 "rate_per_min": 6
             }
         ],
@@ -7351,25 +7351,25 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "钢铁": 36,
-            "玻璃": 12,
-            "资金": 132
+            "steel": 36,
+            "glass": 12,
+            "money": 132
         },
         "duration_seconds": 127,
         "worker_required": 32,
         "input": [
             {
-                "resource": "钢铁",
+                "resource": "steel",
                 "rate_per_min": 16.52
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 17.7
             }
         ],
         "output": [
             {
-                "resource": "机械",
+                "resource": "machinery",
                 "rate_per_min": 8.1
             }
         ],
@@ -7390,25 +7390,25 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "钢铁": 60,
-            "玻璃": 20,
-            "资金": 220
+            "steel": 60,
+            "glass": 20,
+            "money": 220
         },
         "duration_seconds": 184,
         "worker_required": 33,
         "input": [
             {
-                "resource": "钢铁",
+                "resource": "steel",
                 "rate_per_min": 20.3
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 21.75
             }
         ],
         "output": [
             {
-                "resource": "机械",
+                "resource": "machinery",
                 "rate_per_min": 10.8
             }
         ],
@@ -7429,26 +7429,26 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "钢铁": 40,
-            "玻璃": 30,
-            "水泥": 50,
-            "资金": 200
+            "steel": 40,
+            "glass": 30,
+            "cement": 50,
+            "money": 200
         },
         "duration_seconds": 190,
         "worker_required": 22,
         "input": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 35
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 18
             }
         ],
         "output": [
             {
-                "resource": "加工食品",
+                "resource": "processed_food",
                 "rate_per_min": 28
             }
         ],
@@ -7469,26 +7469,26 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "钢铁": 24,
-            "玻璃": 18,
-            "水泥": 30,
-            "资金": 120
+            "steel": 24,
+            "glass": 18,
+            "cement": 30,
+            "money": 120
         },
         "duration_seconds": 105,
         "worker_required": 24,
         "input": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 41.3
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 21.24
             }
         ],
         "output": [
             {
-                "resource": "加工食品",
+                "resource": "processed_food",
                 "rate_per_min": 37.8
             }
         ],
@@ -7509,26 +7509,26 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "钢铁": 40,
-            "玻璃": 30,
-            "水泥": 50,
-            "资金": 200
+            "steel": 40,
+            "glass": 30,
+            "cement": 50,
+            "money": 200
         },
         "duration_seconds": 152,
         "worker_required": 25,
         "input": [
             {
-                "resource": "粮食",
+                "resource": "food",
                 "rate_per_min": 50.75
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 26.1
             }
         ],
         "output": [
             {
-                "resource": "加工食品",
+                "resource": "processed_food",
                 "rate_per_min": 50.4
             }
         ],
@@ -7549,29 +7549,29 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "钢铁": 80,
-            "水泥": 60,
-            "资金": 300
+            "steel": 80,
+            "cement": 60,
+            "money": 300
         },
         "duration_seconds": 220,
         "worker_required": 28,
         "input": [
             {
-                "resource": "石油",
+                "resource": "oil",
                 "rate_per_min": 22
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 15
             }
         ],
         "output": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 16
             },
             {
-                "resource": "塑料",
+                "resource": "plastic",
                 "rate_per_min": 7
             }
         ],
@@ -7592,29 +7592,29 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "钢铁": 48,
-            "水泥": 36,
-            "资金": 180
+            "steel": 48,
+            "cement": 36,
+            "money": 180
         },
         "duration_seconds": 122,
         "worker_required": 30,
         "input": [
             {
-                "resource": "石油",
+                "resource": "oil",
                 "rate_per_min": 25.96
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 17.7
             }
         ],
         "output": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 21.6
             },
             {
-                "resource": "塑料",
+                "resource": "plastic",
                 "rate_per_min": 9.45
             }
         ],
@@ -7635,29 +7635,29 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "钢铁": 80,
-            "水泥": 60,
-            "资金": 300
+            "steel": 80,
+            "cement": 60,
+            "money": 300
         },
         "duration_seconds": 176,
         "worker_required": 31,
         "input": [
             {
-                "resource": "石油",
+                "resource": "oil",
                 "rate_per_min": 31.9
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 21.75
             }
         ],
         "output": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 28.8
             },
             {
-                "resource": "塑料",
+                "resource": "plastic",
                 "rate_per_min": 12.6
             }
         ],
@@ -7678,27 +7678,27 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "钢铁": 150,
-            "玻璃": 80,
-            "水泥": 100,
-            "电子元件": 40,
-            "资金": 700
+            "steel": 150,
+            "glass": 80,
+            "cement": 100,
+            "electronic_components": 40,
+            "money": 700
         },
         "duration_seconds": 320,
         "worker_required": 40,
         "input": [
             {
-                "resource": "稀有金属",
+                "resource": "rare_metals",
                 "rate_per_min": 8
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 45
             }
         ],
         "output": [
             {
-                "resource": "先进材料",
+                "resource": "advanced_materials",
                 "rate_per_min": 10
             }
         ],
@@ -7719,27 +7719,27 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "钢铁": 90,
-            "玻璃": 48,
-            "水泥": 60,
-            "电子元件": 24,
-            "资金": 420
+            "steel": 90,
+            "glass": 48,
+            "cement": 60,
+            "electronic_components": 24,
+            "money": 420
         },
         "duration_seconds": 176,
         "worker_required": 42,
         "input": [
             {
-                "resource": "稀有金属",
+                "resource": "rare_metals",
                 "rate_per_min": 9.44
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 53.1
             }
         ],
         "output": [
             {
-                "resource": "先进材料",
+                "resource": "advanced_materials",
                 "rate_per_min": 13.5
             }
         ],
@@ -7760,27 +7760,27 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "钢铁": 150,
-            "玻璃": 80,
-            "水泥": 100,
-            "电子元件": 40,
-            "资金": 700
+            "steel": 150,
+            "glass": 80,
+            "cement": 100,
+            "electronic_components": 40,
+            "money": 700
         },
         "duration_seconds": 256,
         "worker_required": 44,
         "input": [
             {
-                "resource": "稀有金属",
+                "resource": "rare_metals",
                 "rate_per_min": 11.6
             },
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 65.25
             }
         ],
         "output": [
             {
-                "resource": "先进材料",
+                "resource": "advanced_materials",
                 "rate_per_min": 18
             }
         ],
@@ -7801,14 +7801,14 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 20
+            "wood": 20
         },
         "duration_seconds": 20,
         "worker_required": 1,
         "input": [],
         "output": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 4
             }
         ],
@@ -7829,14 +7829,14 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 12
+            "wood": 12
         },
         "duration_seconds": 11,
         "worker_required": 2,
         "input": [],
         "output": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 5.4
             }
         ],
@@ -7857,14 +7857,14 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 20
+            "wood": 20
         },
         "duration_seconds": 16,
         "worker_required": 2,
         "input": [],
         "output": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 7.2
             }
         ],
@@ -7885,20 +7885,20 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 40,
-            "石料": 20
+            "wood": 40,
+            "stone": 20
         },
         "duration_seconds": 60,
         "worker_required": 4,
         "input": [
             {
-                "resource": "木材",
+                "resource": "wood",
                 "rate_per_min": 6
             }
         ],
         "output": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 5
             }
         ],
@@ -7919,20 +7919,20 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 24,
-            "石料": 12
+            "wood": 24,
+            "stone": 12
         },
         "duration_seconds": 33,
         "worker_required": 5,
         "input": [
             {
-                "resource": "木材",
+                "resource": "wood",
                 "rate_per_min": 7.08
             }
         ],
         "output": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 6.75
             }
         ],
@@ -7953,20 +7953,20 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 40,
-            "石料": 20
+            "wood": 40,
+            "stone": 20
         },
         "duration_seconds": 48,
         "worker_required": 5,
         "input": [
             {
-                "resource": "木材",
+                "resource": "wood",
                 "rate_per_min": 8.7
             }
         ],
         "output": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 9
             }
         ],
@@ -7987,21 +7987,21 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "砖": 80,
-            "钢铁": 70,
-            "资金": 250
+            "brick": 80,
+            "steel": 70,
+            "money": 250
         },
         "duration_seconds": 220,
         "worker_required": 25,
         "input": [
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 28
             }
         ],
         "output": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 110
             }
         ],
@@ -8022,21 +8022,21 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "砖": 48,
-            "钢铁": 42,
-            "资金": 150
+            "brick": 48,
+            "steel": 42,
+            "money": 150
         },
         "duration_seconds": 122,
         "worker_required": 27,
         "input": [
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 33.04
             }
         ],
         "output": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 148.5
             }
         ],
@@ -8057,21 +8057,21 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "砖": 80,
-            "钢铁": 70,
-            "资金": 250
+            "brick": 80,
+            "steel": 70,
+            "money": 250
         },
         "duration_seconds": 176,
         "worker_required": 28,
         "input": [
             {
-                "resource": "煤炭",
+                "resource": "coal",
                 "rate_per_min": 40.6
             }
         ],
         "output": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 198
             }
         ],
@@ -8092,22 +8092,22 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "钢铁": 80,
-            "水泥": 70,
-            "电子元件": 20,
-            "资金": 350
+            "steel": 80,
+            "cement": 70,
+            "electronic_components": 20,
+            "money": 350
         },
         "duration_seconds": 210,
         "worker_required": 22,
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 22
             }
         ],
         "output": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 160
             }
         ],
@@ -8128,22 +8128,22 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "钢铁": 48,
-            "水泥": 42,
-            "电子元件": 12,
-            "资金": 210
+            "steel": 48,
+            "cement": 42,
+            "electronic_components": 12,
+            "money": 210
         },
         "duration_seconds": 116,
         "worker_required": 24,
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 25.96
             }
         ],
         "output": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 216
             }
         ],
@@ -8164,22 +8164,22 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "钢铁": 80,
-            "水泥": 70,
-            "电子元件": 20,
-            "资金": 350
+            "steel": 80,
+            "cement": 70,
+            "electronic_components": 20,
+            "money": 350
         },
         "duration_seconds": 168,
         "worker_required": 25,
         "input": [
             {
-                "resource": "燃料",
+                "resource": "fuel",
                 "rate_per_min": 31.9
             }
         ],
         "output": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 288
             }
         ],
@@ -8200,22 +8200,22 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "钢铁": 180,
-            "电子元件": 60,
-            "稀有金属": 25,
-            "资金": 900
+            "steel": 180,
+            "electronic_components": 60,
+            "rare_metals": 25,
+            "money": 900
         },
         "duration_seconds": 360,
         "worker_required": 35,
         "input": [
             {
-                "resource": "先进材料",
+                "resource": "advanced_materials",
                 "rate_per_min": 4
             }
         ],
         "output": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 350
             }
         ],
@@ -8236,22 +8236,22 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "钢铁": 108,
-            "电子元件": 36,
-            "稀有金属": 15,
-            "资金": 540
+            "steel": 108,
+            "electronic_components": 36,
+            "rare_metals": 15,
+            "money": 540
         },
         "duration_seconds": 199,
         "worker_required": 37,
         "input": [
             {
-                "resource": "先进材料",
+                "resource": "advanced_materials",
                 "rate_per_min": 4.72
             }
         ],
         "output": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 472.5
             }
         ],
@@ -8272,22 +8272,22 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "钢铁": 180,
-            "电子元件": 60,
-            "稀有金属": 25,
-            "资金": 900
+            "steel": 180,
+            "electronic_components": 60,
+            "rare_metals": 25,
+            "money": 900
         },
         "duration_seconds": 288,
         "worker_required": 39,
         "input": [
             {
-                "resource": "先进材料",
+                "resource": "advanced_materials",
                 "rate_per_min": 5.8
             }
         ],
         "output": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 630
             }
         ],
@@ -8308,16 +8308,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 50,
-            "石料": 20,
-            "资金": 40
+            "wood": 50,
+            "stone": 20,
+            "money": 40
         },
         "duration_seconds": 70,
         "worker_required": 4,
         "input": [],
         "output": [
             {
-                "resource": "贸易容量",
+                "resource": "trade_capacity",
                 "rate_per_min": 100
             }
         ],
@@ -8338,16 +8338,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 30,
-            "石料": 12,
-            "资金": 24
+            "wood": 30,
+            "stone": 12,
+            "money": 24
         },
         "duration_seconds": 39,
         "worker_required": 5,
         "input": [],
         "output": [
             {
-                "resource": "贸易容量",
+                "resource": "trade_capacity",
                 "rate_per_min": 135
             }
         ],
@@ -8368,16 +8368,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 50,
-            "石料": 20,
-            "资金": 40
+            "wood": 50,
+            "stone": 20,
+            "money": 40
         },
         "duration_seconds": 56,
         "worker_required": 5,
         "input": [],
         "output": [
             {
-                "resource": "贸易容量",
+                "resource": "trade_capacity",
                 "rate_per_min": 180
             }
         ],
@@ -8398,17 +8398,17 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "石料": 100,
-            "砖": 80,
-            "铁": 20,
-            "资金": 150
+            "stone": 100,
+            "brick": 80,
+            "iron": 20,
+            "money": 150
         },
         "duration_seconds": 130,
         "worker_required": 10,
         "input": [],
         "output": [
             {
-                "resource": "贸易容量",
+                "resource": "trade_capacity",
                 "rate_per_min": 450
             }
         ],
@@ -8429,17 +8429,17 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "石料": 60,
-            "砖": 48,
-            "铁": 12,
-            "资金": 90
+            "stone": 60,
+            "brick": 48,
+            "iron": 12,
+            "money": 90
         },
         "duration_seconds": 72,
         "worker_required": 11,
         "input": [],
         "output": [
             {
-                "resource": "贸易容量",
+                "resource": "trade_capacity",
                 "rate_per_min": 607.5
             }
         ],
@@ -8460,17 +8460,17 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "石料": 100,
-            "砖": 80,
-            "铁": 20,
-            "资金": 150
+            "stone": 100,
+            "brick": 80,
+            "iron": 20,
+            "money": 150
         },
         "duration_seconds": 104,
         "worker_required": 11,
         "input": [],
         "output": [
             {
-                "resource": "贸易容量",
+                "resource": "trade_capacity",
                 "rate_per_min": 810
             }
         ],
@@ -8491,16 +8491,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "石料": 120,
-            "玻璃": 30,
-            "资金": 350
+            "stone": 120,
+            "glass": 30,
+            "money": 350
         },
         "duration_seconds": 180,
         "worker_required": 18,
         "input": [],
         "output": [
             {
-                "resource": "金融容量",
+                "resource": "finance_capacity",
                 "rate_per_min": 800
             }
         ],
@@ -8521,16 +8521,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "石料": 72,
-            "玻璃": 18,
-            "资金": 210
+            "stone": 72,
+            "glass": 18,
+            "money": 210
         },
         "duration_seconds": 100,
         "worker_required": 19,
         "input": [],
         "output": [
             {
-                "resource": "金融容量",
+                "resource": "finance_capacity",
                 "rate_per_min": 1080
             }
         ],
@@ -8551,16 +8551,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "石料": 120,
-            "玻璃": 30,
-            "资金": 350
+            "stone": 120,
+            "glass": 30,
+            "money": 350
         },
         "duration_seconds": 144,
         "worker_required": 20,
         "input": [],
         "output": [
             {
-                "resource": "金融容量",
+                "resource": "finance_capacity",
                 "rate_per_min": 1440
             }
         ],
@@ -8581,23 +8581,23 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "钢铁": 100,
-            "玻璃": 80,
-            "水泥": 80,
-            "电子元件": 25,
-            "资金": 800
+            "steel": 100,
+            "glass": 80,
+            "cement": 80,
+            "electronic_components": 25,
+            "money": 800
         },
         "duration_seconds": 280,
         "worker_required": 35,
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 20
             }
         ],
         "output": [
             {
-                "resource": "贸易容量",
+                "resource": "trade_capacity",
                 "rate_per_min": 3000
             }
         ],
@@ -8618,23 +8618,23 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "钢铁": 60,
-            "玻璃": 48,
-            "水泥": 48,
-            "电子元件": 15,
-            "资金": 480
+            "steel": 60,
+            "glass": 48,
+            "cement": 48,
+            "electronic_components": 15,
+            "money": 480
         },
         "duration_seconds": 154,
         "worker_required": 37,
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 23.6
             }
         ],
         "output": [
             {
-                "resource": "贸易容量",
+                "resource": "trade_capacity",
                 "rate_per_min": 4050
             }
         ],
@@ -8655,23 +8655,23 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "钢铁": 100,
-            "玻璃": 80,
-            "水泥": 80,
-            "电子元件": 25,
-            "资金": 800
+            "steel": 100,
+            "glass": 80,
+            "cement": 80,
+            "electronic_components": 25,
+            "money": 800
         },
         "duration_seconds": 224,
         "worker_required": 39,
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 29
             }
         ],
         "output": [
             {
-                "resource": "贸易容量",
+                "resource": "trade_capacity",
                 "rate_per_min": 5400
             }
         ],
@@ -8692,16 +8692,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 70,
-            "石料": 50,
-            "资金": 80
+            "wood": 70,
+            "stone": 50,
+            "money": 80
         },
         "duration_seconds": 100,
         "worker_required": 8,
         "input": [],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 3
             }
         ],
@@ -8722,16 +8722,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 42,
-            "石料": 30,
-            "资金": 48
+            "wood": 42,
+            "stone": 30,
+            "money": 48
         },
         "duration_seconds": 56,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 4.05
             }
         ],
@@ -8752,16 +8752,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 70,
-            "石料": 50,
-            "资金": 80
+            "wood": 70,
+            "stone": 50,
+            "money": 80
         },
         "duration_seconds": 80,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 5.4
             }
         ],
@@ -8782,16 +8782,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "石料": 120,
-            "砖": 80,
-            "资金": 180
+            "stone": 120,
+            "brick": 80,
+            "money": 180
         },
         "duration_seconds": 160,
         "worker_required": 16,
         "input": [],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 8
             }
         ],
@@ -8812,16 +8812,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "石料": 72,
-            "砖": 48,
-            "资金": 108
+            "stone": 72,
+            "brick": 48,
+            "money": 108
         },
         "duration_seconds": 88,
         "worker_required": 17,
         "input": [],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 10.8
             }
         ],
@@ -8842,16 +8842,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "石料": 120,
-            "砖": 80,
-            "资金": 180
+            "stone": 120,
+            "brick": 80,
+            "money": 180
         },
         "duration_seconds": 128,
         "worker_required": 18,
         "input": [],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 14.4
             }
         ],
@@ -8872,17 +8872,17 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "石料": 160,
-            "砖": 100,
-            "玻璃": 20,
-            "资金": 300
+            "stone": 160,
+            "brick": 100,
+            "glass": 20,
+            "money": 300
         },
         "duration_seconds": 210,
         "worker_required": 24,
         "input": [],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 14
             }
         ],
@@ -8903,17 +8903,17 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "石料": 96,
-            "砖": 60,
-            "玻璃": 12,
-            "资金": 180
+            "stone": 96,
+            "brick": 60,
+            "glass": 12,
+            "money": 180
         },
         "duration_seconds": 116,
         "worker_required": 26,
         "input": [],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 18.9
             }
         ],
@@ -8934,17 +8934,17 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "石料": 160,
-            "砖": 100,
-            "玻璃": 20,
-            "资金": 300
+            "stone": 160,
+            "brick": 100,
+            "glass": 20,
+            "money": 300
         },
         "duration_seconds": 168,
         "worker_required": 27,
         "input": [],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 25.2
             }
         ],
@@ -8965,23 +8965,23 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "钢铁": 100,
-            "玻璃": 80,
-            "水泥": 60,
-            "电子元件": 35,
-            "资金": 600
+            "steel": 100,
+            "glass": 80,
+            "cement": 60,
+            "electronic_components": 35,
+            "money": 600
         },
         "duration_seconds": 280,
         "worker_required": 32,
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 25
             }
         ],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 24
             }
         ],
@@ -9002,23 +9002,23 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "钢铁": 60,
-            "玻璃": 48,
-            "水泥": 36,
-            "电子元件": 21,
-            "资金": 360
+            "steel": 60,
+            "glass": 48,
+            "cement": 36,
+            "electronic_components": 21,
+            "money": 360
         },
         "duration_seconds": 154,
         "worker_required": 34,
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 29.5
             }
         ],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 32.4
             }
         ],
@@ -9039,23 +9039,23 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "钢铁": 100,
-            "玻璃": 80,
-            "水泥": 60,
-            "电子元件": 35,
-            "资金": 600
+            "steel": 100,
+            "glass": 80,
+            "cement": 60,
+            "electronic_components": 35,
+            "money": 600
         },
         "duration_seconds": 224,
         "worker_required": 36,
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 36.25
             }
         ],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 43.2
             }
         ],
@@ -9076,27 +9076,27 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "钢铁": 180,
-            "玻璃": 100,
-            "电子元件": 80,
-            "稀有金属": 20,
-            "资金": 1200
+            "steel": 180,
+            "glass": 100,
+            "electronic_components": 80,
+            "rare_metals": 20,
+            "money": 1200
         },
         "duration_seconds": 400,
         "worker_required": 55,
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 70
             },
             {
-                "resource": "先进材料",
+                "resource": "advanced_materials",
                 "rate_per_min": 3
             }
         ],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 50
             }
         ],
@@ -9117,27 +9117,27 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "钢铁": 108,
-            "玻璃": 60,
-            "电子元件": 48,
-            "稀有金属": 12,
-            "资金": 720
+            "steel": 108,
+            "glass": 60,
+            "electronic_components": 48,
+            "rare_metals": 12,
+            "money": 720
         },
         "duration_seconds": 221,
         "worker_required": 58,
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 82.6
             },
             {
-                "resource": "先进材料",
+                "resource": "advanced_materials",
                 "rate_per_min": 3.54
             }
         ],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 67.5
             }
         ],
@@ -9158,27 +9158,27 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "钢铁": 180,
-            "玻璃": 100,
-            "电子元件": 80,
-            "稀有金属": 20,
-            "资金": 1200
+            "steel": 180,
+            "glass": 100,
+            "electronic_components": 80,
+            "rare_metals": 20,
+            "money": 1200
         },
         "duration_seconds": 320,
         "worker_required": 61,
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 101.5
             },
             {
-                "resource": "先进材料",
+                "resource": "advanced_materials",
                 "rate_per_min": 4.35
             }
         ],
         "output": [
             {
-                "resource": "知识",
+                "resource": "knowledge",
                 "rate_per_min": 90
             }
         ],
@@ -9199,16 +9199,16 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "木材": 60,
-            "石料": 50,
-            "资金": 100
+            "wood": 60,
+            "stone": 50,
+            "money": 100
         },
         "duration_seconds": 120,
         "worker_required": 8,
         "input": [],
         "output": [
             {
-                "resource": "医疗容量",
+                "resource": "medical_capacity",
                 "rate_per_min": 120
             }
         ],
@@ -9229,16 +9229,16 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "木材": 36,
-            "石料": 30,
-            "资金": 60
+            "wood": 36,
+            "stone": 30,
+            "money": 60
         },
         "duration_seconds": 66,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "医疗容量",
+                "resource": "medical_capacity",
                 "rate_per_min": 162
             }
         ],
@@ -9259,16 +9259,16 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "木材": 60,
-            "石料": 50,
-            "资金": 100
+            "wood": 60,
+            "stone": 50,
+            "money": 100
         },
         "duration_seconds": 96,
         "worker_required": 9,
         "input": [],
         "output": [
             {
-                "resource": "医疗容量",
+                "resource": "medical_capacity",
                 "rate_per_min": 216
             }
         ],
@@ -9289,27 +9289,27 @@
         "level": 1,
         "cost_type": "建造",
         "cost": {
-            "钢铁": 70,
-            "玻璃": 50,
-            "水泥": 60,
-            "电子元件": 20,
-            "资金": 450
+            "steel": 70,
+            "glass": 50,
+            "cement": 60,
+            "electronic_components": 20,
+            "money": 450
         },
         "duration_seconds": 230,
         "worker_required": 24,
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 18
             },
             {
-                "resource": "药品",
+                "resource": "medicine",
                 "rate_per_min": 3
             }
         ],
         "output": [
             {
-                "resource": "医疗容量",
+                "resource": "medical_capacity",
                 "rate_per_min": 1000
             }
         ],
@@ -9330,27 +9330,27 @@
         "level": 2,
         "cost_type": "L1→L2升级",
         "cost": {
-            "钢铁": 42,
-            "玻璃": 30,
-            "水泥": 36,
-            "电子元件": 12,
-            "资金": 270
+            "steel": 42,
+            "glass": 30,
+            "cement": 36,
+            "electronic_components": 12,
+            "money": 270
         },
         "duration_seconds": 127,
         "worker_required": 26,
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 21.24
             },
             {
-                "resource": "药品",
+                "resource": "medicine",
                 "rate_per_min": 3.54
             }
         ],
         "output": [
             {
-                "resource": "医疗容量",
+                "resource": "medical_capacity",
                 "rate_per_min": 1350
             }
         ],
@@ -9371,27 +9371,27 @@
         "level": 3,
         "cost_type": "L2→L3升级",
         "cost": {
-            "钢铁": 70,
-            "玻璃": 50,
-            "水泥": 60,
-            "电子元件": 20,
-            "资金": 450
+            "steel": 70,
+            "glass": 50,
+            "cement": 60,
+            "electronic_components": 20,
+            "money": 450
         },
         "duration_seconds": 184,
         "worker_required": 27,
         "input": [
             {
-                "resource": "电力",
+                "resource": "electricity",
                 "rate_per_min": 26.1
             },
             {
-                "resource": "药品",
+                "resource": "medicine",
                 "rate_per_min": 4.35
             }
         ],
         "output": [
             {
-                "resource": "医疗容量",
+                "resource": "medical_capacity",
                 "rate_per_min": 1800
             }
         ],

@@ -46,6 +46,9 @@ Route::prefix('api')->group(function () {
         // 可建建筑列表:联查 L1 成本/产出,供前端建筑面板显示
         Route::get('/definitions/buildings', [\App\Http\Controllers\City\DefinitionController::class, 'buildings'])->middleware('throttle:api');
 
+        // 资源定义:code → 中文显示名(资源主键已英文化,前端显示名一律从这里取)
+        Route::get('/definitions/resources', [\App\Http\Controllers\City\DefinitionController::class, 'resources'])->middleware('throttle:api');
+
         // 建造:完整安全链(幂等/Revision/占地/上限/资源/审计)
         Route::post('/city/build', \App\Http\Controllers\City\BuildController::class)->middleware('throttle:api');
 
@@ -57,16 +60,22 @@ Route::prefix('api')->group(function () {
     });
 });
 
-// 管理后台:仅 admin 角色可访问
+// 管理后台(CLAUDE §63 角色分级):
+// 组级 'admin' 不带参数 = 兜底门槛(support 及以上才进得来,player 一律 403);
+// 单个端点再挂具体权限,按最小权限收紧。权限表见 App\Support\Role。
 Route::prefix('api/admin')->middleware(['auth:web', 'admin', 'throttle:api'])->group(function () {
-    // 只读:玩家列表 / 玩家详情(含城市摘要) / 审计日志
-    Route::get('/players', [\App\Http\Controllers\Admin\AdminReadController::class, 'players']);
-    Route::get('/players/{id}', [\App\Http\Controllers\Admin\AdminReadController::class, 'playerDetail'])->whereNumber('id');
-    Route::get('/audit', [\App\Http\Controllers\Admin\AdminReadController::class, 'audit']);
+    // 当前管理员身份:username/role/permissions,供后台按权限显隐 UI(任意管理角色可读自己的)
+    Route::get('/me', [\App\Http\Controllers\Admin\AdminReadController::class, 'me']);
 
-    // Definition 调整:某建筑三级可编辑字段快照 / 提交调整(allowlist + 审计 + 版本递增)
-    Route::get('/definitions/building-levels', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'buildingLevels']);
-    Route::post('/definitions/building-level', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editBuildingLevel']);
+    // 只读:玩家列表 / 玩家详情(含城市摘要) / 审计日志
+    Route::get('/players', [\App\Http\Controllers\Admin\AdminReadController::class, 'players'])->middleware('admin:read_player');
+    Route::get('/players/{id}', [\App\Http\Controllers\Admin\AdminReadController::class, 'playerDetail'])->whereNumber('id')->middleware('admin:read_player');
+    Route::get('/audit', [\App\Http\Controllers\Admin\AdminReadController::class, 'audit'])->middleware('admin:read_audit');
+
+    // Definition 调整:某建筑三级可编辑字段快照 / 提交调整(allowlist + 审计 + 版本递增)。
+    // 查看当前值是「调整流程」的第一步,与提交同挂 edit_definition:support / game_master 不碰游戏数值
+    Route::get('/definitions/building-levels', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'buildingLevels'])->middleware('admin:edit_definition');
+    Route::post('/definitions/building-level', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editBuildingLevel'])->middleware('admin:edit_definition');
 });
 
 // 仅测试环境:用于验证异常渲染,绝不在生产暴露
