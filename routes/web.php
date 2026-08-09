@@ -47,6 +47,9 @@ Route::prefix('api')->group(function () {
 
         // 升级:L1→L2→L3,严格所有权校验(越权 403 + 审计)
         Route::post('/city/upgrade', \App\Http\Controllers\City\UpgradeController::class)->middleware('throttle:api');
+
+        // 拆除:所有权校验(越权 403 + 审计),M1 不返还资源
+        Route::post('/city/demolish', \App\Http\Controllers\City\DemolishController::class)->middleware('throttle:api');
     });
 });
 
