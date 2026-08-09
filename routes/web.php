@@ -21,6 +21,9 @@ Route::prefix('api')->group(function () {
             'serverTime' => now()->toIso8601String(),
         ],
     ]));
+
+    // 注册接口:限流防刷
+    Route::middleware('throttle:api')->post('/auth/register', \App\Http\Controllers\Auth\RegisterController::class);
 });
 
 // 仅测试环境:用于验证异常渲染,绝不在生产暴露
