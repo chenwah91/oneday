@@ -8,8 +8,15 @@ Route::get('/', function () {
 });
 
 // 基础设施探针(供中间件/健康检查测试)
-Route::prefix('api')->group(function () {
+Route::prefix('api')->middleware('throttle:api')->group(function () {
     Route::get('/_ping', fn () => ApiResponse::ok(['data' => ['pong' => true]]));
+
+    Route::get('/health', fn () => ApiResponse::ok([
+        'data' => [
+            'status'     => 'ok',
+            'serverTime' => now()->toIso8601String(),
+        ],
+    ]));
 });
 
 // 仅测试环境:用于验证异常渲染,绝不在生产暴露
