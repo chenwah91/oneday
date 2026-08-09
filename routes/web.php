@@ -38,6 +38,9 @@ Route::prefix('api')->group(function () {
 
         // 登出:失效 session 并写审计
         Route::post('/auth/logout', [\App\Http\Controllers\Auth\SessionController::class, 'logout']);
+
+        // 城市只读快照:先结算再返回聚合状态
+        Route::get('/city', [\App\Http\Controllers\City\CityController::class, 'show']);
     });
 });
 
