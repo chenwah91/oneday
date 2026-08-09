@@ -163,21 +163,20 @@ Expected: 迁移成功;`apg` 库出现 `users`、`migrations`、`cache`、`jobs`
 
 - [ ] **Step 7: 写并跑一个配置健全性测试**
 
-Create `tests/Unit/ConfigTest.php`:
+Create `tests/Feature/ConfigTest.php`(继承 `Tests\TestCase` 以启动 Laravel,断言解析后的配置):
 ```php
 <?php
 
-namespace Tests\Unit;
+namespace Tests\Feature;
 
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 // 环境配置健全性:时区必须 UTC
 class ConfigTest extends TestCase
 {
-    public function test_app_timezone_env_defaults_to_utc(): void
+    public function test_app_timezone_is_utc(): void
     {
-        // 未设 APP_TIMEZONE 时应回落 UTC
-        $this->assertSame('UTC', env('APP_TIMEZONE', 'UTC'));
+        $this->assertSame('UTC', config('app.timezone'));
     }
 }
 ```
@@ -193,7 +192,7 @@ Expected: PASS。
 Run:
 ```bash
 cd "C:/Users/User/Documents/apg"
-git add .env.example config/app.php phpunit.xml tests/Unit/ConfigTest.php
+git add .env.example config/app.php phpunit.xml tests/Feature/ConfigTest.php
 git commit -m "M1P1 环境配置:MariaDB 连接、UTC 时区、测试库"
 ```
 (注:`.env` 已被 `.gitignore` 忽略,不入库。)
@@ -214,16 +213,17 @@ git commit -m "M1P1 环境配置:MariaDB 连接、UTC 时区、测试库"
   - `App\Support\ApiResponse::ok(array $data = [], int $status = 200): JsonResponse` — 输出 `{"success":true, ...$data}`
   - `App\Support\ApiResponse::fail(string $error, int $status = 400, array $extra = []): JsonResponse` — 输出 `{"success":false,"error":<code>,"requestId":<id>, ...$extra}`(`requestId` 取自 `Context::get('request_id')`,无则 `null`)
 
-- [ ] **Step 1: 写失败测试 `tests/Unit/ApiResponseTest.php`**
+- [ ] **Step 1: 写失败测试 `tests/Feature/ApiResponseTest.php`**
 
+`ApiResponse` 用到 `response()` 与 `Context` 门面,需启动 Laravel,故继承 `Tests\TestCase`:
 ```php
 <?php
 
-namespace Tests\Unit;
+namespace Tests\Feature;
 
 use App\Support\ApiResponse;
 use App\Support\ErrorCode;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 // ApiResponse 统一响应格式测试
 class ApiResponseTest extends TestCase
@@ -316,7 +316,7 @@ Expected: 2 个测试 PASS。
 Run:
 ```bash
 cd "C:/Users/User/Documents/apg"
-git add app/Support/ErrorCode.php app/Support/ApiResponse.php tests/Unit/ApiResponseTest.php
+git add app/Support/ErrorCode.php app/Support/ApiResponse.php tests/Feature/ApiResponseTest.php
 git commit -m "M1P1 稳定错误码与统一 JSON 响应"
 ```
 
