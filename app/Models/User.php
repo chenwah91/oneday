@@ -48,4 +48,10 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    // 用户的城市(一对一,注册时由 CityFactory 建城)
+    public function city(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(\App\Models\City::class);
+    }
 }

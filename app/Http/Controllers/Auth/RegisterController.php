@@ -29,6 +29,8 @@ class RegisterController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
+        \App\Game\City\CityFactory::createForUser($user);
+
         AuditLogger::record(AuditAction::AUTH_REGISTER, 'success', [
             'actor_id' => $user->id,
             'user_id'  => $user->id,
