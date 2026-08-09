@@ -15,7 +15,7 @@
 | P4 | 城市 Runtime + Snapshot + Time Delta 地基 | `2026-08-09-m1-p4-city-runtime.md` | ✅ 已完成 (v0.7.0) |
 | P5 | 建造/升级/拆除(全安全链) | `2026-08-09-m1-p5-build-upgrade.md` | 🚧 执行中 |
 | P6 | 生产结算 + 人口粮食 + 存储 + 离线 | (已并入 P4 模拟) | ✅ 随 P4 |
-| P7 | 前端最小可玩(Vanilla JS + PixiJS + PWA 壳) | — | 待做 |
+| P7 | 前端最小可玩(Vanilla JS + PixiJS + PWA 壳) | `2026-08-09-m1-p7-frontend.md` | 🚧 执行中 |
 | P8 | 管理后台雏形(Definition 调整 + 审计查看) | — | 待写 |
 | P9 | M1 收尾(回归测试 + 发布前安全检查 + test 部署) | — | 待写 |
 
