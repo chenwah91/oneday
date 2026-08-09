@@ -62,6 +62,10 @@ Route::prefix('api/admin')->middleware(['auth:web', 'admin', 'throttle:api'])->g
     Route::get('/players', [\App\Http\Controllers\Admin\AdminReadController::class, 'players']);
     Route::get('/players/{id}', [\App\Http\Controllers\Admin\AdminReadController::class, 'playerDetail'])->whereNumber('id');
     Route::get('/audit', [\App\Http\Controllers\Admin\AdminReadController::class, 'audit']);
+
+    // Definition 调整:某建筑三级可编辑字段快照 / 提交调整(allowlist + 审计 + 版本递增)
+    Route::get('/definitions/building-levels', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'buildingLevels']);
+    Route::post('/definitions/building-level', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editBuildingLevel']);
 });
 
 // 仅测试环境:用于验证异常渲染,绝不在生产暴露
