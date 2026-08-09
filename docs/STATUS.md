@@ -1,13 +1,13 @@
 # 当前进度快照
 
-> 最后更新:2026-08-10
+> 最后更新:2026-08-10(晚)
 > 用途:关闭会话后直接读这份就能续上。数值权威 `docs/templates/v3.1.md`;架构 `/CLAUDE.md`;安全 `/SECURITY.md`;计划索引 `docs/superpowers/plans/README.md`。
 
 ---
 
 ## 一句话状态
 
-**M1 核心循环版(P1–P9)已全部完成、浏览器实测通过、已推送到 `oneday.git`(HEAD `0adf40c`)。** 工作区干净,无未提交改动。等待用户测试与讨论,再决定 M2。
+**M1 完成后已做 M2 全面盘点(`docs/superpowers/plans/2026-08-10-m2-backlog.md`,约 95 项),并完成 v1.0.1:修复盘点发现的 5 个 M1 遗留缺陷(含 2 个可刷资源漏洞:加工链缺料出货、Mutation 用过期快照扣款)。测试 88 passed。** 本地已提交,push 待用户确认;M2 开工前需先回答 backlog 第 6 节「必须拍板的问题」。
 
 ---
 
@@ -32,7 +32,8 @@
 | P8 | 管理后台:角色隔离 + 审计查看 + Definition 调整(`public/admin/`) |
 | P9 | 收尾:§15 回归测试 + `artisan release:check` + `docs/deploy.md` + `CHANGELOG.md` |
 
-- **测试:76 passed。** P2/P5/P8 各做对抗式安全审查并修复(登录限流防绕过、结算并发 clobber、升级双花、管理员负值造钱、role 防质量赋值提权等)。
+- **测试:88 passed**(76 + v1.0.1 缺陷修复新增 12)。P2/P5/P8 各做对抗式安全审查并修复(登录限流防绕过、结算并发 clobber、升级双花、管理员负值造钱、role 防质量赋值提权等)。
+- **v1.0.1(2026-08-10)**:修复 5 个 M1 遗留缺陷——①加工链缺料照样出货(库存满足率限流);②Mutation 事务内先行 Time Delta 结算(`SimulationService::applyLocked`);③离线结算封顶 12h;④拆除接入幂等+Revision;⑤幂等键校验 action+请求指纹(新迁移 `2026_08_10_100001` 加 city_id/request_hash 列)。详见 CHANGELOG v1.0.1。
 - 浏览器实测:游戏(注册→建城→建农田→粮食转正养人口)+ 后台(登录→看审计→改数值 V3.1.1)。
 
 ## 怎么运行 / 测试
