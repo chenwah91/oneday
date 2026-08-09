@@ -10,8 +10,8 @@
 
 | 项 | 决定 | 说明 |
 |----|------|------|
-| 后端 | **Laravel 12** | PHP 8.2+ 兼容(本地 8.2.12 / 线上 8.3);Laravel 13 需 PHP 8.3,故不选 |
-| 数据库 | **MySQL 5.7.39** | Laravel 官方支持 5.7+;⚠️ 5.7 无窗口函数/CTE,建表与查询避开 |
+| 后端 | **Laravel 12**(已确认) | PHP 8.2+ 兼容(本地 8.2.12 / 线上 8.3);Laravel 13 需 PHP 8.3,故不选 |
+| 数据库 | **本地 MariaDB 10.4 / 线上 MySQL 5.7.39**(已确认) | 双环境!差异记入 `docs/ops/db-mariadb-vs-mysql57.md`,上线时按记录调整。⚠️ 两者都要避开窗口函数/CTE(MySQL 5.7 不支持),即使本地 MariaDB 能跑也不用 |
 | 前端 | Vanilla HTML/CSS/JS ES Modules + PixiJS | 无框架、无构建工具 |
 | 架构 | Modular Monolith,`app/Game/*` 模块 | 见 CLAUDE §11 |
 | 认证 | **Laravel Session Auth**(Cookie HttpOnly + CSRF) | 非 token;取代旧的自制 sha256 token |
@@ -49,6 +49,8 @@
 - 安全触点:Request ID、Error Hiding、Debug off 基线
 
 ### P2 — 账号系统(Session Auth)+ Authorization 骨架 + 审计地基
+- **注册字段(已确认)**:用户名、email、密码、手机号(选填)。`users` 表加 `username`(唯一)、`phone`(可空)
+- **登录**:用「用户名 + 密码」(email 可作为备用登录标识,P2 细化时定)
 - 注册 / 登录 / 登出(Laravel Auth + `Hash` bcrypt;Session 重生成;Secure/HttpOnly/SameSite Cookie)
 - 登录失败 **Rate Limit** + `AUTH.LOGIN_SUCCESS/FAILED` 审计
 - `audit_logs` 表落地(SECURITY §54 字段)+ 最小 Audit 写入服务
@@ -132,16 +134,17 @@ P7 前端可与 P8 后台并行(都在 P6 之后)。
 
 ---
 
-## 5. 需要你拍板的开放问题(动 P1 前最好先定)
+## 5. 已锁定决策(2026-08-09 用户确认)
 
-1. **Laravel 版本**:按 **Laravel 12**(不动本地 PHP)?还是你要本地 PHP 升 8.3 用 Laravel 13?
-2. **MySQL 5.7.39 在哪**:是**本地**装的,还是**线上 cPanel** 的?本地开发要连的那台的 host/port/账号密码给我(本地 XAMPP 现在是 MariaDB,若本地无 MySQL 需先装或直接用 MariaDB 本地开发、线上才 MySQL)。
-3. **开局初始数值**:新玩家建城给多少初始资源/人口/地图尺寸?v3.1 未明确规定,需要你定(或我先给一版草案你改)。
-4. **P8 管理后台范围**:M1 只做「查看审计 + 调 Definition」够吗?还是要连「给玩家补资源(ADMIN.COMPENSATION)」也进 M1?
-5. **地图与开局玩法**:等距地图初始大小、建造网格规则,先用最简(固定小地图)可以吗?
+1. **Laravel 版本** = 12(不动本地 PHP)。
+2. **数据库双环境** = 本地 MariaDB 10.4 开发 / 线上 MySQL 5.7.39。差异记入 `docs/ops/db-mariadb-vs-mysql57.md`,上线时按记录调整。⚠️ 两者都避开窗口函数/CTE 等 MySQL 5.7 不支持的语法。
+3. **注册字段** = 用户名 + email + 密码 + 手机号(选填)。登录用「用户名 + 密码」。
+4. **开局初始数值** = 先随机给(合理区间),之后由**管理员后台设定**;建城逻辑用可配置随机区间。
+5. **P8 后台 M1 范围** = 只做「查审计 + 调 Definition」。**给玩家补资源(ADMIN.COMPENSATION)延后 M2**,加入时必须带审计(Admin ID + Reason + Delta)。
+6. **地图** = 先用最简固定小地图。
 
 ---
 
 ## 6. 下一步
 
-你 review 本路线图 + 回答第 5 节开放问题后,我按 `superpowers:writing-plans` 展开 **P1 的逐步详细计划**给你 review,再开始写代码。
+展开 **P1 的逐步详细计划**(`superpowers:writing-plans`)给你 review,再开始写代码。
