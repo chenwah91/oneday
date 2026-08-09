@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\City;
 
+use App\Game\Building\GameRuleException;
 use App\Game\City\CityFactory;
 use App\Http\Controllers\Controller;
 use App\Support\ApiResponse;
@@ -34,20 +35,31 @@ class DemolishController extends Controller
             return ApiResponse::fail(ErrorCode::FORBIDDEN, 403);
         }
 
-        $newRevision = DB::transaction(function () use ($city, $instanceId, $inst) {
-            $locked = DB::table('cities')->where('id', $city->id)->lockForUpdate()->first();
-            DB::table('city_building_instances')->where('id', $instanceId)->delete();
-            $rev = (int) $locked->revision + 1;
-            DB::table('cities')->where('id', $city->id)->update(['revision' => $rev]);
-            AuditLogger::record(AuditAction::BUILDING_DEMOLISH, 'success', [
-                'actor_id' => $city->user_id, 'user_id' => $city->user_id, 'city_id' => $city->id,
-                'entity_type' => 'building', 'entity_id' => (string) $instanceId,
-                'city_revision_before' => (int) $locked->revision, 'city_revision_after' => $rev,
-                'metadata_json' => ['buildingId' => $inst->building_id],
-            ]);
+        try {
+            $newRevision = DB::transaction(function () use ($city, $instanceId, $inst) {
+                $locked = DB::table('cities')->where('id', $city->id)->lockForUpdate()->first();
 
-            return $rev;
-        });
+                // 限定 city_id 并校验影响行数:防止实例在所有权校验与加锁之间被并发拆除,产生"假成功"(revision 空涨)
+                $affected = DB::table('city_building_instances')->where('id', $instanceId)->where('city_id', $city->id)->delete();
+                if ($affected !== 1) {
+                    throw new GameRuleException(ErrorCode::NOT_FOUND, 404);
+                }
+
+                $rev = (int) $locked->revision + 1;
+                DB::table('cities')->where('id', $city->id)->update(['revision' => $rev]);
+                AuditLogger::record(AuditAction::BUILDING_DEMOLISH, 'success', [
+                    'actor_id' => $city->user_id, 'user_id' => $city->user_id, 'city_id' => $city->id,
+                    'entity_type' => 'building', 'entity_id' => (string) $instanceId,
+                    'city_revision_before' => (int) $locked->revision, 'city_revision_after' => $rev,
+                    'before_json' => ['level' => $inst->level, 'x' => $inst->x, 'y' => $inst->y],
+                    'metadata_json' => ['buildingId' => $inst->building_id],
+                ]);
+
+                return $rev;
+            });
+        } catch (GameRuleException $e) {
+            return ApiResponse::fail($e->errorCode, $e->status);
+        }
 
         return ApiResponse::ok(['data' => ['revision' => $newRevision, 'demolishedId' => $instanceId]]);
     }

@@ -36,6 +36,21 @@ class UpgradeTest extends TestCase
         $this->actingAs($u)->postJson('/api/city/upgrade', ['instanceId' => $id])->assertStatus(422);
     }
 
+    public function test_upgrade_is_idempotent(): void
+    {
+        [$u, $city, $id] = $this->makeUserWithFarm('upgrader2');
+        $wood = fn () => (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '木材')->value('amount');
+        $before = $wood();
+
+        // F02 L1→L2 花费:木材12/石料3/资金8
+        $body = ['instanceId' => $id, 'idempotencyKey' => 'upgrade-fixed-key-1'];
+        $this->actingAs($u)->postJson('/api/city/upgrade', $body)->assertOk();
+        $this->actingAs($u)->postJson('/api/city/upgrade', $body)->assertOk(); // 重复请求:同一 key,不再扣费/不再升级
+
+        $this->assertSame(2, (int) CityBuildingInstance::find($id)->level); // 停在 L2,未被重复升到 L3
+        $this->assertSame($before - 12, $wood()); // 只扣了一次木材
+    }
+
     public function test_cannot_upgrade_another_players_building(): void
     {
         [$ua, $ca, $ida] = $this->makeUserWithFarm('ownerA');

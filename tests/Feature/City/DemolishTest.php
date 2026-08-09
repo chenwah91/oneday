@@ -26,6 +26,23 @@ class DemolishTest extends TestCase
         $this->assertSame('BUILDING.DEMOLISH', DB::table('audit_logs')->latest('id')->first()->action);
     }
 
+    public function test_double_demolish_does_not_phantom(): void
+    {
+        $u = User::create(['username' => 'razer2', 'name' => 'razer2', 'email' => 'r2@z.com', 'password' => 'password123']);
+        $city = CityFactory::createForUser($u);
+        $id = CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'F02', 'level' => 1, 'x' => 1, 'y' => 1, 'status' => 'active'])->id;
+
+        $this->actingAs($u)->postJson('/api/city/demolish', ['instanceId' => $id])->assertOk();
+        $revisionAfterFirst = (int) DB::table('cities')->where('id', $city->id)->value('revision');
+
+        // 同一实例再次拆除:应返回 404,且不产生"假成功"的 revision 空涨
+        $this->actingAs($u)->postJson('/api/city/demolish', ['instanceId' => $id])
+            ->assertStatus(404)->assertJson(['error' => 'NOT_FOUND']);
+        $revisionAfterSecond = (int) DB::table('cities')->where('id', $city->id)->value('revision');
+
+        $this->assertSame($revisionAfterFirst, $revisionAfterSecond);
+    }
+
     public function test_cannot_demolish_others_building(): void
     {
         $ua = User::create(['username' => 'da', 'name' => 'da', 'email' => 'da@x.com', 'password' => 'password123']);

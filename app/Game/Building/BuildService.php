@@ -26,10 +26,21 @@ class BuildService
             throw new GameRuleException(ErrorCode::INVALID_BUILDING, 422);
         }
         $lvl = DB::table('building_level_definition')->where('building_id', $buildingId)->where('level', 1)->first();
+        if (! $lvl) {
+            throw new GameRuleException(ErrorCode::INVALID_BUILDING, 422);
+        }
         $cost = json_decode($lvl->cost_json, true) ?: [];
 
         return DB::transaction(function () use ($city, $def, $buildingId, $x, $y, $cost, $idempotencyKey, $expectedRevision) {
             $locked = DB::table('cities')->where('id', $city->id)->lockForUpdate()->first();
+
+            // 幂等:锁后重新校验,关闭"锁前检查、锁后写入"之间的并发窗口(TOCTOU)
+            if ($idempotencyKey !== null) {
+                $existing = DB::table('idempotency_keys')->where('user_id', $city->user_id)->where('key', $idempotencyKey)->first();
+                if ($existing) {
+                    return self::snapshotDiff($city->fresh());
+                }
+            }
 
             if ($expectedRevision !== null && (int) $locked->revision !== $expectedRevision) {
                 throw new GameRuleException(ErrorCode::REVISION_CONFLICT, 409);

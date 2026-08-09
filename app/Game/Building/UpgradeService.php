@@ -27,19 +27,35 @@ class UpgradeService
             throw new GameRuleException(ErrorCode::FORBIDDEN, 403);
         }
 
-        if ((int) $inst->level >= 3) {
-            throw new GameRuleException(ErrorCode::BUILDING_LIMIT_REACHED, 422);
+        // 幂等:同一 user+key 已处理则直接成功返回(不重复扣费/升级),与 BuildService 对齐
+        if ($idempotencyKey !== null) {
+            $existing = DB::table('idempotency_keys')->where('user_id', $city->user_id)->where('key', $idempotencyKey)->first();
+            if ($existing) {
+                return self::snapshot($city->fresh(), $instanceId);
+            }
         }
 
-        $nextLevel = (int) $inst->level + 1;
-        $lvl = DB::table('building_level_definition')->where('building_id', $inst->building_id)->where('level', $nextLevel)->first();
-        $cost = json_decode($lvl->cost_json, true) ?: [];
-
-        return DB::transaction(function () use ($city, $inst, $instanceId, $nextLevel, $cost, $expectedRevision, $idempotencyKey) {
+        return DB::transaction(function () use ($city, $instanceId, $expectedRevision, $idempotencyKey) {
             $locked = DB::table('cities')->where('id', $city->id)->lockForUpdate()->first();
             if ($expectedRevision !== null && (int) $locked->revision !== $expectedRevision) {
                 throw new GameRuleException(ErrorCode::REVISION_CONFLICT, 409);
             }
+
+            // 加锁后重新读取实例:防止并发拆除导致的幽灵升级(instance 已不存在则视为 NOT_FOUND)
+            $inst = DB::table('city_building_instances')->where('id', $instanceId)->where('city_id', $city->id)->first();
+            if (! $inst) {
+                throw new GameRuleException(ErrorCode::NOT_FOUND, 404);
+            }
+            if ((int) $inst->level >= 3) {
+                throw new GameRuleException(ErrorCode::BUILDING_LIMIT_REACHED, 422);
+            }
+
+            $nextLevel = (int) $inst->level + 1;
+            $lvl = DB::table('building_level_definition')->where('building_id', $inst->building_id)->where('level', $nextLevel)->first();
+            if (! $lvl) {
+                throw new GameRuleException(ErrorCode::INVALID_BUILDING, 422);
+            }
+            $cost = json_decode($lvl->cost_json, true) ?: [];
 
             // 资源足额(资金单列在 cities.money)
             $resAmounts = DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id');
@@ -56,10 +72,28 @@ class UpgradeService
                 $delta[$res] = -$amt;
             }
 
-            DB::table('city_building_instances')->where('id', $instanceId)->update(['level' => $nextLevel, 'updated_at' => now()]);
+            // 影响行数校验:防止实例在扣款与写级之间被并发拆除,产生"扣了钱但没升级"的幽灵升级
+            $affected = DB::table('city_building_instances')->where('id', $instanceId)->where('city_id', $city->id)
+                ->update(['level' => $nextLevel, 'updated_at' => now()]);
+            if ($affected === 0) {
+                throw new GameRuleException(ErrorCode::NOT_FOUND, 404);
+            }
+
+            // 不变量:资源不为负(扣前已校验,双保险)
+            $neg = DB::table('city_resources')->where('city_id', $city->id)->where('amount', '<', 0)->count();
+            if ($neg > 0 || (float) DB::table('cities')->where('id', $city->id)->value('money') < 0) {
+                throw new GameRuleException(ErrorCode::INSUFFICIENT_RESOURCE, 422);
+            }
 
             $newRevision = (int) $locked->revision + 1;
             DB::table('cities')->where('id', $city->id)->update(['revision' => $newRevision]);
+
+            if ($idempotencyKey !== null) {
+                DB::table('idempotency_keys')->insert([
+                    'user_id' => $city->user_id, 'key' => $idempotencyKey, 'action' => AuditAction::BUILDING_UPGRADE,
+                    'response_status' => 200, 'created_at' => now(),
+                ]);
+            }
 
             AuditLogger::record(AuditAction::BUILDING_UPGRADE, 'success', [
                 'actor_id' => $city->user_id, 'user_id' => $city->user_id, 'city_id' => $city->id,
@@ -77,5 +111,19 @@ class UpgradeService
                 'delta'     => $delta,
             ];
         });
+    }
+
+    // 幂等重放:返回当前实例/资源快照,不重复扣费/升级
+    private static function snapshot(City $city, int $instanceId): array
+    {
+        $level = (int) DB::table('city_building_instances')->where('id', $instanceId)->value('level');
+
+        return [
+            'revision'  => (int) $city->revision,
+            'building'  => ['id' => $instanceId, 'level' => $level],
+            'resources' => DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all(),
+            'money'     => (float) $city->money,
+            'delta'     => [],
+        ];
     }
 }

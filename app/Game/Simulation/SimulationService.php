@@ -51,7 +51,11 @@ class SimulationService
 
         if ($elapsed > 0) {
             DB::transaction(function () use ($city, $ratePerMin, $elapsed, $storageCap, $maintenanceMoneyPerMin, $now) {
+                // 先锁城市行:与 build/upgrade/demolish 用同一把锁串行化,避免用事务前的旧快照覆盖并发中的扣款/扣建
+                $locked = DB::table('cities')->where('id', $city->id)->lockForUpdate()->first();
+
                 $minutes = $elapsed / 60.0;
+                // 加锁后再读资源现值,确保是并发写入之后的最新值
                 $current = DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id');
 
                 foreach ($ratePerMin as $res => $rate) {
@@ -64,7 +68,7 @@ class SimulationService
                     );
                 }
 
-                $money = max(0, (float) $city->money - $maintenanceMoneyPerMin * $minutes);
+                $money = max(0, (float) $locked->money - $maintenanceMoneyPerMin * $minutes);
                 DB::table('cities')->where('id', $city->id)->update([
                     'money'             => $money,
                     'last_simulated_at' => $now,
