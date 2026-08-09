@@ -1,9 +1,14 @@
-/* 地图舞台与建造面板容器(PixiJS 挂载点,后续任务填充) */
+/* 地图舞台与建造面板容器(PixiJS 挂载点) */
 #stage {
     flex: 1;
     position: relative;
     overflow: hidden;
     background: #0d1116;
+}
+
+#stage canvas {
+    display: block;
+    touch-action: none; /* 交给 Pixi 自行处理拖拽/缩放手势,避免浏览器默认滚动干扰 */
 }
 
 #panel {
@@ -13,4 +18,97 @@
 
 #panel:empty {
     display: none;
+}
+
+/* 建造面板:底部停靠,横向可滚动的建筑按钮列表(移动端友好) */
+.build-panel {
+    display: flex;
+    flex-direction: column;
+    max-height: 40vh;
+}
+
+.build-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+}
+
+.build-panel-title {
+    font-size: 13px;
+    color: #9aa4b2;
+    font-weight: 600;
+}
+
+.build-cancel-btn {
+    margin-left: auto;
+    padding: 5px 12px;
+    border: 1px solid #ff6b6b;
+    border-radius: 8px;
+    background: rgba(255, 107, 107, 0.12);
+    color: #ff6b6b;
+    font-size: 12px;
+}
+
+.build-list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 0 10px 10px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.build-item {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: 96px;
+    padding: 8px 12px;
+    border: 1px solid #2a3140;
+    border-radius: 10px;
+    background: #232a36;
+    color: #e8eaed;
+}
+
+.build-item.active {
+    border-color: #5b8def;
+    background: rgba(91, 141, 239, 0.18);
+}
+
+.build-item-name {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.build-item-cost {
+    font-size: 11px;
+    color: #9aa4b2;
+    white-space: nowrap;
+}
+
+/* 轻量 toast 提示(建造失败等) */
+.game-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translate(-50%, 12px);
+    padding: 10px 16px;
+    background: #232a36;
+    border: 1px solid #ff6b6b;
+    color: #ff6b6b;
+    border-radius: 10px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 100;
+    max-width: 80vw;
+    text-align: center;
+}
+
+.game-toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
 }
