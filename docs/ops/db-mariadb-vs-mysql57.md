@@ -20,7 +20,7 @@
 
 | 日期 | 位置(Migration/文件) | 差异 | 本地(MariaDB)表现 | 线上(MySQL 5.7)预期 | 上线动作 |
 |------|----------------------|------|----------------------|------------------------|----------|
-| — | (暂无) | | | | |
+| 2026-08-09 | 定义表迁移(building_level_definition 等 JSON 列) | MariaDB 把 `json()` 实现为 `longtext` + 引擎自动加 `CHECK (json_valid(col))` | 列类型显示为 longtext,带 json_valid CHECK | MySQL 5.7 为原生 `JSON` 类型,无该 CHECK | 上线在 MySQL 5.7 实跑迁移确认 JSON 列正常;应用层不依赖该 CHECK |
 
 ## 上线前 DB 核对清单(P9 收尾用)
 
