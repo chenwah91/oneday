@@ -235,4 +235,95 @@ class EconomyRegressionTest extends TestCase
         DB::table('cities')->where('id', $city->id)->update(['population' => 139, 'money' => 100000]);
         DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '粮食')->update(['amount' => 400]);
     }
+
+    // ---- M1 缺陷:加工建筑缺料照样出货(凭空造成品)→ 保守库存满足率 ----
+    //
+    // 主用例建筑 P01 磨坊 L1:投入 粮食 10/min、产出 面粉 8/min、维护 资金 2/min。
+    // 为让断言精确,统一把人口设为 0(排除人口吃粮),并保证城里只有磨坊。
+
+    // 缺料:粮食为 0 时不得产出任何面粉,粮食不为负,但维护费照扣
+    public function test_processing_without_input_produces_nothing(): void
+    {
+        $base = Carbon::parse('2026-01-01 00:00:00');
+        Carbon::setTestNow($base);
+        $city = $this->cityWithMills('millzero', 1, 0);
+
+        Carbon::setTestNow($base->copy()->addMinutes(10));
+        SimulationService::simulate($city->fresh());
+
+        $this->assertSame(0.0, $this->amountOf($city, '面粉'), '缺料时不得凭空造出面粉');
+        $this->assertSame(0.0, $this->amountOf($city, '粮食'), '粮食停在 0,不为负');
+        // 维护 资金 2/min × 10min = 20:建筑闲置也照付维护
+        $this->assertEqualsWithDelta(10000 - 20, $this->moneyOf($city), 0.01, '维护资金不受满足率影响');
+    }
+
+    // 半料:库存 50、需求 100 → 满足率 0.5,产出同比例打折,原料恰好耗尽
+    public function test_processing_partial_input_scales_output(): void
+    {
+        $base = Carbon::parse('2026-01-01 00:00:00');
+        Carbon::setTestNow($base);
+        $city = $this->cityWithMills('millhalf', 1, 50);
+
+        Carbon::setTestNow($base->copy()->addMinutes(10));
+        SimulationService::simulate($city->fresh());
+
+        // recipeRate = 50/100 = 0.5 → 面粉 8×0.5×10 = 40,粮食 10×0.5×10 = 50 全部吃光
+        $this->assertEqualsWithDelta(40, $this->amountOf($city, '面粉'), 0.01, '面粉应按满足率 0.5 打折');
+        $this->assertEqualsWithDelta(0, $this->amountOf($city, '粮食'), 0.01, '粮食恰好耗尽');
+    }
+
+    // 多栋共享同一原料:需求经 demand 汇总,总消耗不得超过库存
+    public function test_processing_multiple_buildings_share_stock(): void
+    {
+        $base = Carbon::parse('2026-01-01 00:00:00');
+        Carbon::setTestNow($base);
+        $city = $this->cityWithMills('millpair', 2, 100);
+
+        Carbon::setTestNow($base->copy()->addMinutes(10));
+        SimulationService::simulate($city->fresh());
+
+        // 总需求 2×10×10 = 200,库存 100 → 每栋 recipeRate = 0.5
+        // 面粉合计 2×8×0.5×10 = 80;粮食合计消耗 2×10×0.5×10 = 100,恰好耗尽且绝不超扣
+        $this->assertEqualsWithDelta(80, $this->amountOf($city, '面粉'), 0.01, '两栋磨坊合计产 80 面粉');
+        $this->assertEqualsWithDelta(0, $this->amountOf($city, '粮食'), 0.01, '共享库存被恰好耗尽,不超扣');
+    }
+
+    // 料充足:满足率为 1,数值与"未打折"的正确路径完全一致
+    public function test_processing_with_enough_input_is_unaffected(): void
+    {
+        $base = Carbon::parse('2026-01-01 00:00:00');
+        Carbon::setTestNow($base);
+        $city = $this->cityWithMills('millfull', 1, 1000);
+
+        Carbon::setTestNow($base->copy()->addMinutes(10));
+        SimulationService::simulate($city->fresh());
+
+        $this->assertEqualsWithDelta(80, $this->amountOf($city, '面粉'), 0.01, '料足时面粉 8/min × 10min');
+        $this->assertEqualsWithDelta(900, $this->amountOf($city, '粮食'), 0.01, '料足时粮食 10/min × 10min');
+    }
+
+    // 加工建筑用例的统一初值:只摆 N 座 P01 磨坊,人口 0(排除人口吃粮),资金 10000,粮食指定
+    private function cityWithMills(string $un, int $count, float $food): City
+    {
+        $u = User::create(['username' => $un, 'name' => $un, 'email' => "$un@x.com", 'password' => 'password123']);
+        $city = CityFactory::createForUser($u);
+        DB::table('city_building_instances')->where('city_id', $city->id)->delete(); // 确保城里只有磨坊
+        for ($i = 0; $i < $count; $i++) {
+            CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'P01', 'level' => 1, 'x' => 1 + $i * 4, 'y' => 1, 'status' => 'active']);
+        }
+        DB::table('cities')->where('id', $city->id)->update(['population' => 0, 'money' => 10000]);
+        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', '粮食')->update(['amount' => $food]);
+        return $city;
+    }
+
+    // 读资源现值(行不存在时按 0)
+    private function amountOf(City $city, string $resourceId): float
+    {
+        return (float) (CityResource::where('city_id', $city->id)->where('resource_id', $resourceId)->value('amount') ?? 0);
+    }
+
+    private function moneyOf(City $city): float
+    {
+        return (float) DB::table('cities')->where('id', $city->id)->value('money');
+    }
 }

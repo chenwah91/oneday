@@ -46,41 +46,82 @@ class SimulationService
             ->select('bl.output_json', 'bl.input_json', 'bl.maintenance_money_per_min', 'bl.maintenance_food_per_min')
             ->get();
 
+        // 锁后再读资源现值,确保是并发写入之后的最新值
+        // (必须先于速率计算:加工建筑的"库存满足率"要拿现值当分子)
+        $resources = DB::table('city_resources')->where('city_id', $lockedCity->id)
+            ->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all();
+        $money = (float) $lockedCity->money;
+        $minutes = $elapsed / 60.0;
+
         $ratePerMin = [];   // 资源 => 每分钟净速率
         $storageCap = SimConstants::BASE_STORAGE;
         $populationCap = 0;
         $maintenanceMoneyPerMin = 0.0;
+        $processing = [];   // 加工建筑(有 input 的等级行):[['in' => [资源=>速率], 'out' => [资源=>速率]], ...]
 
         foreach ($levels as $lv) {
+            $in = [];
+            foreach (json_decode($lv->input_json ?: '[]', true) as $i) {
+                $res = $i['resource'];
+                $in[$res] = ($in[$res] ?? 0) + (float) $i['rate_per_min'];
+            }
+
+            $out = [];
             foreach (json_decode($lv->output_json ?: '[]', true) as $o) {
                 $res = $o['resource']; $r = (float) $o['rate_per_min'];
                 if ($res === '仓储容量') { $storageCap += $r; continue; }
                 if ($res === '人口容量') { $populationCap += $r; continue; }
                 if (in_array($res, SimConstants::CAPACITY_OUTPUTS, true)) { continue; } // 其他容量:M1 不结算
-                $ratePerMin[$res] = ($ratePerMin[$res] ?? 0) + $r;
+                $out[$res] = ($out[$res] ?? 0) + $r;
             }
-            foreach (json_decode($lv->input_json ?: '[]', true) as $i) {
-                $res = $i['resource']; $r = (float) $i['rate_per_min'];
-                $ratePerMin[$res] = ($ratePerMin[$res] ?? 0) - $r;
+
+            if ($in) {
+                // 加工建筑:产出/投入都要按原料满足率打折,推迟到下面两遍计算里再并入净速率
+                $processing[] = ['in' => $in, 'out' => $out];
+            } else {
+                // 无投入的建筑(采集/农田等):产出直接并入净速率
+                foreach ($out as $res => $r) { $ratePerMin[$res] = ($ratePerMin[$res] ?? 0) + $r; }
             }
-            // 维护粮食计入粮食支出
+
+            // 维护粮食计入粮食支出(不是配方投入,不参与满足率;缺粮时仍由下面的 max(0,…) 夹住)
             $mf = (float) $lv->maintenance_food_per_min;
             if ($mf > 0) { $ratePerMin['粮食'] = ($ratePerMin['粮食'] ?? 0) - $mf; }
+            // 维护资金不受满足率影响:建筑闲置也照付维护
             $maintenanceMoneyPerMin += (float) $lv->maintenance_money_per_min;
+        }
+
+        // 加工建筑限流:保守库存满足率(修 M1 经济漏洞——缺料照样出货 = 凭空造成品)
+        // 两遍计算:先按库存算出每种原料的全局满足率,再让每栋建筑取其配方中最稀缺原料的满足率打折。
+        // 保守性:不计入"本区间内上游同时在生产该原料"(如 P01 本区间产的面粉不能立刻喂给 P02),
+        // 宁可少产不可多产;精确的分段结算留给 M2。
+        if ($processing) {
+            // 第一遍:汇总本区间各原料的总需求(多栋共享同一原料时天然合并,总消耗不会超过库存)
+            $demand = [];
+            foreach ($processing as $p) {
+                foreach ($p['in'] as $res => $r) { $demand[$res] = ($demand[$res] ?? 0) + $r * $minutes; }
+            }
+            // 每种原料的全局满足率 = 库存 / 总需求,夹在 [0,1];
+            // elapsed == 0 时 minutes=0 → 需求为 0 → 满足率取 1,返回的是"无约束名义速率",仅供前端显示
+            $globalRate = [];
+            foreach ($demand as $res => $need) {
+                $globalRate[$res] = $need > 0
+                    ? max(0.0, min(1.0, (float) ($resources[$res] ?? 0) / $need))
+                    : 1.0;
+            }
+            // 第二遍:逐栋按配方满足率(取所有投入原料中最小的那个)缩放产出与投入
+            foreach ($processing as $p) {
+                $recipeRate = 1.0;
+                foreach (array_keys($p['in']) as $res) { $recipeRate = min($recipeRate, $globalRate[$res] ?? 1.0); }
+                foreach ($p['out'] as $res => $r) { $ratePerMin[$res] = ($ratePerMin[$res] ?? 0) + $r * $recipeRate; }
+                foreach ($p['in'] as $res => $r) { $ratePerMin[$res] = ($ratePerMin[$res] ?? 0) - $r * $recipeRate; }
+            }
         }
 
         // 人口粮食消耗(人口取自锁到的城市行,不依赖事务外的 Eloquent 模型)
         $ratePerMin['粮食'] = ($ratePerMin['粮食'] ?? 0) - (int) $lockedCity->population * SimConstants::FOOD_PER_CAPITA_PER_MIN;
 
-        // 锁后再读资源现值,确保是并发写入之后的最新值
-        $resources = DB::table('city_resources')->where('city_id', $lockedCity->id)
-            ->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all();
-        $money = (float) $lockedCity->money;
-
         // elapsed == 0:跳过写库,但速率/容量仍照常算出返回
         if ($elapsed > 0) {
-            $minutes = $elapsed / 60.0;
-
             foreach ($ratePerMin as $res => $rate) {
                 $val = (float) ($resources[$res] ?? 0) + $rate * $minutes;
                 $val = max(0, min($val, $storageCap));
