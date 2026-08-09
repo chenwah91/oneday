@@ -1,19 +1,11 @@
 // 建造交互:管理"放置模式"状态、提交建造请求、把返回 diff 合并进 state,并驱动重绘
 import { api } from '../core/api.js';
+import { newIdempotencyKey } from '../core/idempotency.js';
 import { state, setState } from '../core/state.js';
+import { errorText } from '../core/error-messages.js';
 import { render as renderBuildings } from '../renderer/buildings.js';
 import { updateHud } from '../ui/hud.js';
-
-// 后端错误码 -> 中文提示(与 BuildService/GameRuleException 的 errorCode 对应)
-const ERROR_MESSAGES = {
-    INSUFFICIENT_RESOURCE: '资源不足',
-    LAND_OCCUPIED: '这里已被占用',
-    INVALID_POSITION: '不能建在这里',
-    BUILDING_LIMIT_REACHED: '已达数量上限',
-    INVALID_BUILDING: '无效的建筑类型',
-    REVISION_CONFLICT: '数据已更新,请重试',
-    IDEMPOTENCY_KEY_REUSED: '操作重复提交,请刷新后重试',
-};
+import { notifyError } from '../ui/notification.js';
 
 let placement = null; // { buildingId, footprint, name } | null,非 null 即"放置模式"
 let worldRef = null; // pixi-app 的世界容器,用于建造成功后重绘建筑
@@ -54,14 +46,18 @@ export async function handleTileClick(gx, gy) {
     const buildingId = placement.buildingId;
 
     try {
-        const diff = await api.post('/api/city/build', { buildingId, x: gx, y: gy });
+        // 幂等键防重复提交(网络重试不重复扣建);expectedRevision 防旧页面覆盖新状态
+        const diff = await api.post('/api/city/build', {
+            buildingId, x: gx, y: gy,
+            idempotencyKey: newIdempotencyKey(),
+            expectedRevision: state.city ? state.city.revision : undefined,
+        });
         applyDiff(diff, buildingId, gx, gy);
         cancelPlacement(); // 建造成功后退出放置模式
         if (worldRef) renderBuildings(worldRef, state.city.buildings);
         updateHud(state.city);
     } catch (err) {
-        const code = err && err.error;
-        showToast(ERROR_MESSAGES[code] || '建造失败,请重试');
+        notifyError(errorText(err, '建造失败,请重试'));
     }
 }
 
@@ -92,20 +88,4 @@ function applyDiff(diff, buildingId, x, y) {
             buildings,
         }),
     });
-}
-
-// 轻量 toast 提示(建造失败等),挂在 body 上,不依赖具体面板结构
-let toastTimer = null;
-export function showToast(msg) {
-    let el = document.getElementById('game-toast');
-    if (!el) {
-        el = document.createElement('div');
-        el.id = 'game-toast';
-        el.className = 'game-toast';
-        document.body.appendChild(el);
-    }
-    el.textContent = msg;
-    el.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
 }

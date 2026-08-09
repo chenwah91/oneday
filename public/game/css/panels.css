@@ -91,27 +91,165 @@
     white-space: nowrap;
 }
 
-/* 轻量 toast 提示(建造失败等) */
-.game-toast {
-    position: fixed;
-    left: 50%;
-    bottom: 24px;
-    transform: translate(-50%, 12px);
-    padding: 10px 16px;
-    background: #232a36;
-    border: 1px solid #ff6b6b;
-    color: #ff6b6b;
-    border-radius: 10px;
-    font-size: 13px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease, transform 0.2s ease;
-    z-index: 100;
-    max-width: 80vw;
-    text-align: center;
+/* 建筑详情面板:绝对定位在地图舞台内,不占用底部建造面板的空间 */
+.bldg-detail {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 20;
+    width: 250px;
+    max-height: calc(100% - 24px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background: #1b212b;
+    border: 1px solid #2a3140;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
 }
 
-.game-toast.show {
-    opacity: 1;
-    transform: translate(-50%, 0);
+.bldg-detail[hidden] {
+    display: none;
+}
+
+.bldg-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #2a3140;
+}
+
+.bldg-title {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.bldg-close {
+    margin-left: auto;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #9aa4b2;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.bldg-body {
+    padding: 8px 12px;
+}
+
+.bldg-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 4px 0;
+    font-size: 13px;
+}
+
+.bldg-row-key {
+    flex: 0 0 auto;
+    color: #9aa4b2;
+    font-size: 12px;
+}
+
+.bldg-row-value {
+    margin-left: auto;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.bldg-actions {
+    display: flex;
+    gap: 8px;
+    padding: 4px 12px 12px;
+}
+
+.bldg-btn {
+    flex: 1 1 0;
+    min-height: 38px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #2a3140;
+    background: #232a36;
+    color: #e8eaed;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.bldg-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.bldg-btn-upgrade {
+    border-color: #5b8def;
+    background: #5b8def;
+    color: #fff;
+}
+
+.bldg-btn-demolish,
+.bldg-btn-danger {
+    border-color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.12);
+    color: #ff6b6b;
+}
+
+.bldg-btn-danger {
+    background: #ff6b6b;
+    color: #fff;
+}
+
+.bldg-btn-ghost {
+    border-color: #333c4a;
+    background: transparent;
+    color: #9aa4b2;
+}
+
+.bldg-hint {
+    padding: 0 12px 12px;
+    color: #9aa4b2;
+    font-size: 12px;
+}
+
+/* 拆除二次确认条:删除语义,必须再点一次才真正提交 */
+.bldg-confirm {
+    padding: 10px 12px 12px;
+    border-top: 1px solid #2a3140;
+    background: rgba(255, 107, 107, 0.06);
+}
+
+.bldg-confirm-text {
+    margin-bottom: 8px;
+    color: #ff6b6b;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.bldg-confirm-actions {
+    display: flex;
+    gap: 8px;
+}
+
+@media (max-width: 480px) {
+    /* 手机:顶部铺开半屏,下半屏地图仍可见可操作;按钮触控区加大到 44px */
+    .bldg-detail {
+        top: 8px;
+        left: 8px;
+        right: 8px;
+        width: auto;
+        max-height: 52%;
+    }
+
+    .bldg-btn {
+        min-height: 44px;
+        font-size: 14px;
+    }
+
+    .bldg-close {
+        width: 36px;
+        height: 36px;
+    }
 }

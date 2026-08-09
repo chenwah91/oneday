@@ -7,6 +7,7 @@ use App\Models\City;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
+use App\Support\GameRuleException;
 use App\Support\Idempotency;
 use Illuminate\Support\Facades\DB;
 

@@ -8,6 +8,7 @@ use App\Support\ApiResponse;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
+use App\Support\SecurityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -50,6 +51,14 @@ class LoginController extends Controller
             AuditLogger::record(AuditAction::AUTH_LOGIN_FAILED, 'failed', [
                 'reason_code'   => 'BAD_CREDENTIALS',
                 'metadata_json' => ['username' => $safeUsername],
+            ]);
+
+            // Security Log 与审计并行(CLAUDE §60):只带账号 id 与原因,绝不写用户名原文与密码
+            SecurityLogger::log('security.login_failed', [
+                'user_id'    => $user?->id,
+                'route'      => $request->path(),
+                'reason'     => 'BAD_CREDENTIALS',
+                'error_code' => ErrorCode::BAD_CREDENTIALS,
             ]);
 
             return ApiResponse::fail(ErrorCode::BAD_CREDENTIALS, 401);

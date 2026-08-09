@@ -73,6 +73,15 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // 安全事件独立通道(CLAUDE §60):与业务/调试日志分开,便于单独保留与告警
+        'security' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/security.log'),
+            'level' => env('LOG_SECURITY_LEVEL', 'debug'),
+            'days' => env('LOG_SECURITY_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

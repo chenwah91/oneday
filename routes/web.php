@@ -39,11 +39,12 @@ Route::prefix('api')->group(function () {
         // 登出:失效 session 并写审计
         Route::post('/auth/logout', [\App\Http\Controllers\Auth\SessionController::class, 'logout']);
 
-        // 城市只读快照:先结算再返回聚合状态
-        Route::get('/city', [\App\Http\Controllers\City\CityController::class, 'show']);
+        // 城市只读快照:先结算再返回聚合状态。
+        // 独立限流(每用户每分钟 30 次):快照会跑结算与多表联查,是最贵的 GET(CLAUDE §48)
+        Route::get('/city', [\App\Http\Controllers\City\CityController::class, 'show'])->middleware('throttle:snapshot');
 
         // 可建建筑列表:联查 L1 成本/产出,供前端建筑面板显示
-        Route::get('/definitions/buildings', [\App\Http\Controllers\City\DefinitionController::class, 'buildings']);
+        Route::get('/definitions/buildings', [\App\Http\Controllers\City\DefinitionController::class, 'buildings'])->middleware('throttle:api');
 
         // 建造:完整安全链(幂等/Revision/占地/上限/资源/审计)
         Route::post('/city/build', \App\Http\Controllers\City\BuildController::class)->middleware('throttle:api');

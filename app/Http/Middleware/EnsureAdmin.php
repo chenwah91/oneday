@@ -6,6 +6,7 @@ use App\Support\ApiResponse;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
+use App\Support\SecurityLogger;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -24,6 +25,12 @@ class EnsureAdmin
                 'actor_id' => $user->id, 'user_id' => $user->id,
                 'reason_code' => 'NOT_ADMIN',
                 'metadata_json' => ['path' => $request->path()],
+            ]);
+            // 非管理员访问后台是高风险信号,除审计外单独进 Security Log 便于告警(CLAUDE §60)
+            SecurityLogger::log('security.authorization_failed', [
+                'user_id' => $user->id, 'route' => $request->path(),
+                'reason' => 'NOT_ADMIN', 'method' => $request->method(),
+                'error_code' => ErrorCode::FORBIDDEN,
             ]);
             return ApiResponse::fail(ErrorCode::FORBIDDEN, 403);
         }

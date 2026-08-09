@@ -15,6 +15,26 @@ const DEFAULT_COLOR = 0x9aa4b2;
 const BLOCK_HEIGHT = 14; // 伪 3D 建筑体的侧面高度(像素)
 
 let buildingLayer = null;
+let clickHandler = null; // 建筑点击回调(main.js 注入),参数为对应的 city.buildings 记录
+let interactive = true; // false 时整层不参与命中,点击直接穿透到下面的地格
+
+// fn(building):点击已建建筑时触发;传 null 可解除
+export function setBuildingClickHandler(fn) {
+    clickHandler = typeof fn === 'function' ? fn : null;
+}
+
+// 放置模式优先:进入放置模式时关掉建筑层命中,避免建筑侧面挡住相邻地格的点击
+export function setBuildingsInteractive(enabled) {
+    interactive = !!enabled;
+    applyInteractive();
+}
+
+function applyInteractive() {
+    if (!buildingLayer) return;
+    // interactiveChildren 是关键:false 时 Pixi 直接跳过整层子节点的命中测试
+    buildingLayer.eventMode = interactive ? 'passive' : 'none';
+    buildingLayer.interactiveChildren = interactive;
+}
 
 // 深色化:侧面用比顶面更暗的同色系,做出简单的立体感
 function shade(color, factor) {
@@ -71,6 +91,9 @@ function makeBuildingSprite(b, footprint, color) {
     g.closePath();
     g.endFill();
 
+    // 命中:色块提供命中几何(Container 自身没有形状),事件冒泡到 Container 统一处理
+    g.eventMode = 'static';
+
     container.addChild(g);
 
     // 等级标签
@@ -83,12 +106,23 @@ function makeBuildingSprite(b, footprint, color) {
     label.anchor.set(0.5);
     const center = gridToScreen(b.x + footprint.w / 2, b.y + footprint.h / 2);
     label.position.set(center.sx, center.sy);
+    // 标签不参与命中:它盖在色块正中央,若参与命中会先被命中并吃掉点击,
+    // 建筑中心(最顺手的点击位置)反而点不动
+    label.eventMode = 'none';
     container.addChild(label);
 
     // 非活跃状态(如已拆除但未清理等)降低透明度,便于区分
     if (b.status && b.status !== 'active') {
         container.alpha = 0.45;
     }
+
+    // 点击回调挂在 Container 上:子节点(色块/标签)的命中都会冒泡上来,
+    // 不依赖具体是哪个子节点被命中,后续加图标/进度条等子元素也不会漏点
+    container.eventMode = 'static';
+    container.cursor = 'pointer';
+    container.on('pointertap', () => {
+        if (clickHandler) clickHandler(b);
+    });
 
     // 按格坐标简单排序,越靠"前"(x+y 越大)越晚绘制,避免遮挡穿帮
     container.zIndex = b.x + b.y;
@@ -105,6 +139,7 @@ export function render(world, buildings) {
     buildingLayer.zIndex = 10;
     buildingLayer.sortableChildren = true;
     world.addChild(buildingLayer);
+    applyInteractive(); // 每次重建图层都要把当前命中开关同步上去
 
     const defs = defsById();
     (buildings || []).forEach((b) => {

@@ -2,7 +2,6 @@
 
 namespace App\Support;
 
-use App\Game\Building\GameRuleException;
 use Illuminate\Support\Facades\DB;
 
 // 幂等统一入口(CLAUDE §49):请求指纹计算 / 命中判定 / 落键

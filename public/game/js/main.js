@@ -5,9 +5,10 @@ import { renderAuth } from './ui/auth.js';
 import { mountHud, updateHud } from './ui/hud.js';
 import { initPixiApp } from './renderer/pixi-app.js';
 import { renderMap } from './renderer/map.js';
-import { render as renderBuildings } from './renderer/buildings.js';
+import { render as renderBuildings, setBuildingClickHandler, setBuildingsInteractive } from './renderer/buildings.js';
 import { mountBuildPanel } from './ui/build-panel.js';
-import { initBuildModule, handleTileClick } from './modules/build.js';
+import { mountBuildingPanel, openBuildingPanel, closeBuildingPanel } from './ui/building-panel.js';
+import { initBuildModule, handleTileClick, onPlacementChange, getPlacement } from './modules/build.js';
 
 const app = document.getElementById('app');
 
@@ -29,6 +30,24 @@ async function bootApp() {
     // 建造面板:挂到 #panel;建造模块拿到 world 引用,建造成功后自行重绘
     initBuildModule(pixiApp.world);
     await mountBuildPanel(document.getElementById('panel'));
+
+    // 建筑详情面板:挂在 #stage 内绝对定位,升级/拆除后自行重绘建筑层与 HUD
+    mountBuildingPanel(stageEl, pixiApp.world);
+
+    // 点击已有建筑 → 打开详情。两道闸门:
+    // 1) 放置模式优先(此时建筑层已被关掉命中,这里再判一次兜底,避免边缘时序问题)
+    // 2) 拖拽平移结束的那一下不算点击(与 map.js 地格点击同一判据)
+    setBuildingClickHandler((building) => {
+        if (getPlacement()) return;
+        if (pixiApp.isDragging()) return;
+        openBuildingPanel(building);
+    });
+
+    // 进入放置模式:整层建筑不参与命中(点击穿透到地格),同时收起已打开的详情面板
+    onPlacementChange((placement) => {
+        setBuildingsInteractive(!placement);
+        if (placement) closeBuildingPanel();
+    });
 
     // 轮询:定期刷新城市快照,让生产累积/资源变化对玩家可见
     setInterval(async () => {
