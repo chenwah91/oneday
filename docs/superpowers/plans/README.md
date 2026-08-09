@@ -1,14 +1,24 @@
-# M1 核心循环版 — 实现计划索引
+# 实现计划索引
 
-依据:`docs/superpowers/specs/2026-08-08-city-builder-design.md`(v0.2)+ V3 数值规格。
+> 技术栈:PHP + **Laravel 12** + **MySQL 5.7** + Vanilla JS/PixiJS(见 `/CLAUDE.md`)
+> 数值权威:`docs/templates/v3.1.md`;安全权威:`/SECURITY.md`
 
-M1 拆成 4 个子计划,按顺序执行,每个子计划独立可测试交付:
+## 当前里程碑:M1 核心循环版(Laravel 重写)
 
-| 子计划 | 内容 | 计划文件 | 状态 |
+- **整体路线图**:`2026-08-09-m1-laravel-roadmap.md`(v0.4 草案,待 review)
+
+| 子计划 | 内容 | 详细计划 | 状态 |
 |--------|------|----------|------|
-| P1 基础设施与账号 | 项目骨架、配置、PDO/日志/响应、token 认证、测试框架 | `2026-08-09-m1-plan1-infra-auth.md` | ✅ 已完成 (v0.3.0) |
-| P2 Seed 数据管道 | 定义表建表、V3 规格解析 → Seed SQL、282 条等级生成、导入校验 | 待写(P1 完成后) | — |
-| P3 核心玩法 API | 城市/资源 Runtime、建造/升级事务+幂等、生产懒结算、粮食人口幸福治理物流、科技、时代升级、土地购买 | 待写 | — |
-| P4 基础前端 | PixiJS 等距地图、建造交互、综合面板、登录界面 | 待写 | — |
+| P1 | Laravel 骨架 + 安全中间件地基 + 测试框架 | 待写(路线图批准后) | 规划中 |
+| P2 | 账号(Session Auth)+ Authorization + 审计地基 | — | 待写 |
+| P3 | Definition Migration + Seed(v3.1)+ 数据版本 | — | 待写 |
+| P4 | 城市 Runtime + Snapshot + Time Delta 地基 | — | 待写 |
+| P5 | 建造/升级/拆除(全安全链) | — | 待写 |
+| P6 | 生产结算 + 人口粮食 + 存储 + 离线 | — | 待写 |
+| P7 | 前端最小可玩(Vanilla JS + PixiJS + PWA 壳) | — | 待写 |
+| P8 | 管理后台雏形(Definition 调整 + 审计查看) | — | 待写 |
+| P9 | M1 收尾(回归测试 + 发布前安全检查 + test 部署) | — | 待写 |
 
-本地开发环境(已确认):XAMPP `C:\xampp`,PHP 8.2.12(线上 8.3,避免用 8.3 独有特性),MariaDB 10.4,root 无密码。
+## 历史(已废弃)
+
+- 旧 vanilla PHP 版 M1-P1(无框架 + 自制 token)已于 commit `379ca1d` 移除,不再沿用。
