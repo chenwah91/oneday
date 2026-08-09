@@ -9,13 +9,13 @@
 
 | 子计划 | 内容 | 详细计划 | 状态 |
 |--------|------|----------|------|
-| P1 | Laravel 骨架 + 安全中间件地基 + 测试框架 | `2026-08-09-m1-p1-laravel-foundation.md` | ✅ 计划就绪,待执行 |
-| P2 | 账号(Session Auth)+ Authorization + 审计地基 | — | 待写 |
-| P3 | Definition Migration + Seed(v3.1)+ 数据版本 | — | 待写 |
-| P4 | 城市 Runtime + Snapshot + Time Delta 地基 | — | 待写 |
-| P5 | 建造/升级/拆除(全安全链) | — | 待写 |
-| P6 | 生产结算 + 人口粮食 + 存储 + 离线 | — | 待写 |
-| P7 | 前端最小可玩(Vanilla JS + PixiJS + PWA 壳) | — | 待写 |
+| P1 | Laravel 骨架 + 安全中间件地基 + 测试框架 | `2026-08-09-m1-p1-laravel-foundation.md` | ✅ 已完成 (v0.4.0) |
+| P2 | 账号(Session Auth)+ Authorization + 审计地基 | `2026-08-09-m1-p2-auth-audit.md` | 🚧 执行中 |
+| P3 | Definition Migration + Seed(v3.1)+ 数据版本 | — | 待做 |
+| P4 | 城市 Runtime + Snapshot + Time Delta 地基 | — | 待做 |
+| P5 | 建造/升级/拆除(全安全链) | — | 待做 |
+| P6 | 生产结算 + 人口粮食 + 存储 + 离线 | — | 待做 |
+| P7 | 前端最小可玩(Vanilla JS + PixiJS + PWA 壳) | — | 待做 |
 | P8 | 管理后台雏形(Definition 调整 + 审计查看) | — | 待写 |
 | P9 | M1 收尾(回归测试 + 发布前安全检查 + test 部署) | — | 待写 |
 
