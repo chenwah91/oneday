@@ -3,22 +3,45 @@
 namespace App\Game\Simulation;
 
 use App\Models\City;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 // Time Delta 懒结算:按 now - last_simulated_at 应用生产/消耗/维护/粮食,资源夹在 [0, 存储上限]
 class SimulationService
 {
+    // 兼容包装:自开事务 + 锁城市行,再走 applyLocked(全项目唯一开结算事务的入口)
+    // 只读路径(快照)用它;写路径(建造/升级/拆除)已自带事务与锁,应直接调 applyLocked
     public static function simulate(City $city): array
     {
-        $now = now();
-        $elapsed = max(0, $now->getTimestamp() - $city->last_simulated_at->getTimestamp());
+        return DB::transaction(function () use ($city) {
+            // 先锁城市行:与 build/upgrade/demolish 用同一把锁串行化,避免用事务前的旧快照覆盖并发中的扣款/扣建
+            $locked = DB::table('cities')->where('id', $city->id)->lockForUpdate()->first();
 
-        // 读 active 建筑实例的每级定义
+            return self::applyLocked($locked, now());
+        });
+    }
+
+    // 锁内结算:把 [last_simulated_at, $now] 这段时间的产出/消耗/维护结清并落库
+    //
+    // 前置约定:调用方必须已在事务内对该 cities 行 lockForUpdate,并把锁到的行原样传进来。
+    // 本方法不自开事务、不再加锁;建筑实例与资源现值都在锁之后才读,确保拿到并发写入之后的最新值。
+    //
+    // 返回值除速率/容量/经过秒数外,另带结算后的最新 money 与 resources,
+    // 供调用方(建造/升级)直接做余额校验,不必再查一次库,也避免误用结算前的旧值。
+    public static function applyLocked(object $lockedCity, CarbonInterface $now): array
+    {
+        $lastSimulatedAt = Carbon::parse($lockedCity->last_simulated_at);
+        $elapsed = max(0, $now->getTimestamp() - $lastSimulatedAt->getTimestamp());
+        // 离线封顶:超过上限的部分不结算(但 last_simulated_at 仍推进到 $now,否则会积压反复重算)
+        $elapsed = min($elapsed, SimConstants::MAX_OFFLINE_SECONDS);
+
+        // 锁后再读 active 建筑实例的每级定义,消除"锁前读实例"的竞态
         $levels = DB::table('city_building_instances as ci')
             ->join('building_level_definition as bl', function ($j) {
                 $j->on('ci.building_id', '=', 'bl.building_id')->on('ci.level', '=', 'bl.level');
             })
-            ->where('ci.city_id', $city->id)
+            ->where('ci.city_id', $lockedCity->id)
             ->where('ci.status', 'active')
             ->select('bl.output_json', 'bl.input_json', 'bl.maintenance_money_per_min', 'bl.maintenance_food_per_min')
             ->get();
@@ -46,34 +69,33 @@ class SimulationService
             $maintenanceMoneyPerMin += (float) $lv->maintenance_money_per_min;
         }
 
-        // 人口粮食消耗
-        $ratePerMin['粮食'] = ($ratePerMin['粮食'] ?? 0) - $city->population * SimConstants::FOOD_PER_CAPITA_PER_MIN;
+        // 人口粮食消耗(人口取自锁到的城市行,不依赖事务外的 Eloquent 模型)
+        $ratePerMin['粮食'] = ($ratePerMin['粮食'] ?? 0) - (int) $lockedCity->population * SimConstants::FOOD_PER_CAPITA_PER_MIN;
 
+        // 锁后再读资源现值,确保是并发写入之后的最新值
+        $resources = DB::table('city_resources')->where('city_id', $lockedCity->id)
+            ->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all();
+        $money = (float) $lockedCity->money;
+
+        // elapsed == 0:跳过写库,但速率/容量仍照常算出返回
         if ($elapsed > 0) {
-            DB::transaction(function () use ($city, $ratePerMin, $elapsed, $storageCap, $maintenanceMoneyPerMin, $now) {
-                // 先锁城市行:与 build/upgrade/demolish 用同一把锁串行化,避免用事务前的旧快照覆盖并发中的扣款/扣建
-                $locked = DB::table('cities')->where('id', $city->id)->lockForUpdate()->first();
+            $minutes = $elapsed / 60.0;
 
-                $minutes = $elapsed / 60.0;
-                // 加锁后再读资源现值,确保是并发写入之后的最新值
-                $current = DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id');
+            foreach ($ratePerMin as $res => $rate) {
+                $val = (float) ($resources[$res] ?? 0) + $rate * $minutes;
+                $val = max(0, min($val, $storageCap));
+                DB::table('city_resources')->updateOrInsert(
+                    ['city_id' => $lockedCity->id, 'resource_id' => $res],
+                    ['amount' => $val]
+                );
+                $resources[$res] = $val;
+            }
 
-                foreach ($ratePerMin as $res => $rate) {
-                    $base = (float) ($current[$res] ?? 0);
-                    $val = $base + $rate * $minutes;
-                    $val = max(0, min($val, $storageCap));
-                    DB::table('city_resources')->updateOrInsert(
-                        ['city_id' => $city->id, 'resource_id' => $res],
-                        ['amount' => $val]
-                    );
-                }
-
-                $money = max(0, (float) $locked->money - $maintenanceMoneyPerMin * $minutes);
-                DB::table('cities')->where('id', $city->id)->update([
-                    'money'             => $money,
-                    'last_simulated_at' => $now,
-                ]);
-            });
+            $money = max(0, $money - $maintenanceMoneyPerMin * $minutes);
+            DB::table('cities')->where('id', $lockedCity->id)->update([
+                'money'             => $money,
+                'last_simulated_at' => $now,
+            ]);
         }
 
         return [
@@ -81,6 +103,8 @@ class SimulationService
             'storageCapacity'    => $storageCap,
             'populationCapacity' => $populationCap,
             'elapsedSeconds'     => $elapsed,
+            'money'              => $money,
+            'resources'          => $resources,
         ];
     }
 }

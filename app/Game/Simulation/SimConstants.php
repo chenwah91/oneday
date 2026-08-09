@@ -8,6 +8,10 @@ class SimConstants
     // 人均粮食消耗(每分钟)
     public const FOOD_PER_CAPITA_PER_MIN = 0.1;
 
+    // 最大离线结算时长(秒):超过此时长的离线段按此上限结算,防止长期挂机一次性暴收
+    // 依据 CLAUDE §18 参考值 12h/24h 取 12h,最终数值待用户确认,可调
+    public const MAX_OFFLINE_SECONDS = 43200;
+
     // 基础仓储容量(无仓储类建筑时的默认上限)
     // 注意:必须大于 START_RESOURCES 各资源上限(木材400/粮食500),
     // 否则新城建成时资源已超过上限,首次结算会被夹到 200 而丢失资源(见 P4 Task3 调试记录)

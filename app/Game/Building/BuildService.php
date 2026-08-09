@@ -2,6 +2,7 @@
 
 namespace App\Game\Building;
 
+use App\Game\Simulation\SimulationService;
 use App\Models\City;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
@@ -46,6 +47,11 @@ class BuildService
                 throw new GameRuleException(ErrorCode::REVISION_CONFLICT, 409);
             }
 
+            // 锁内先跑 Time Delta 结算(CLAUDE §51):
+            // 1) 不结算就扣款,玩家可用"离线期间已被吃掉的旧快照资源"建造;
+            // 2) 不结算就建造,新建筑会追溯生产建成之前的时段。
+            $sim = SimulationService::applyLocked($locked, now());
+
             // 占地:落在地图内
             $w = (int) $def->footprint_w; $h = (int) $def->footprint_h;
             if ($x < 0 || $y < 0 || $x + $w > $locked->map_width || $y + $h > $locked->map_height) {
@@ -69,14 +75,10 @@ class BuildService
                 throw new GameRuleException(ErrorCode::BUILDING_LIMIT_REACHED, 422);
             }
 
-            // 资源足额(资金单列在 cities.money)
-            $resAmounts = DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id');
+            // 资源足额:一律用结算后的最新余额(资金单列在 cities.money)
             foreach ($cost as $res => $amt) {
-                if ($res === '资金') {
-                    if ((float) $locked->money < $amt) { throw new GameRuleException(ErrorCode::INSUFFICIENT_RESOURCE, 422); }
-                } elseif ((float) ($resAmounts[$res] ?? 0) < $amt) {
-                    throw new GameRuleException(ErrorCode::INSUFFICIENT_RESOURCE, 422);
-                }
+                $have = $res === '资金' ? (float) $sim['money'] : (float) ($sim['resources'][$res] ?? 0);
+                if ($have < $amt) { throw new GameRuleException(ErrorCode::INSUFFICIENT_RESOURCE, 422); }
             }
 
             // 扣资源

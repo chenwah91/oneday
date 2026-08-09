@@ -2,6 +2,7 @@
 
 namespace App\Game\Building;
 
+use App\Game\Simulation\SimulationService;
 use App\Models\City;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
@@ -41,6 +42,11 @@ class UpgradeService
                 throw new GameRuleException(ErrorCode::REVISION_CONFLICT, 409);
             }
 
+            // 锁内先跑 Time Delta 结算(CLAUDE §51):
+            // 1) 不结算就扣款,玩家可用"离线期间已被吃掉的旧快照资源"升级;
+            // 2) 不结算就升级,新等级会追溯生产升级之前的时段。
+            $sim = SimulationService::applyLocked($locked, now());
+
             // 加锁后重新读取实例:防止并发拆除导致的幽灵升级(instance 已不存在则视为 NOT_FOUND)
             $inst = DB::table('city_building_instances')->where('id', $instanceId)->where('city_id', $city->id)->first();
             if (! $inst) {
@@ -57,10 +63,9 @@ class UpgradeService
             }
             $cost = json_decode($lvl->cost_json, true) ?: [];
 
-            // 资源足额(资金单列在 cities.money)
-            $resAmounts = DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id');
+            // 资源足额:一律用结算后的最新余额(资金单列在 cities.money)
             foreach ($cost as $res => $amt) {
-                $have = $res === '资金' ? (float) $locked->money : (float) ($resAmounts[$res] ?? 0);
+                $have = $res === '资金' ? (float) $sim['money'] : (float) ($sim['resources'][$res] ?? 0);
                 if ($have < $amt) { throw new GameRuleException(ErrorCode::INSUFFICIENT_RESOURCE, 422); }
             }
 

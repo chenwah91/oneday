@@ -4,6 +4,7 @@ namespace App\Http\Controllers\City;
 
 use App\Game\Building\GameRuleException;
 use App\Game\City\CityFactory;
+use App\Game\Simulation\SimulationService;
 use App\Http\Controllers\Controller;
 use App\Support\ApiResponse;
 use App\Support\AuditAction;
@@ -38,6 +39,10 @@ class DemolishController extends Controller
         try {
             $newRevision = DB::transaction(function () use ($city, $instanceId, $inst) {
                 $locked = DB::table('cities')->where('id', $city->id)->lockForUpdate()->first();
+
+                // 锁内先跑 Time Delta 结算(CLAUDE §51):拆除虽不校验资源,
+                // 但必须先把"拆除前时段"的产出结清,否则被拆建筑这段时间应得的产出会丢失
+                SimulationService::applyLocked($locked, now());
 
                 // 限定 city_id 并校验影响行数:防止实例在所有权校验与加锁之间被并发拆除,产生"假成功"(revision 空涨)
                 $affected = DB::table('city_building_instances')->where('id', $instanceId)->where('city_id', $city->id)->delete();
