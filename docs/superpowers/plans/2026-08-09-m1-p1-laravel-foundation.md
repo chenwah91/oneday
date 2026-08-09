@@ -204,7 +204,7 @@ git commit -m "M1P1 环境配置:MariaDB 连接、UTC 时区、测试库"
 **Files:**
 - Create: `app/Support/ErrorCode.php`
 - Create: `app/Support/ApiResponse.php`
-- Test: `tests/Unit/ApiResponseTest.php`
+- Test: `tests/Feature/ApiResponseTest.php`(继承 `Tests\TestCase`,需启动 Laravel)
 
 **Interfaces:**
 - Consumes: Laravel 骨架、`Illuminate\Support\Facades\Context`
