@@ -17,14 +17,15 @@ class LoginController extends Controller
     public function __invoke(Request $request): JsonResponse
     {
         $credentials = $request->validate([
-            'username' => ['required', 'string'],
+            'username' => ['required', 'string', 'max:190'],
             'password' => ['required', 'string'],
         ]);
 
         if (! Auth::attempt(['username' => $credentials['username'], 'password' => $credentials['password']])) {
             AuditLogger::record(AuditAction::AUTH_LOGIN_FAILED, 'failed', [
                 'reason_code'   => 'BAD_CREDENTIALS',
-                'metadata_json' => ['username' => $credentials['username']],
+                // 审计中的用户名做截断保护(即便校验已限制长度,双重防御避免异常输入撑大记录)
+                'metadata_json' => ['username' => \Illuminate\Support\Str::limit((string) $credentials['username'], 190, '')],
             ]);
 
             return ApiResponse::fail(ErrorCode::BAD_CREDENTIALS, 401);
