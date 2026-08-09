@@ -11,8 +11,8 @@
 |--------|------|----------|------|
 | P1 | Laravel 骨架 + 安全中间件地基 + 测试框架 | `2026-08-09-m1-p1-laravel-foundation.md` | ✅ 已完成 (v0.4.0) |
 | P2 | 账号(Session Auth)+ Authorization + 审计地基 | `2026-08-09-m1-p2-auth-audit.md` | ✅ 已完成 (v0.5.1) |
-| P3 | Definition Migration + Seed(v3.1)+ 数据版本 | `2026-08-09-m1-p3-definitions-seed.md` | 🚧 执行中 |
-| P4 | 城市 Runtime + Snapshot + Time Delta 地基 | — | 待做 |
+| P3 | Definition Migration + Seed(v3.1)+ 数据版本 | `2026-08-09-m1-p3-definitions-seed.md` | ✅ 已完成 (v0.6.0) |
+| P4 | 城市 Runtime + Snapshot + Time Delta 地基 | `2026-08-09-m1-p4-city-runtime.md` | 🚧 执行中 |
 | P5 | 建造/升级/拆除(全安全链) | — | 待做 |
 | P6 | 生产结算 + 人口粮食 + 存储 + 离线 | — | 待做 |
 | P7 | 前端最小可玩(Vanilla JS + PixiJS + PWA 壳) | — | 待做 |
