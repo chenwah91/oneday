@@ -19,7 +19,10 @@ class AdminReadTest extends TestCase
 
     private function admin(): User
     {
-        return User::create(['username' => 'adm', 'name' => 'adm', 'email' => 'adm@a.com', 'password' => 'password123', 'role' => 'admin']);
+        // role 已不可批量赋值,测试里用 forceFill 显式提权
+        $user = User::create(['username' => 'adm', 'name' => 'adm', 'email' => 'adm@a.com', 'password' => 'password123']);
+        $user->forceFill(['role' => 'admin'])->save();
+        return $user;
     }
 
     public function test_players_list(): void

@@ -35,8 +35,11 @@ class AdminDefinitionController extends Controller
             'buildingId' => ['required', 'string', 'max:16'],
             'level'      => ['required', 'integer', 'between:1,3'],
             'field'      => ['required', 'string'],
-            'value'      => ['required', 'numeric'],
-            'reason'     => ['required', 'string', 'min:2', 'max:200'],
+            // value 不允许负数:所有 EDITABLE 字段(耗时/工人/维护/幸福度/治理/防御/容量)按设计均为非负,
+            // 若放行负数,负的 maintenance_money_per_min 会让 SimulationService 的 max(0, money - rate*minutes) 变成无上限生钱
+            'value'      => ['required', 'numeric', 'min:0'],
+            // reason 上限对齐 audit_logs.reason_code 的 VARCHAR(80),避免超长原因导致写入审计时报错、事务回滚且不留痕
+            'reason'     => ['required', 'string', 'min:2', 'max:80'],
         ]);
 
         if (! in_array($data['field'], self::EDITABLE, true)) {
@@ -46,7 +49,8 @@ class AdminDefinitionController extends Controller
         $admin = $request->user();
 
         $result = DB::transaction(function () use ($data, $admin) {
-            $row = DB::table('building_level_definition')->where('building_id', $data['buildingId'])->where('level', $data['level'])->first();
+            // lockForUpdate:锁住该行直到事务提交,防止并发编辑时 before/after 审计值出现丢失更新
+            $row = DB::table('building_level_definition')->where('building_id', $data['buildingId'])->where('level', $data['level'])->lockForUpdate()->first();
             if (! $row) {
                 return null;
             }

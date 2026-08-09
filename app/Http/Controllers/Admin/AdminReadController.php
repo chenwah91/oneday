@@ -30,7 +30,8 @@ class AdminReadController extends Controller
     // 玩家详情:基础信息 + 城市摘要(revision/population/money/建筑数)
     public function playerDetail(int $id): JsonResponse
     {
-        $u = DB::table('users')->where('id', $id)->first();
+        // 仅取展示所需字段,password/remember_token 等敏感列不进内存
+        $u = DB::table('users')->where('id', $id)->select('id', 'username', 'email', 'role', 'created_at')->first();
         if (! $u) {
             return ApiResponse::fail(ErrorCode::NOT_FOUND, 404);
         }

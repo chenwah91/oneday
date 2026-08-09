@@ -18,7 +18,8 @@ class AdminPromote extends Command
             $this->error('用户不存在');
             return 1;
         }
-        $user->update(['role' => 'admin']);
+        // role 已从 $fillable 移除,不能再走批量赋值,这里用 forceFill 显式绕过
+        $user->forceFill(['role' => 'admin'])->save();
         $this->info("已将 {$user->username} 设为管理员");
         return 0;
     }

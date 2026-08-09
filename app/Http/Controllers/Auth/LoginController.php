@@ -59,9 +59,11 @@ class LoginController extends Controller
         $request->session()->regenerate();
         $user = Auth::user();
 
+        // 管理员登录单独标注 actor_type,便于审计日志区分「管理员」与「普通玩家」的登录事件
         AuditLogger::record(AuditAction::AUTH_LOGIN_SUCCESS, 'success', [
-            'actor_id' => $user->id,
-            'user_id'  => $user->id,
+            'actor_id'   => $user->id,
+            'user_id'    => $user->id,
+            'actor_type' => $user->role === 'admin' ? 'admin' : 'player',
         ]);
 
         return ApiResponse::ok([
