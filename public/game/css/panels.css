@@ -1,6 +1,7 @@
 /* 地图舞台与建造面板容器(PixiJS 挂载点) */
 #stage {
-    flex: 1;
+    flex: 1 1 auto;
+    min-height: 0; /* 允许 flex 子项收缩到 canvas 内容以下,给底部面板让出空间 */
     position: relative;
     overflow: hidden;
     background: #0d1116;
@@ -12,6 +13,8 @@
 }
 
 #panel {
+    flex: 0 0 auto; /* 底部面板固定,不被 stage 挤出视口 */
+    max-height: 40vh;
     background: #1b212b;
     border-top: 1px solid #2a3140;
 }
