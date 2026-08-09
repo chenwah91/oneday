@@ -13,7 +13,7 @@
 | P2 | 账号(Session Auth)+ Authorization + 审计地基 | `2026-08-09-m1-p2-auth-audit.md` | ✅ 已完成 (v0.5.1) |
 | P3 | Definition Migration + Seed(v3.1)+ 数据版本 | `2026-08-09-m1-p3-definitions-seed.md` | ✅ 已完成 (v0.6.0) |
 | P4 | 城市 Runtime + Snapshot + Time Delta 地基 | `2026-08-09-m1-p4-city-runtime.md` | ✅ 已完成 (v0.7.0) |
-| P5 | 建造/升级/拆除(全安全链) | `2026-08-09-m1-p5-build-upgrade.md` | 🚧 执行中 |
+| P5 | 建造/升级/拆除(全安全链) | `2026-08-09-m1-p5-build-upgrade.md` | ✅ 已完成 (v0.8.0) |
 | P6 | 生产结算 + 人口粮食 + 存储 + 离线 | (已并入 P4 模拟) | ✅ 随 P4 |
 | P7 | 前端最小可玩(Vanilla JS + PixiJS + PWA 壳) | `2026-08-09-m1-p7-frontend.md` | ✅ 已完成 (v1.0.0) |
 | P8 | 管理后台雏形(Definition 调整 + 审计查看) | `2026-08-09-m1-p8-admin.md` | ✅ 已完成 (v0.9.0) |
