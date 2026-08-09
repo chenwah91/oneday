@@ -27,6 +27,17 @@ Route::prefix('api')->group(function () {
 
     // 登录接口:同 用户名+IP 每分钟 5 次(更严格的独立限流)
     Route::post('/auth/login', \App\Http\Controllers\Auth\LoginController::class)->middleware('throttle:auth');
+
+    // CSRF cookie:公开接口,供 SPA 首次取用 XSRF-TOKEN
+    Route::get('/csrf-cookie', [\App\Http\Controllers\Auth\SessionController::class, 'csrfCookie']);
+
+    Route::middleware('auth:web')->group(function () {
+        // 当前登录用户
+        Route::get('/me', [\App\Http\Controllers\Auth\SessionController::class, 'me']);
+
+        // 登出:失效 session 并写审计
+        Route::post('/auth/logout', [\App\Http\Controllers\Auth\SessionController::class, 'logout']);
+    });
 });
 
 // 仅测试环境:用于验证异常渲染,绝不在生产暴露
