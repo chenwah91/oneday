@@ -9,7 +9,7 @@
 
 | 子计划 | 内容 | 详细计划 | 状态 |
 |--------|------|----------|------|
-| P1 | Laravel 骨架 + 安全中间件地基 + 测试框架 | 待写(路线图批准后) | 规划中 |
+| P1 | Laravel 骨架 + 安全中间件地基 + 测试框架 | `2026-08-09-m1-p1-laravel-foundation.md` | ✅ 计划就绪,待执行 |
 | P2 | 账号(Session Auth)+ Authorization + 审计地基 | — | 待写 |
 | P3 | Definition Migration + Seed(v3.1)+ 数据版本 | — | 待写 |
 | P4 | 城市 Runtime + Snapshot + Time Delta 地基 | — | 待写 |
