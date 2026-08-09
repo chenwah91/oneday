@@ -24,11 +24,10 @@ class AppServiceProvider extends ServiceProvider
             return \Illuminate\Cache\RateLimiting\Limit::perMinute(60)->by($request->ip());
         });
 
-        // 登录限流:同一 用户名+IP 每分钟 5 次(用户名过长时截断,避免撑爆限流缓存 key)
+        // 登录限流:此处仅作粗粒度按 IP 的 DoS 防护(每 IP 每分钟 20 次),
+        // 真正按账号、与 IP 无关的失败次数限制在 LoginController 中实现(见该文件顶部注释)
         \Illuminate\Support\Facades\RateLimiter::for('auth', function (\Illuminate\Http\Request $request) {
-            $key = \Illuminate\Support\Str::substr(strtolower((string) $request->input('username')), 0, 190).'|'.$request->ip();
-
-            return \Illuminate\Cache\RateLimiting\Limit::perMinute(5)->by($key);
+            return \Illuminate\Cache\RateLimiting\Limit::perMinute(20)->by($request->ip());
         });
 
         // 注册限流:同 IP 每分钟 10 次,减缓「用户名/邮箱是否已占用」的账号枚举探测

@@ -25,7 +25,8 @@ Route::prefix('api')->group(function () {
     // 注册接口:独立限流(同 IP 每分钟 10 次),减缓账号枚举探测
     Route::middleware('throttle:register')->post('/auth/register', \App\Http\Controllers\Auth\RegisterController::class);
 
-    // 登录接口:同 用户名+IP 每分钟 5 次(更严格的独立限流)
+    // 登录接口:throttle:auth 仅做粗粒度按 IP 限流(每分钟 20 次)兜底 DoS;
+    // 真正的按账号失败次数限制(每 15 分钟 5 次、与 IP 无关)在 LoginController 内实现
     Route::post('/auth/login', \App\Http\Controllers\Auth\LoginController::class)->middleware('throttle:auth');
 
     // CSRF cookie:公开接口,供 SPA 首次取用 XSRF-TOKEN
