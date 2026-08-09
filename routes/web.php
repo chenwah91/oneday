@@ -42,6 +42,9 @@ Route::prefix('api')->group(function () {
         // 城市只读快照:先结算再返回聚合状态
         Route::get('/city', [\App\Http\Controllers\City\CityController::class, 'show']);
 
+        // 可建建筑列表:联查 L1 成本/产出,供前端建筑面板显示
+        Route::get('/definitions/buildings', [\App\Http\Controllers\City\DefinitionController::class, 'buildings']);
+
         // 建造:完整安全链(幂等/Revision/占地/上限/资源/审计)
         Route::post('/city/build', \App\Http\Controllers\City\BuildController::class)->middleware('throttle:api');
 
