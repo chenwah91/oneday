@@ -1,3 +1,9 @@
-app/config/env.php
-logs/
+# Composer 本地工具(项目内安装,不入库)
+/composer.phar
+
+# 依赖与环境(Laravel 骨架建立后由其 .gitignore 接管)
+/vendor/
+/node_modules/
+.env
+.env.backup
 *.log
