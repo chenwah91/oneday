@@ -1,0 +1,314 @@
+/* 管理后台样式:深色,风格与 /game 保持一致 */
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: #12161c;
+    color: #e8eaed;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+#app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.muted {
+    color: #9aa4b2;
+}
+
+/* 顶部栏 */
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: #1b212b;
+    border-bottom: 1px solid #2a3140;
+}
+
+.topbar-title {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.topbar-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: #9aa4b2;
+}
+
+/* 按钮 */
+.btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid #333c4a;
+    background: #1b212b;
+    color: #e8eaed;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.btn:hover {
+    border-color: #5b8def;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.btn-primary {
+    background: #5b8def;
+    border-color: #5b8def;
+    color: #fff;
+    font-weight: 600;
+}
+
+.btn-ghost {
+    background: transparent;
+}
+
+/* 登录卡片(与 /game/css/auth.css 视觉一致) */
+.auth-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 360px;
+    background: #1b212b;
+    border: 1px solid #2a3140;
+    border-radius: 14px;
+    padding: 28px 24px;
+}
+
+.auth-title {
+    margin: 0 0 4px;
+    font-size: 22px;
+    text-align: center;
+}
+
+.auth-subtitle {
+    margin: 0 0 20px;
+    text-align: center;
+    color: #9aa4b2;
+    font-size: 13px;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.auth-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.auth-label {
+    font-size: 12px;
+    color: #9aa4b2;
+}
+
+.auth-field input,
+.auth-field select {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #333c4a;
+    background: #12161c;
+    color: #e8eaed;
+    font-size: 14px;
+    width: 100%;
+}
+
+.auth-field input:focus,
+.auth-field select:focus {
+    outline: none;
+    border-color: #5b8def;
+}
+
+.auth-error {
+    color: #ff6b6b;
+    font-size: 13px;
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.35);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.auth-submit-row {
+    margin-top: 4px;
+}
+
+/* 无权限视图 */
+.center-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+}
+
+.card {
+    width: 100%;
+    max-width: 420px;
+    background: #1b212b;
+    border: 1px solid #2a3140;
+    border-radius: 14px;
+    padding: 28px 24px;
+    text-align: center;
+}
+
+/* 主看板 */
+.dashboard {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 20px;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.panel {
+    background: #1b212b;
+    border: 1px solid #2a3140;
+    border-radius: 12px;
+    padding: 16px 18px;
+}
+
+.panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.panel-header h2 {
+    margin: 0;
+    font-size: 15px;
+}
+
+.panel-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.panel-actions input {
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid #333c4a;
+    background: #12161c;
+    color: #e8eaed;
+    font-size: 13px;
+    min-width: 220px;
+}
+
+.panel-actions input:focus {
+    outline: none;
+    border-color: #5b8def;
+}
+
+.status {
+    font-size: 12px;
+    margin-bottom: 8px;
+    min-height: 16px;
+}
+
+/* 表格 */
+.table-wrap {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.data-table th,
+.data-table td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid #2a3140;
+    white-space: nowrap;
+}
+
+.data-table th {
+    color: #9aa4b2;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.data-table tbody tr:hover {
+    background: rgba(91, 141, 239, 0.06);
+}
+
+.role-admin {
+    color: #5b8def;
+    font-weight: 600;
+}
+
+.status-success {
+    color: #4cd97b;
+}
+
+.status-failed,
+.status-rejected {
+    color: #ff6b6b;
+}
+
+/* Definition 表单 */
+.def-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.def-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.def-row .auth-field {
+    flex: 1 1 160px;
+    min-width: 140px;
+}
+
+.def-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.def-result {
+    background: rgba(76, 217, 123, 0.1);
+    border: 1px solid rgba(76, 217, 123, 0.35);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.6;
+}

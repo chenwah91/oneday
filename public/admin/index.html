@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="zh">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#12161c">
+  <title>管理后台</title>
+  <link rel="stylesheet" href="/admin/css/admin.css">
+</head>
+<body>
+  <div id="app">
+
+    <header id="topbar" class="topbar hidden">
+      <div class="topbar-title">游戏管理后台</div>
+      <div class="topbar-user">
+        <span id="current-user"></span>
+        <button id="logout-btn" type="button" class="btn btn-ghost">退出登录</button>
+      </div>
+    </header>
+
+    <!-- 登录视图 -->
+    <div id="login-view" class="auth-wrap">
+      <div class="auth-card">
+        <h1 class="auth-title">管理后台登录</h1>
+        <p class="auth-subtitle">仅限管理员账号访问</p>
+        <form id="login-form" class="auth-form">
+          <div class="auth-field">
+            <label class="auth-label" for="login-username">用户名</label>
+            <input id="login-username" name="username" type="text" autocomplete="username" required maxlength="190">
+          </div>
+          <div class="auth-field">
+            <label class="auth-label" for="login-password">密码</label>
+            <input id="login-password" name="password" type="password" autocomplete="current-password" required maxlength="100">
+          </div>
+          <div id="login-error" class="auth-error hidden"></div>
+          <button id="login-submit" type="submit" class="btn btn-primary">登录</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 无权限视图 -->
+    <div id="denied-view" class="hidden center-wrap">
+      <div class="card">
+        <h2>无管理员权限</h2>
+        <p class="muted">当前账号不是管理员,请使用管理员账号登录。</p>
+      </div>
+    </div>
+
+    <!-- 管理后台主视图 -->
+    <div id="dashboard-view" class="hidden dashboard">
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>玩家列表</h2>
+          <button id="players-refresh" type="button" class="btn btn-ghost">刷新</button>
+        </div>
+        <div id="players-status" class="status muted"></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>用户名</th>
+                <th>邮箱</th>
+                <th>角色</th>
+                <th>城市 ID</th>
+              </tr>
+            </thead>
+            <tbody id="players-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>审计日志</h2>
+          <div class="panel-actions">
+            <input id="audit-action-input" type="text" placeholder="按 action 筛选,如 ADMIN.CONFIG_CHANGE">
+            <button id="audit-refresh" type="button" class="btn btn-ghost">刷新</button>
+          </div>
+        </div>
+        <div id="audit-status" class="status muted"></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>时间</th>
+                <th>action</th>
+                <th>actorType</th>
+                <th>userId</th>
+                <th>status</th>
+                <th>reasonCode</th>
+                <th>requestId</th>
+              </tr>
+            </thead>
+            <tbody id="audit-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Definition 调整</h2>
+        </div>
+        <form id="def-form" class="def-form">
+          <div class="def-row">
+            <div class="auth-field">
+              <label class="auth-label" for="def-building-id">buildingId</label>
+              <input id="def-building-id" type="text" placeholder="如 F02" required maxlength="16">
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="def-level">等级</label>
+              <select id="def-level" required>
+                <option value="1">L1</option>
+                <option value="2">L2</option>
+                <option value="3">L3</option>
+              </select>
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="def-field">字段</label>
+              <select id="def-field" required>
+                <option value="duration_seconds">duration_seconds(建造耗时秒)</option>
+                <option value="worker_required">worker_required(所需工人)</option>
+                <option value="maintenance_money_per_min">maintenance_money_per_min(每分钟金钱维护)</option>
+                <option value="maintenance_food_per_min">maintenance_food_per_min(每分钟粮食维护)</option>
+                <option value="maintenance_fuel_per_min">maintenance_fuel_per_min(每分钟燃料维护)</option>
+                <option value="power_per_min">power_per_min(每分钟电力)</option>
+                <option value="happiness_bonus">happiness_bonus(幸福度加成)</option>
+                <option value="governance_bonus">governance_bonus(治理加成)</option>
+                <option value="defense_score">defense_score(防御分)</option>
+                <option value="capacity">capacity(容量)</option>
+              </select>
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="def-value">value</label>
+              <input id="def-value" type="number" step="any" required>
+            </div>
+          </div>
+          <div class="auth-field">
+            <label class="auth-label" for="def-reason">调整原因(必填)</label>
+            <input id="def-reason" type="text" required minlength="2" maxlength="200" placeholder="说明本次调整原因">
+          </div>
+          <div id="def-current" class="status muted"></div>
+          <div id="def-error" class="auth-error hidden"></div>
+          <div id="def-result" class="def-result hidden"></div>
+          <div class="def-actions">
+            <button id="def-view-btn" type="button" class="btn btn-ghost">查看当前值</button>
+            <button id="def-submit" type="submit" class="btn btn-primary">提交调整</button>
+          </div>
+        </form>
+      </section>
+
+    </div>
+
+  </div>
+  <script type="module" src="/admin/js/admin.js"></script>
+</body>
+</html>
