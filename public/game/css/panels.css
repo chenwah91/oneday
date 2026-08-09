@@ -1,0 +1,16 @@
+/* 地图舞台与建造面板容器(PixiJS 挂载点,后续任务填充) */
+#stage {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #0d1116;
+}
+
+#panel {
+    background: #1b212b;
+    border-top: 1px solid #2a3140;
+}
+
+#panel:empty {
+    display: none;
+}
