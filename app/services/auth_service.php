@@ -33,4 +33,42 @@ final class AuthService {
         $playerId = (int)$db->lastInsertId();
         return ['player_id' => $playerId, 'token' => Auth::issueToken($playerId)];
     }
+
+    public static function login(string $username, string $password, string $ip): array {
+        $username = trim($username);
+        $db = Db::get();
+        // 15 分钟内失败满 5 次锁定
+        $stmt = $db->prepare(
+            'SELECT COUNT(*) AS n FROM login_attempt
+             WHERE username = :username AND success = 0 AND attempted_at > :since'
+        );
+        $stmt->execute([
+            ':username' => $username,
+            ':since'    => gmdate('Y-m-d H:i:s', time() - 900),
+        ]);
+        if ((int)$stmt->fetch()['n'] >= 5) {
+            return ['error' => 'TOO_MANY_ATTEMPTS'];
+        }
+
+        $stmt = $db->prepare('SELECT id, password_hash FROM player WHERE username = :username AND status = 1 LIMIT 1');
+        $stmt->execute([':username' => $username]);
+        $row = $stmt->fetch();
+        $okLogin = $row && password_verify($password, $row['password_hash']);
+
+        $stmt = $db->prepare(
+            'INSERT INTO login_attempt (username, ip, attempted_at, success)
+             VALUES (:username, :ip, :attempted_at, :success)'
+        );
+        $stmt->execute([
+            ':username'     => $username,
+            ':ip'           => $ip,
+            ':attempted_at' => gmdate('Y-m-d H:i:s'),
+            ':success'      => $okLogin ? 1 : 0,
+        ]);
+
+        if (!$okLogin) {
+            return ['error' => 'BAD_CREDENTIALS'];
+        }
+        return ['player_id' => (int)$row['id'], 'token' => Auth::issueToken((int)$row['id'])];
+    }
 }
