@@ -24,6 +24,9 @@ Route::prefix('api')->group(function () {
 
     // 注册接口:限流防刷
     Route::middleware('throttle:api')->post('/auth/register', \App\Http\Controllers\Auth\RegisterController::class);
+
+    // 登录接口:同 用户名+IP 每分钟 5 次(更严格的独立限流)
+    Route::post('/auth/login', \App\Http\Controllers\Auth\LoginController::class)->middleware('throttle:auth');
 });
 
 // 仅测试环境:用于验证异常渲染,绝不在生产暴露

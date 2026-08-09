@@ -15,4 +15,7 @@ final class ErrorCode
     public const METHOD_NOT_ALLOWED = 'METHOD_NOT_ALLOWED';
     public const CSRF_TOKEN_MISMATCH = 'CSRF_TOKEN_MISMATCH';
     public const HTTP_ERROR = 'HTTP_ERROR';
+
+    // 登录
+    public const BAD_CREDENTIALS = 'BAD_CREDENTIALS';
 }
