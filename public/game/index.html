@@ -3,7 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#12161c">
   <title>城市建设</title>
+  <link rel="manifest" href="/game/manifest.json">
+  <link rel="icon" href="/game/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/game/icons/icon-192.png">
   <link rel="stylesheet" href="/game/css/base.css">
   <link rel="stylesheet" href="/game/css/auth.css">
   <link rel="stylesheet" href="/game/css/hud.css">
@@ -13,5 +17,11 @@
   <div id="app"></div>
   <script src="/game/vendor/pixi.min.js"></script>
   <script type="module" src="/game/js/main.js"></script>
+  <script>
+    // 注册 PWA Service Worker(离线壳缓存,/api/* 始终不缓存,详见 service-worker.js)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/game/service-worker.js', { scope: '/game/' });
+    }
+  </script>
 </body>
 </html>
