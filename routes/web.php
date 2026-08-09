@@ -44,6 +44,9 @@ Route::prefix('api')->group(function () {
 
         // 建造:完整安全链(幂等/Revision/占地/上限/资源/审计)
         Route::post('/city/build', \App\Http\Controllers\City\BuildController::class)->middleware('throttle:api');
+
+        // 升级:L1→L2→L3,严格所有权校验(越权 403 + 审计)
+        Route::post('/city/upgrade', \App\Http\Controllers\City\UpgradeController::class)->middleware('throttle:api');
     });
 });
 
