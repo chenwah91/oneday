@@ -190,9 +190,13 @@ class SimulationInternalsTest extends TestCase
 
         $x = 1;
         foreach ($buildingIds as $bid) {
+            // 工人一律补满该级 worker_required:本文件验的是乘区/满足率/落库,
+            // 不是用工率,所以 workerFactor 必须恒为 1.0(否则每条精确断言都会被打折干扰)
+            $workers = (int) DB::table('building_level_definition')
+                ->where('building_id', $bid)->where('level', 1)->value('worker_required');
             CityBuildingInstance::create([
                 'city_id' => $city->id, 'building_id' => $bid, 'level' => 1,
-                'x' => $x, 'y' => 1, 'status' => 'active',
+                'x' => $x, 'y' => 1, 'status' => 'active', 'assigned_workers' => $workers,
             ]);
             $x += 4;
         }

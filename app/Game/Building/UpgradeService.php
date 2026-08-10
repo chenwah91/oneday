@@ -93,6 +93,7 @@ class UpgradeService
             }
 
             // 影响行数校验:防止实例在扣款与写级之间被并发拆除,产生"扣了钱但没升级"的幽灵升级
+            // (升级不自动调整工人:派工由玩家自理,§10.4 用户裁决 2026-08-10;超编对产出无害,workerFactor 封顶 1)
             $affected = DB::table('city_building_instances')->where('id', $instanceId)->where('city_id', $city->id)
                 ->update(['level' => $nextLevel, 'updated_at' => now()]);
             if ($affected === 0) {

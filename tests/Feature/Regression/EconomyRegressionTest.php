@@ -23,11 +23,12 @@ class EconomyRegressionTest extends TestCase
     // 每个用例结束都复位 Carbon 假时间,避免污染后续用例
     protected function tearDown(): void { Carbon::setTestNow(); parent::tearDown(); }
 
+    // 一座城 + 一座工人补满的 F02(F02 L1 需 4 人;不补满 workerFactor 会把产量打折)
     private function cityWithFarm(string $un): City
     {
         $u = User::create(['username' => $un, 'name' => $un, 'email' => "$un@x.com", 'password' => 'password123']);
         $city = CityFactory::createForUser($u);
-        CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'F02', 'level' => 1, 'x' => 1, 'y' => 1, 'status' => 'active']);
+        CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'F02', 'level' => 1, 'x' => 1, 'y' => 1, 'status' => 'active', 'assigned_workers' => 4]);
         return $city;
     }
 
@@ -106,8 +107,9 @@ class EconomyRegressionTest extends TestCase
         $city->update(['last_simulated_at' => now()->subSeconds(600)]);
         SimulationService::simulate($city->fresh());
         $foodAfter = (float) CityResource::where('city_id', $city->id)->where('resource_id', 'food')->value('amount');
-        // 10 分钟:F02 产 14/min × 10 − 人口10×0.03×10 = 140 − 3 = 137(未触顶前;起始 300~500,+137 < 1000)
-        $this->assertEqualsWithDelta($foodBefore + 137, $foodAfter, 0.5);
+        // 10 分钟:F02 产 14/min × 10 − 人口30×0.03×10 = 140 − 9 = 131(未触顶前;起始 300~500,+131 < 1000)
+        // 新城无住宅 → populationCapacity=0 → housingFactor=0 → 人口不增长,10 分钟内粮耗恒定
+        $this->assertEqualsWithDelta($foodBefore + 131, $foodAfter, 0.5);
     }
 
     // ---- M1 缺陷 0.2:建造/升级/拆除必须在锁内先跑 Time Delta 结算 ----
@@ -120,8 +122,8 @@ class EconomyRegressionTest extends TestCase
 
         $u = User::create(['username' => 'staleres', 'name' => 'staleres', 'email' => 'staleres@x.com', 'password' => 'password123']);
         $city = CityFactory::createForUser($u);
-        // E02 木炭窑:每分钟吃 木材 6(净速率为负),城里没有产木材的建筑
-        CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'E02', 'level' => 1, 'x' => 1, 'y' => 1, 'status' => 'active']);
+        // E02 木炭窑:每分钟吃 木材 6(净速率为负),城里没有产木材的建筑;工人补满(L1 需 4 人)
+        CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'E02', 'level' => 1, 'x' => 1, 'y' => 1, 'status' => 'active', 'assigned_workers' => 4]);
         DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->update(['amount' => 30]);
         DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'stone')->update(['amount' => 1000]);
         DB::table('cities')->where('id', $city->id)->update(['money' => 1000]);
@@ -177,17 +179,22 @@ class EconomyRegressionTest extends TestCase
         DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'food')->update(['amount' => 400]);
         DB::table('cities')->where('id', $city->id)->update(['money' => 1000]);
 
-        // 前 10 分钟城里没有农田:只有人口吃粮 10×0.03×10 = 3,粮食 400 → 397
+        // 前 10 分钟城里没有农田:只有人口吃粮 30×0.03×10 = 9,粮食 400 → 391
         Carbon::setTestNow($base->copy()->addMinutes(10));
         $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 2, 'y' => 2])->assertOk();
 
         $food = (float) CityResource::where('city_id', $city->id)->where('resource_id', 'food')->value('amount');
-        $this->assertEqualsWithDelta(397, $food, 0.01, '建造时应按"建造前的建筑集合"结算');
+        $this->assertEqualsWithDelta(391, $food, 0.01, '建造时应按"建造前的建筑集合"结算');
+
+        // 给新农田补满工人(否则 workerFactor=0,"不追溯"会被"本来就不产"掩盖,断言失去意义)。
+        // 同一时刻分配,经过 0 秒 → 不产生任何产出
+        $instanceId = (int) DB::table('city_building_instances')->where('city_id', $city->id)->value('id');
+        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instanceId' => $instanceId, 'workers' => 4])->assertOk();
 
         // 同一时刻(经过 0 秒)再取快照:新农田不得倒补建成之前的 10 分钟产量
         $this->actingAs($u)->getJson('/api/city')->assertOk();
         $foodAfterSnapshot = (float) CityResource::where('city_id', $city->id)->where('resource_id', 'food')->value('amount');
-        $this->assertEqualsWithDelta(397, $foodAfterSnapshot, 0.01, '新建筑不得追溯生产建成前的时段');
+        $this->assertEqualsWithDelta(391, $foodAfterSnapshot, 0.01, '新建筑不得追溯生产建成前的时段');
     }
 
     // ---- M1 缺陷 0.3:离线结算时长封顶 12h ----
@@ -310,7 +317,8 @@ class EconomyRegressionTest extends TestCase
         $city = CityFactory::createForUser($u);
         DB::table('city_building_instances')->where('city_id', $city->id)->delete(); // 确保城里只有磨坊
         for ($i = 0; $i < $count; $i++) {
-            CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'P01', 'level' => 1, 'x' => 1 + $i * 4, 'y' => 1, 'status' => 'active']);
+            // 工人补满(P01 L1 需 3 人):本组用例验的是原料满足率,workerFactor 必须恒为 1.0
+            CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'P01', 'level' => 1, 'x' => 1 + $i * 4, 'y' => 1, 'status' => 'active', 'assigned_workers' => 3]);
         }
         DB::table('cities')->where('id', $city->id)->update(['population' => 0, 'money' => 10000]);
         DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'food')->update(['amount' => $food]);

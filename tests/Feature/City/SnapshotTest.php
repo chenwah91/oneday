@@ -31,7 +31,13 @@ class SnapshotTest extends TestCase
 
         $res = $this->actingAs($u)->getJson('/api/city');
         $res->assertOk();
-        $res->assertJson(['success' => true, 'data' => ['city' => ['population' => 10, 'mapWidth' => 20]]]);
-        $res->assertJsonStructure(['data' => ['city' => ['resources', 'ratesPerMin', 'storageCapacity', 'buildings']]]);
+        // 初始人口 30(§10.4);新城没有建筑 → 可用工人 floor(30×0.60)=18,已分配 0
+        $res->assertJson(['success' => true, 'data' => ['city' => [
+            'population' => 30, 'mapWidth' => 20, 'availableWorkers' => 18, 'assignedWorkers' => 0,
+        ]]]);
+        $res->assertJsonStructure(['data' => ['city' => [
+            'resources', 'ratesPerMin', 'storageCapacity', 'buildings',
+            'availableWorkers', 'assignedWorkers', 'populationGrowthPerMin',
+        ]]]);
     }
 }

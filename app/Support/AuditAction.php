@@ -21,6 +21,9 @@ final class AuditAction
     public const BUILDING_UPGRADE = 'BUILDING.UPGRADE';
     public const BUILDING_DEMOLISH = 'BUILDING.DEMOLISH';
 
+    // 工人分配(绝对值设置:before/after 记该实例分配前后的工人数)
+    public const WORKER_ASSIGN = 'WORKER.ASSIGN';
+
     // 安全:越权操作被拒
     public const SECURITY_AUTHORIZATION_FAILED = 'SECURITY.AUTHORIZATION_FAILED';
 

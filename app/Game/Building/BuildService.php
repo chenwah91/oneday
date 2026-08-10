@@ -98,7 +98,7 @@ class BuildService
                 $delta[$res] = -$amt;
             }
 
-            // 建实体
+            // 建实体(assigned_workers 默认 0:没派工人就不生产是预期玩法,由玩家自行派工,§10.4 用户裁决 2026-08-10)
             $instanceId = DB::table('city_building_instances')->insertGetId([
                 'city_id' => $city->id, 'building_id' => $buildingId, 'level' => 1,
                 'x' => $x, 'y' => $y, 'status' => 'active',

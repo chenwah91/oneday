@@ -27,6 +27,9 @@ final class ErrorCode
     public const REVISION_CONFLICT = 'REVISION_CONFLICT';
     public const INVALID_BUILDING = 'INVALID_BUILDING';
 
+    // 劳动力不足:本次分配会让全城已分配工人超过 floor(population × 0.60)(CLAUDE §32 预留码)
+    public const WORKER_NOT_AVAILABLE = 'WORKER_NOT_AVAILABLE';
+
     // 幂等:同一 key 被复用到不同操作或不同参数上(409)
     public const IDEMPOTENCY_KEY_REUSED = 'IDEMPOTENCY_KEY_REUSED';
 }

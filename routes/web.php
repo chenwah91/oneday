@@ -57,6 +57,9 @@ Route::prefix('api')->group(function () {
 
         // 拆除:所有权校验(越权 403 + 审计),M1 不返还资源
         Route::post('/city/demolish', \App\Http\Controllers\City\DemolishController::class)->middleware('throttle:api');
+
+        // 工人分配:绝对值设置,受实例 worker_required 与全城 availableWorkers 双重约束(v3.2 §10.4)
+        Route::post('/city/workers/assign', \App\Http\Controllers\City\WorkerAssignController::class)->middleware('throttle:api');
     });
 });
 
