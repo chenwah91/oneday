@@ -1,6 +1,6 @@
 // PWA Service Worker:缓存 /game/ 静态资源,永不缓存 /api/*(玩家数据以服务器为准)
 // 版本号:每次静态资源有实质变更时递增,触发旧缓存清理
-const CACHE = 'apg-v7';
+const CACHE = 'apg-v8';
 
 // 预缓存的静态资源清单(HTML/CSS/JS/vendor/manifest/图标)
 const PRECACHE_URLS = [

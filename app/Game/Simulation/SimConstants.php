@@ -131,6 +131,49 @@ class SimConstants
     // 取代 M1 的「money = max(0, money) 然后继续满产」白嫖口径
     public const MAINTENANCE_ARREARS_FACTOR = 0.50;
 
+    // 财政预警两档(§10.5「财政储备 < 10分钟总维护 → 黄色预警;< 3分钟总维护 → 红色预警」)。
+    // 分母是全城维护资金速率;维护为 0 的城市不可能欠费,恒 none
+    public const FISCAL_WARNING_YELLOW_MINUTES = 10.0;
+    public const FISCAL_WARNING_RED_MINUTES = 3.0;
+
+    // ---- 物流(v3.2 §10.7 物流 + §3.3 等级状态公式,数值同样不得在代码里改)----
+
+    // 距离系数(§10.7「M2:distanceFactor = 1.0」):地图距离惩罚留到 M3 大地图深化。
+    // 保留成常量而不是直接写 1.0,是为了 M3 接大地图时只换这一处的取值来源
+    public const LOGISTICS_DISTANCE_FACTOR = 1.0;
+
+    // 运输负载分档拐点(§10.7):
+    //   transportLoad = transportDemand / max(1, transportCapacity)
+    //   <= 0.80        → logisticsFactor = 1.00
+    //   0.80 ~ 1.00    → 轻微运输延迟(§10.7 只写了「延迟」没写降产,所以仍是 1.00)
+    //   1.00 ~ 1.25    → 从 1.00 线性下降至 0.70
+    //   > 1.25         → 继续下降但不低于 0.25,并产生拥堵警报
+    public const TRANSPORT_LOAD_FREE = 0.80;
+    public const TRANSPORT_LOAD_TIGHT = 1.00;
+    public const TRANSPORT_LOAD_OVER = 1.25;
+
+    // 物流率的三个锚点(§10.7 + §3.3「clamp(availableTransportCapacity / transportDemand, 0.25, 1)」):
+    // 上限 1.00、负载 1.25 处 0.70、下限 0.25(§15 回归表「物流率不低于 0.25」)
+    public const LOGISTICS_FACTOR_MAX = 1.00;
+    public const LOGISTICS_FACTOR_AT_OVER = 0.70;
+    public const LOGISTICS_FACTOR_MIN = 0.25;
+
+    // 物流需求的起算时代(**本次补充假设,见 SimulationService::applyLocked 的注释**):
+    // v3.2 全表最早的运输建筑是 T02(时代 II / TECH_II_LOG),时代 I 没有任何建筑能产运输容量;
+    // §5.1「I→II 升级后新增核心 = 农田、市场、基础运输」也把运输写成时代 II 才有的东西。
+    // 若时代 I 照样计需求,全部时代 I 城市会被判定重度拥堵且无法自救,与 §13「物流是可经营的瓶颈」相悖
+    public const LOGISTICS_MIN_ERA_ORDER = 2;
+
+    // ---- §13 生产倍率硬上限(防爆)----
+
+    // 「NPC + 工具 + 科技 + 事件总生产倍率建议硬封顶在 2.75×;终局特殊建筑最多 3.25×」(§13 原文)。
+    // 落点唯一:SimulationService::multiplierProduct(),各系统不得在自己内部另夹一次
+    public const MULTIPLIER_CAP = 2.75;
+
+    // 终局特殊建筑的放宽上限。M2 还没有「终局特殊建筑」这个标记位(定义表无该列),
+    // 所以现在没有任何建筑走这一档;M3 补标记后由调用方把它传进 multiplierProduct()
+    public const MULTIPLIER_CAP_ENDGAME = 3.25;
+
     // 容量类产出(建筑等级定义中的产出类型)
     // 单一来源是 ResourceCode::CAPACITY,这里只做别名,避免调用方两处引用不一致
     public const CAPACITY_OUTPUTS = ResourceCode::CAPACITY;

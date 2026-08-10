@@ -59,7 +59,10 @@ Route::prefix('api')->group(function () {
         // 升级:L1→L2→L3,严格所有权校验(越权 403 + 审计)
         Route::post('/city/upgrade', \App\Http\Controllers\City\UpgradeController::class)->middleware('throttle:api');
 
-        // 拆除:所有权校验(越权 403 + 审计),M1 不返还资源
+        // 取消升级(M2-C5):仅 upgrading 可取消,退还该次升级材料的 70%(v3.2 §3.2,资金不返还)
+        Route::post('/city/upgrade/cancel', \App\Http\Controllers\City\UpgradeCancelController::class)->middleware('throttle:api');
+
+        // 拆除:所有权校验(越权 403 + 审计),返还已完工等级建造材料的 50%(v3.2 §10.9)
         Route::post('/city/demolish', \App\Http\Controllers\City\DemolishController::class)->middleware('throttle:api');
 
         // 工人分配:绝对值设置,受实例 worker_required 与全城 available_workers 双重约束(v3.2 §10.4)

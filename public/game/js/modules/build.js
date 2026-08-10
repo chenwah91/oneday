@@ -64,9 +64,10 @@ export async function handleTileClick(gx, gy) {
 }
 
 // 用 /api/city/build 返回的 diff 合并进 state.city:
-// 后端 diff 目前只回传 { revision, resources, money, delta },不含新建筑实体详情,
-// 这里用本地已知的 building_id/x/y/level(=1)/status 合成一条记录先行显示,
-// 下一次轮询 /api/city 会用服务端权威数据(含真实 id 与工人数)覆盖。
+// 后端 diff 回传 { revision, resources, money, delta, building? },其中 building 是本次新建的实例
+// (真实 id / status / construction_finished_at)。M2-C5 起建造要等 duration_seconds,
+// 拿到服务器给的完工时刻,施工倒计时立刻就能画,不必等下一轮快照。
+// 幂等重放路径没有 building 字段,这时回落到本地合成记录(id 为 local-xxx,面板会禁用操作按钮)。
 // 字段名必须与快照里的建筑记录完全一致,否则渲染层与详情面板读不到。
 function applyDiff(diff, buildingId, x, y) {
     const city = state.city;
@@ -74,13 +75,16 @@ function applyDiff(diff, buildingId, x, y) {
 
     const resources = Object.assign({}, city.resources, diff.resources);
     const buildings = city.buildings.slice();
+    const created = diff.building || null;
     buildings.push({
-        id: 'local-' + Date.now(),
+        id: created ? created.id : 'local-' + Date.now(),
         building_id: buildingId,
-        level: 1,
+        level: created ? created.level : 1,
         x,
         y,
-        status: 'active',
+        // 服务器权威状态:建造下单后是 constructing,到点由结算翻成 active
+        status: created ? created.status : 'constructing',
+        construction_finished_at: created ? created.construction_finished_at : null,
         assigned_workers: 0,
         worker_required: 0,
     });

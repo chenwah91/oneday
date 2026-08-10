@@ -27,9 +27,10 @@ class ObservabilityTest extends TestCase
         $city = CityFactory::createForUser($u);
         DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => 'wood'], ['amount' => 1000]);
         DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => 'stone'], ['amount' => 1000]);
-        // 本文件用 F02(时代 II)当"随便一个建造请求"来验可观测性,与时代闸门(M2-B6)无关,
-        // 把城市置于时代 II 免得请求先被 ERA_REQUIRED 挡下
+        // 本文件用 F02(时代 II)当"随便一个建造请求"来验可观测性,与时代 / 科技闸门无关,
+        // 把城市置于时代 II 并铺好前置科技,免得请求先被 ERA_REQUIRED / TECH_NOT_UNLOCKED 挡下
         DB::table('cities')->where('id', $city->id)->update(['era_key' => 'II', 'era_order' => 2]);
+        $this->unlockTechFor($city->id, 'F02');
 
         return $u;
     }
@@ -99,8 +100,9 @@ class ObservabilityTest extends TestCase
         $u = User::create(['username' => 'brokeguy', 'name' => 'brokeguy', 'email' => 'bg@b.com', 'password' => 'password123']);
         $city = CityFactory::createForUser($u);
         DB::table('city_resources')->where('city_id', $city->id)->update(['amount' => 0]);
-        // 时代闸门排在材料校验之前(M2-B6),先垫到时代 II 才验得到 INSUFFICIENT_RESOURCE 的响应结构
+        // 时代 / 科技闸门都排在材料校验之前(M2-B6 / M2-B4),两道都过了才验得到 INSUFFICIENT_RESOURCE 的响应结构
         DB::table('cities')->where('id', $city->id)->update(['era_key' => 'II', 'era_order' => 2]);
+        $this->unlockTechFor($city->id, 'F02');
 
         $res = $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 1, 'y' => 1], ['X-Request-ID' => 'fixed-rule-id-9']);
 

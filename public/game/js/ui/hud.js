@@ -1,5 +1,5 @@
-// 顶部 HUD:资源(wood/stone/food)+ 资金 + 人口/容量 + 劳动力已用/可用 + 粮食速率
-//          + 民生三值(幸福/健康/治安)+ revision
+// 顶部 HUD:资源(wood/stone/food)+ 资金(带财政预警变色)+ 人口/容量 + 劳动力已用/可用
+//          + 粮食速率 + 民生三值(幸福/健康/治安)+ 时代 + revision
 // 资源用英文 code 索引,显示文字一律走 resourceName(code)
 // 读的字段一律是快照的 snake_case 契约字段(用户 2026-08-10 拍板)
 import { fmt } from '../utils/format.js';
@@ -12,6 +12,13 @@ const FOOD = 'food';
 // 幸福警示线(v3.2 §11 民生行「预警阈值建议 <55」;§10.3 低于 50 人口彻底停止增长)。
 // 取 50:前端只在「已经开始伤害增长」时才变红,避免 55 附近长期红着让玩家脱敏
 const HAPPINESS_ALERT = 50;
+
+// 财政预警(v3.2 §10.5)三态 → 提示文字。级别由服务端派生(city.fiscal_warning),
+// 前端只负责上色与话术,绝不自己拿资金除维护再判一次阈值
+const FISCAL_TITLES = {
+    yellow: '资金可支撑维护不足 10 分钟',
+    red: '维护费即将付不出,建筑将半停工',
+};
 
 let refs = null;
 
@@ -46,6 +53,8 @@ export function mountHud(el) {
     });
 
     const moneyVal = makeItem(bar, 'hud-money', resourceName('money'), '💰');
+    // 资金栏整块的 title 要随财政预警改写(悬停在图标上也能看到原因),所以额外留一个外层引用
+    const moneyItem = moneyVal.parentElement;
     const popVal = makeItem(bar, 'hud-population', '人口 / 容量', '👤');
     // 劳动力(§10.4):已派工 / 可用工人。没派工人就不生产,这里让玩家一眼看到还有多少人闲着
     const laborVal = makeItem(bar, 'hud-labor', '劳动力 已用 / 可用', '🛠️');
@@ -68,7 +77,7 @@ export function mountHud(el) {
 
     el.appendChild(bar);
 
-    refs = { resourceEls, moneyVal, popVal, laborVal, rateVal, happinessVal, healthVal, securityVal, eraVal, revItem };
+    refs = { resourceEls, moneyVal, moneyItem, popVal, laborVal, rateVal, happinessVal, healthVal, securityVal, eraVal, revItem };
 }
 
 // city:GET /api/city 返回的 city 对象
@@ -81,6 +90,13 @@ export function updateHud(city) {
     });
 
     refs.moneyVal.textContent = fmt(city.money);
+
+    // 财政预警(§10.5):黄 = 资金撑不到 10 分钟维护,红 = 撑不到 3 分钟(再欠费就半停工)。
+    // 红色复用幸福那套 .hud-alert 警示态,黄色单开 .hud-warn;老响应里没有这个字段时按 none 处理
+    const fiscal = city.fiscal_warning || 'none';
+    refs.moneyVal.classList.toggle('hud-warn', fiscal === 'yellow');
+    refs.moneyVal.classList.toggle('hud-alert', fiscal === 'red');
+    refs.moneyItem.title = FISCAL_TITLES[fiscal] || resourceName('money');
     refs.popVal.textContent = fmt(city.population) + ' / ' + fmt(city.population_capacity);
     refs.laborVal.textContent = fmt(city.assigned_workers) + ' / ' + fmt(city.available_workers);
 

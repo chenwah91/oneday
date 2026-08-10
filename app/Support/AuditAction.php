@@ -21,6 +21,10 @@ final class AuditAction
     public const BUILDING_UPGRADE = 'BUILDING.UPGRADE';
     public const BUILDING_DEMOLISH = 'BUILDING.DEMOLISH';
 
+    // 取消升级(M2-C5,v3.2 §3.2「返还 70%,资金不返还」):
+    // delta 记实际退到手的材料(已按仓储上限截断),被截掉的量在 metadata.truncated
+    public const BUILDING_UPGRADE_CANCEL = 'BUILDING.UPGRADE_CANCEL';
+
     // 工人分配(绝对值设置:before/after 记该实例分配前后的工人数)
     public const WORKER_ASSIGN = 'WORKER.ASSIGN';
 

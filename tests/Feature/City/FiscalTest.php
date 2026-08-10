@@ -3,6 +3,7 @@
 namespace Tests\Feature\City;
 
 use App\Game\City\CityFactory;
+use App\Game\Simulation\SimConstants;
 use App\Game\Simulation\SimulationService;
 use App\Models\City;
 use App\Models\CityBuildingInstance;
@@ -299,6 +300,84 @@ class FiscalTest extends TestCase
         $this->assertEqualsWithDelta(5.0, $sim['grossConsumptionPerMin']['food'], 0.0001, '10 × 0.5');
     }
 
+    // ---- §10.5 财政预警(黄 < 10 分钟维护 / 红 < 3 分钟维护) ----
+
+    public function test_fiscal_warning_thresholds(): void
+    {
+        // 维护 4/min:资金 40 恰好撑 10 分钟 → 还不算黄(阈值是「小于」10 分钟)
+        $this->assertSame('none', SimulationService::fiscalWarning(40.0, 4.0));
+        $this->assertSame('yellow', SimulationService::fiscalWarning(39.99, 4.0)); // 9.9975 分钟
+        // 资金 12 恰好撑 3 分钟 → 仍是黄,再少一点才转红
+        $this->assertSame('yellow', SimulationService::fiscalWarning(12.0, 4.0));
+        $this->assertSame('red', SimulationService::fiscalWarning(11.99, 4.0));    // 2.9975 分钟
+        $this->assertSame('red', SimulationService::fiscalWarning(0.0, 4.0));      // 已经一分钱没有
+        // 维护为 0 的城市永远付得起 → 恒 none(哪怕资金也是 0,分母不能拿来除)
+        $this->assertSame('none', SimulationService::fiscalWarning(0.0, 0.0));
+        $this->assertSame('none', SimulationService::fiscalWarning(100.0, 0.0));
+        // 阈值本身锁死在 §10.5 的 10 / 3 分钟
+        $this->assertSame(10.0, SimConstants::FISCAL_WARNING_YELLOW_MINUTES);
+        $this->assertSame(3.0, SimConstants::FISCAL_WARNING_RED_MINUTES);
+    }
+
+    // 三态在真实结算里各出现一次:同一座 F02(维护 4/min),只改初始资金
+    public function test_fiscal_warning_three_states_in_settlement(): void
+    {
+        $base = Carbon::parse('2026-01-01 00:00:00');
+
+        // 三个用例都紧贴阈值:黄线两侧只差 1 分钟、红线两侧只差 0.5 分钟,
+        // 任何人把 10 / 3 这两个阈值挪动一点都会有用例变红
+        $cases = [
+            // [用户名, 初始资金, 10 分钟后资金 = 初始 − 40, 可撑分钟数, 期望预警]
+            ['fiscwn', 80.0, 40.0, 10.0, 'none'],   // 恰好 10 分钟 → 还不黄
+            ['fiscwy', 76.0, 36.0, 9.0,  'yellow'], // 9 分钟 → 黄
+            ['fiscwr', 50.0, 10.0, 2.5,  'red'],    // 2.5 分钟 → 红
+        ];
+
+        foreach ($cases as [$un, $money0, $money1, $minutes, $expected]) {
+            Carbon::setTestNow($base);
+            // 人口 0:没有税收,资金变化只剩维护一条线,算式干净
+            $city = $this->makeCity($un, ['F02' => 1], 0, 100.0, $money0);
+
+            Carbon::setTestNow($base->copy()->addMinutes(10));
+            $sim = SimulationService::simulate($city->fresh());
+
+            $this->assertEqualsWithDelta($money1, $this->moneyOf($city), 0.0001, "{$un} 结算后资金");
+            $this->assertEqualsWithDelta(4.0, $sim['maintenanceMoneyPerMin'], 0.0001);
+            $this->assertEqualsWithDelta($minutes, $money1 / 4.0, 0.0001, "{$un} 可支撑分钟数");
+            $this->assertSame($expected, $sim['fiscalWarning'], "{$un} 预警级别");
+        }
+    }
+
+    // 零维护的城市永远 none:住宅摆满、资金归零也不该吓唬玩家
+    public function test_zero_maintenance_city_never_warns(): void
+    {
+        $base = Carbon::parse('2026-01-01 00:00:00');
+        Carbon::setTestNow($base);
+        $city = $this->makeCity('fiscwz', ['H01' => 2], 0, 100.0, 0.0);
+
+        Carbon::setTestNow($base->copy()->addMinutes(10));
+        $sim = SimulationService::simulate($city->fresh());
+
+        $this->assertEqualsWithDelta(0.0, $sim['maintenanceMoneyPerMin'], 0.0001);
+        $this->assertEqualsWithDelta(0.0, $this->moneyOf($city), 0.0001);
+        $this->assertSame('none', $sim['fiscalWarning']);
+    }
+
+    // 预警与欠费半停工是同一条时间线上的先后两步:欠费之后资金必然被夹到 0 → 一定是红
+    public function test_arrears_city_is_red(): void
+    {
+        $base = Carbon::parse('2026-01-01 00:00:00');
+        Carbon::setTestNow($base);
+        $city = $this->makeCity('fiscwarr', ['F02' => 1], 0, 100.0, 10.0);
+
+        Carbon::setTestNow($base->copy()->addMinutes(10));
+        $sim = SimulationService::simulate($city->fresh());
+
+        $this->assertTrue($sim['maintenanceArrears']);
+        $this->assertEqualsWithDelta(0.0, $this->moneyOf($city), 0.0001);
+        $this->assertSame('red', $sim['fiscalWarning']);
+    }
+
     // ---- 与人口/幸福分段的叠加一致性 ----
 
     // 税基是「段起人口」:人口在段间增长,第二段的税收必须跟着涨;
@@ -338,7 +417,7 @@ class FiscalTest extends TestCase
 
     // ---- 快照契约 ----
 
-    // /api/city 必须带 tax_income_per_min 与 governance 三件套(全 snake_case)
+    // /api/city 必须带 tax_income_per_min / 维护速率 / 财政预警 与 governance 三件套(全 snake_case)
     public function test_snapshot_exposes_fiscal_fields(): void
     {
         $u = User::create(['username' => 'fiscsnap', 'name' => 'fiscsnap', 'email' => 'fs@x.com', 'password' => 'password123']);
@@ -347,8 +426,13 @@ class FiscalTest extends TestCase
         $res = $this->actingAs($u)->getJson('/api/city');
         $res->assertOk();
         $res->assertJsonStructure(['data' => ['city' => [
-            'tax_income_per_min', 'governance' => ['load', 'efficiency', 'capacity'],
+            'tax_income_per_min', 'maintenance_money_per_min', 'fiscal_warning',
+            'governance' => ['load', 'efficiency', 'capacity'],
         ]]]);
+
+        // 新城没有任何建筑 → 维护 0 → 预警恒 none(HUD 的资金数字保持常态色)
+        $this->assertEqualsWithDelta(0.0, $res->json('data.city.maintenance_money_per_min'), 0.0001);
+        $this->assertSame('none', $res->json('data.city.fiscal_warning'));
 
         // 新城:人口 30、没有治理建筑 → 容量 0 → 负载 30/max(1,0) = 30 > 1.25 → 效率 0.50
         // 税收 = 30 × 0.02 × 0.50 = 0.3/min
@@ -357,6 +441,29 @@ class FiscalTest extends TestCase
         $this->assertEqualsWithDelta(30.0, $city['governance']['load'], 0.0001);
         $this->assertEqualsWithDelta(0.5, $city['governance']['efficiency'], 0.0001);
         $this->assertEqualsWithDelta(0.3, $city['tax_income_per_min'], 0.0001);
+    }
+
+    // 快照里的预警会随资金真实变色:HUD 直接读这两个字段,不自己算阈值
+    public function test_snapshot_fiscal_warning_reflects_money(): void
+    {
+        $base = Carbon::parse('2026-01-01 00:00:00');
+        Carbon::setTestNow($base);
+        // F02 维护 4/min、人口 0(无税收);资金 10 → 只够撑 2.5 分钟 → 红
+        $city = $this->makeCity('fiscsnapr', ['F02' => 1], 0, 100.0, 10.0);
+        $u = User::where('username', 'fiscsnapr')->first();
+
+        // 时间不推进(elapsed = 0):资金原样返回,预警只由「资金 / 维护速率」决定
+        $snapshot = $this->actingAs($u)->getJson('/api/city')->assertOk()->json('data.city');
+        $this->assertEqualsWithDelta(4.0, $snapshot['maintenance_money_per_min'], 0.0001);
+        $this->assertSame('red', $snapshot['fiscal_warning']);
+
+        // 同一座城改资金:70 → 撑 17.5 分钟 → none;30 → 撑 7.5 分钟 → 黄
+        foreach ([[70.0, 'none'], [30.0, 'yellow']] as [$money, $expected]) {
+            DB::table('cities')->where('id', $city->id)->update(['money' => $money]);
+
+            $snapshot = $this->actingAs($u)->getJson('/api/city')->assertOk()->json('data.city');
+            $this->assertSame($expected, $snapshot['fiscal_warning'], "资金 {$money} 的预警级别");
+        }
     }
 
     // ---- 公共辅助 ----

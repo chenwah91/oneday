@@ -84,6 +84,8 @@ class EconomyRegressionTest extends TestCase
         $u = User::create(['username' => 'limiter', 'name' => 'limiter', 'email' => 'lim@x.com', 'password' => 'password123']);
         $city = CityFactory::createForUser($u);
         DB::table('city_resources')->where('city_id', $city->id)->update(['amount' => 100000]);
+        // M2-B4 建造科技闸门排在数量上限之前(v3.2 §4),先铺好 A01 的前置科技,验的才是数量上限
+        $this->unlockTechFor($city->id, 'A01');
         // A01 max_count=1
         $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'A01', 'x' => 1, 'y' => 1])->assertOk();
         $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'A01', 'x' => 6, 'y' => 6])
@@ -124,10 +126,16 @@ class EconomyRegressionTest extends TestCase
         $city = CityFactory::createForUser($u);
         // E02 木炭窑:每分钟吃 木材 6(净速率为负),城里没有产木材的建筑;工人补满(L1 需 4 人)
         CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'E02', 'level' => 1, 'x' => 1, 'y' => 1, 'status' => 'active', 'assigned_workers' => 4]);
+        // T02 道路(运输容量 140):本城下面要被置为时代 II,而物流(M2-C4 / §10.7)自时代 II 起计需求。
+        // E02 的运输需求 = 输入 6 + 输出 5 = 11,没路的话负载 11 → 物流率 0.25,木材 10 分钟只吃掉 15、吃不完;
+        // 本用例验的是「过期快照不能消费」,不是物流,所以给它一条路让物流率回到 1.00(11/140 = 0.079)
+        CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'T02', 'level' => 1, 'x' => 5, 'y' => 1, 'status' => 'active', 'assigned_workers' => 0]);
         DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->update(['amount' => 30]);
         DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'stone')->update(['amount' => 1000]);
         // era_order:F02 是时代 II 建筑,时代闸门(M2-B6)排在材料校验之前,不垫时代就验不到 INSUFFICIENT_RESOURCE
         DB::table('cities')->where('id', $city->id)->update(['money' => 1000, 'era_key' => 'II', 'era_order' => 2]);
+        // 科技闸门(M2-B4)同样排在材料之前,一并铺好前置科技
+        $this->unlockTechFor($city->id, 'F02');
 
         // 10 分钟吃掉 60 木材,只有 30 → 结算后木材必然为 0
         Carbon::setTestNow($base->copy()->addMinutes(10));
@@ -154,6 +162,8 @@ class EconomyRegressionTest extends TestCase
         DB::table('city_resources')->where('city_id', $city->id)->update(['amount' => 1000]);
         // era_order:F02 是时代 II 建筑,时代闸门(M2-B6)排在材料校验之前,不垫时代就验不到 INSUFFICIENT_RESOURCE
         DB::table('cities')->where('id', $city->id)->update(['money' => 30, 'era_key' => 'II', 'era_order' => 2]);
+        // 科技闸门(M2-B4)同样排在材料之前,一并铺好前置科技
+        $this->unlockTechFor($city->id, 'F02');
 
         // 10 分钟维护费 40,只有 30 → 结算后资金必然为 0
         Carbon::setTestNow($base->copy()->addMinutes(10));
@@ -181,6 +191,8 @@ class EconomyRegressionTest extends TestCase
         DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'food')->update(['amount' => 400]);
         // era_order:F02 是时代 II 建筑,时代闸门(M2-B6)会挡下时代 I 的城,这里要的是建造成功
         DB::table('cities')->where('id', $city->id)->update(['money' => 1000, 'era_key' => 'II', 'era_order' => 2]);
+        // 科技闸门(M2-B4)同样要过,这里要的是建造成功
+        $this->unlockTechFor($city->id, 'F02');
 
         // 前 10 分钟城里没有农田:只有人口吃粮 30×0.03×10 = 9,粮食 400 → 391
         Carbon::setTestNow($base->copy()->addMinutes(10));

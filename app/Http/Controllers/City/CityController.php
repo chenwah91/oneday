@@ -12,6 +12,7 @@ use App\Http\Controllers\Controller;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 // 城市只读快照
@@ -42,10 +43,16 @@ class CityController extends Controller
             })
             ->where('ci.city_id', $city->id)
             ->orderBy('ci.id')
-            ->get(['ci.id', 'ci.building_id', 'ci.level', 'ci.x', 'ci.y', 'ci.status', 'ci.assigned_workers', 'bl.worker_required'])
+            ->get(['ci.id', 'ci.building_id', 'ci.level', 'ci.x', 'ci.y', 'ci.status',
+                'ci.construction_finished_at', 'ci.assigned_workers', 'bl.worker_required'])
             ->map(fn ($b) => [
                 'id' => (int) $b->id, 'building_id' => $b->building_id, 'level' => (int) $b->level,
                 'x' => (int) $b->x, 'y' => (int) $b->y, 'status' => $b->status,
+                // 施工 / 升级完工时刻(M2-C5):服务器权威时间,前端拿它做视觉倒计时,
+                // 到点后仍要拉快照确认(客户端时间不可信,§16.3)。NULL = 没有在进行的工程
+                'construction_finished_at' => $b->construction_finished_at !== null
+                    ? Carbon::parse($b->construction_finished_at)->toIso8601String()
+                    : null,
                 'assigned_workers' => (int) $b->assigned_workers,
                 'worker_required'  => (int) $b->worker_required,
             ])->all();
@@ -77,10 +84,24 @@ class CityController extends Controller
                 // tax_income_per_min 与 rates_per_min 同为「最后一段口径」的速率;
                 // governance.load 越界会按四档压低 efficiency,直接打折税收
                 'tax_income_per_min'  => $sim['taxIncomePerMin'],
+                // 维护资金速率(资金/分钟):财政预警的分母,也是玩家判断「还能撑多久」的唯一依据
+                'maintenance_money_per_min' => $sim['maintenanceMoneyPerMin'],
+                // 财政预警(§10.5)'none' | 'yellow' | 'red':资金可支撑维护 < 10 分钟转黄、< 3 分钟转红。
+                // 服务端派生而不是让前端自己拿资金除维护 —— 阈值属于数值规格,不能有第二份口径
+                'fiscal_warning'      => $sim['fiscalWarning'],
                 'governance'          => [
                     'load'       => $sim['governanceLoad'],
                     'efficiency' => $sim['governanceEfficiency'],
                     'capacity'   => $sim['governanceCapacity'],
+                ],
+                // 物流(§10.7 / §11 综合面板「运输使用率」):load 是 §11 的 transport_load_rate 口径(比值,不是百分数),
+                // factor 就是七乘区里 logistics 那一格的实际值,congestion 对应 §10.7 的拥堵警报
+                'logistics'           => [
+                    'capacity'       => $sim['transportCapacity'],
+                    'demand_per_min' => $sim['transportDemandPerMin'],
+                    'load'           => $sim['transportLoad'],
+                    'factor'         => $sim['logisticsFactor'],
+                    'congestion'     => $sim['transportCongestion'],
                 ],
                 'map_width'           => $city->map_width,
                 'map_height'          => $city->map_height,

@@ -5,6 +5,7 @@ namespace App\Game\Building;
 use App\Game\City\EraService;
 use App\Game\Resource\ResourceCode;
 use App\Game\Simulation\SimulationService;
+use App\Game\Technology\TechService;
 use App\Models\City;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
@@ -39,7 +40,7 @@ class BuildService
         }
         $cost = json_decode($lvl->cost_json, true) ?: [];
 
-        return DB::transaction(function () use ($city, $def, $buildingId, $x, $y, $cost, $idempotencyKey, $expectedRevision, $requestHash) {
+        return DB::transaction(function () use ($city, $def, $lvl, $buildingId, $x, $y, $cost, $idempotencyKey, $expectedRevision, $requestHash) {
             $locked = DB::table('cities')->where('id', $city->id)->lockForUpdate()->first();
 
             // 幂等:锁后重新校验,关闭"锁前检查、锁后写入"之间的并发窗口(TOCTOU)
@@ -63,11 +64,25 @@ class BuildService
             // 必须排在占地/上限/材料之前 —— 时代不到根本谈不上"这块地能不能放",
             // 先报 LAND_OCCUPIED 会让玩家换个地方反复试。
             // 判定一律读 cities.era_order(B6 起唯一口径),不再从已解锁科技派生。
-            // 科技闸门(building_definition.tech_id)是 B4 的活,本段不接。
             $eraOrders = EraService::orders();
             $needEraOrder = (int) ($eraOrders[$def->era_key] ?? PHP_INT_MAX);
             if ($needEraOrder > (int) $locked->era_order) {
                 throw new GameRuleException(ErrorCode::ERA_REQUIRED, 422);
+            }
+
+            // 科技闸门(M2-B4,v3.2 §4「时代 → 科技 → 人口 → …」与 §4.1 的 canBuild 伪代码):
+            // building_definition.tech_id 是该建筑的前置科技,必须已解锁(在研不算解锁)。
+            // 位置固定在时代之后、占地/上限/材料之前 —— 与 v3.2 的检查顺序逐条对齐。
+            // tech_id 为空的建筑(定义里允许 NULL)视为无科技前置,直接放行
+            if ($def->tech_id !== null && $def->tech_id !== '') {
+                $techUnlocked = DB::table('city_technologies')
+                    ->where('city_id', $city->id)
+                    ->where('tech_id', $def->tech_id)
+                    ->where('status', TechService::STATUS_UNLOCKED)
+                    ->exists();
+                if (! $techUnlocked) {
+                    throw new GameRuleException(ErrorCode::TECH_NOT_UNLOCKED, 422);
+                }
             }
 
             // 占地:落在地图内
@@ -111,10 +126,17 @@ class BuildService
             }
 
             // 建实体(assigned_workers 默认 0:没派工人就不生产是预期玩法,由玩家自行派工,§10.4 用户裁决 2026-08-10)
+            //
+            // M2-C5 施工计时(v3.2 §16.3):落地即 constructing,完工时刻 = 服务器当前时间 + L1 duration_seconds。
+            // 扣费仍是即时的(§16.3「资源在事务内扣除」);建筑要等懒完工翻正成 active 之后才进生产集合。
+            // finished_at 一律用服务器时间算,客户端改时间不可能提前完工
+            $now = now();
+            $finishedAt = $now->copy()->addSeconds(max(0, (int) $lvl->duration_seconds));
             $instanceId = DB::table('city_building_instances')->insertGetId([
                 'city_id' => $city->id, 'building_id' => $buildingId, 'level' => 1,
-                'x' => $x, 'y' => $y, 'status' => 'active',
-                'created_at' => now(), 'updated_at' => now(),
+                'x' => $x, 'y' => $y, 'status' => ConstructionService::STATUS_CONSTRUCTING,
+                'construction_finished_at' => $finishedAt,
+                'created_at' => $now, 'updated_at' => $now,
             ]);
 
             // 不变量:资源不为负(扣前已校验,双保险)
@@ -135,21 +157,45 @@ class BuildService
                 'entity_type' => 'building', 'entity_id' => (string) $instanceId,
                 'city_revision_before' => (int) $locked->revision, 'city_revision_after' => $newRevision,
                 'delta_json' => $delta, 'idempotency_key' => $idempotencyKey,
-                'metadata_json' => ['buildingId' => $buildingId, 'x' => $x, 'y' => $y],
+                // finishedAt 进 metadata:完工翻正本身不写审计(见 ConstructionService),
+                // 「这栋楼当初约定几点完工」的可追溯性由下单这条审计承担
+                'metadata_json' => [
+                    'buildingId'      => $buildingId,
+                    'x'               => $x,
+                    'y'               => $y,
+                    'durationSeconds' => (int) $lvl->duration_seconds,
+                    'finishedAt'      => $finishedAt->toIso8601String(),
+                ],
             ]);
 
-            return self::snapshotDiff($city->fresh(), $delta);
+            return self::snapshotDiff($city->fresh(), $delta, [
+                'id'                       => (int) $instanceId,
+                'building_id'              => $buildingId,
+                'level'                    => 1,
+                'x'                        => $x,
+                'y'                        => $y,
+                'status'                   => ConstructionService::STATUS_CONSTRUCTING,
+                'construction_finished_at' => $finishedAt->toIso8601String(),
+            ]);
         });
     }
 
-    // 返回资源/revision 简要 diff
-    private static function snapshotDiff(City $city, array $delta = []): array
+    // 返回资源/revision 简要 diff。
+    // $building 非 null 时附带新建实例(前端拿真实 id 与完工时刻,不必再等一轮快照才能显示倒计时);
+    // 幂等重放路径拿不到本次实例,该键缺省不出现,前端回落到下一次快照
+    private static function snapshotDiff(City $city, array $delta = [], ?array $building = null): array
     {
-        return [
+        $diff = [
             'revision'  => (int) $city->revision,
             'resources' => DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all(),
             'money'     => (float) $city->money,
             'delta'     => $delta,
         ];
+
+        if ($building !== null) {
+            $diff['building'] = $building;
+        }
+
+        return $diff;
     }
 }

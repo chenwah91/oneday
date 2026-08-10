@@ -15,8 +15,18 @@ import { categoryName } from '../core/enum-names.js';
 
 const MAX_LEVEL = 3; // 与后端 UpgradeService 一致:L1→L2→L3
 
+// 返还比例(v3.2 §10.9 拆除 50% / §3.2 取消 70%):只用于文案,真正的返还量由服务器算
+const DEMOLISH_REFUND_PERCENT = 50;
+const CANCEL_REFUND_PERCENT = 70;
+
+// 施工 / 升级中的状态文案(与后端 ConstructionService 的 status 取值一一对应)
+const BUSY_STATUS_TEXT = { constructing: '施工中', upgrading: '升级中' };
+
 // 升级语境下的错误码文案覆盖:后端满级复用了 BUILDING_LIMIT_REACHED,这里译成"已达最高等级"
-const UPGRADE_ERRORS = { BUILDING_LIMIT_REACHED: '已达最高等级' };
+const UPGRADE_ERRORS = { BUILDING_LIMIT_REACHED: '已达最高等级', VALIDATION_ERROR: '这栋建筑正在施工/升级中' };
+
+// 取消升级语境下的覆盖:后端"不是 upgrading 状态"复用了 VALIDATION_ERROR
+const CANCEL_ERRORS = { VALIDATION_ERROR: '升级已完成或已取消,请刷新后重试' };
 
 // 派工语境下的覆盖:后端"超过该级 worker_required"复用了 VALIDATION_ERROR,泛化文案说不清原因
 const WORKER_ERRORS = { VALIDATION_ERROR: '超过这栋建筑的用工需求,请刷新后重试' };
@@ -27,6 +37,15 @@ let openId = null; // 当前打开的建筑实例 id,null = 关闭
 let confirming = false; // 拆除二次确认条是否展开
 let busy = false; // 请求进行中:禁用按钮,防重复提交
 let lastSignature = ''; // 上次渲染时的数据指纹,用于跳过无关刷新
+
+// 施工倒计时(M2-C5):纯视觉,用客户端时钟对着服务器给的完工时刻倒数。
+// 客户端时间不可信(§16.3「修改电脑/手机时间不能提前完工」),所以倒数到 0 只做一件事:
+// 拉一次权威快照,由服务器决定到底完工没有。逐秒只改 countdownEl 的文本,不整块重建 DOM,
+// 免得每秒一次的重建打断玩家正按着的按钮。
+let countdownEl = null;
+let countdownTimer = null;
+let countdownDeadline = 0; // 完工时刻(毫秒)
+let lastConfirmAt = 0; // 上次"到点拉快照"的时刻,限流成最快 3 秒一次
 
 function defsById() {
     const map = {};
@@ -58,6 +77,40 @@ function isSynced(b) {
     return b != null && /^\d+$/.test(String(b.id));
 }
 
+// 是否有在进行中的工程(施工 / 升级)
+function isBusyStatus(b) {
+    return !!(b && BUSY_STATUS_TEXT[b.status]);
+}
+
+// 秒数 → mm:ss(超过一小时前面补小时)
+function formatRemaining(seconds) {
+    const s = Math.max(0, Math.floor(seconds));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    const pad = (n) => (n < 10 ? '0' + n : String(n));
+    return h > 0 ? h + ':' + pad(m) + ':' + pad(sec) : pad(m) + ':' + pad(sec);
+}
+
+// 本次拆除预计返还的口径文案(具体数量由服务器算,前端只说比例,不自己算游戏规则)
+function refundHint(b) {
+    if (b.status === 'constructing') {
+        return '取消建造,返还建造材料的 ' + CANCEL_REFUND_PERCENT + '%(资金不返还)';
+    }
+    if (b.status === 'upgrading') {
+        return '返还在建升级材料的 ' + CANCEL_REFUND_PERCENT + '% + 已完工等级建造材料的 '
+            + DEMOLISH_REFUND_PERCENT + '%(资金不返还)';
+    }
+    return '返还已完工等级建造材料的 ' + DEMOLISH_REFUND_PERCENT + '%(资金不返还)';
+}
+
+// 返还明细 → 提示文案(delta 是服务器算好的实际到手量)
+function refundText(delta) {
+    const entries = Object.keys(delta || {});
+    if (entries.length === 0) return '';
+    return entries.map((code) => resourceName(code) + ' ' + fmt(delta[code])).join(' ');
+}
+
 // 产出展示:定义接口目前只回传 L1 的 output(数组 [{resource, rate_per_min}])
 // resource 是英文 code,显示时翻成中文名;容量类不是每分钟速率,不加 "/分"
 function formatOutput(output) {
@@ -78,10 +131,46 @@ function signature() {
     if (!b) return 'none';
     const pool = cityWorkerPool();
     return [
-        b.id, b.level, b.x, b.y, b.status,
+        b.id, b.level, b.x, b.y, b.status, b.construction_finished_at,
         b.assigned_workers, b.worker_required, pool.available, pool.assigned,
         state.definitions ? 1 : 0, busy ? 1 : 0, confirming ? 1 : 0,
     ].join('|');
+}
+
+// ---- 施工倒计时 ----
+
+function stopCountdown() {
+    if (countdownTimer !== null) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+    }
+    countdownEl = null;
+    countdownDeadline = 0;
+}
+
+function tickCountdown() {
+    if (!countdownEl || !countdownDeadline) return;
+
+    const left = Math.round((countdownDeadline - Date.now()) / 1000);
+    countdownEl.textContent = left > 0 ? formatRemaining(left) : '完工确认中...';
+
+    // 到点:拉一次权威快照让服务器决定是否已完工(最快 3 秒一次,避免时钟偏差时刷接口)
+    if (left <= 0 && Date.now() - lastConfirmAt > 3000) {
+        lastConfirmAt = Date.now();
+        refreshCity();
+    }
+}
+
+// finishedAt:服务器给的 ISO 完工时刻
+function startCountdown(el, finishedAt) {
+    stopCountdown();
+    const deadline = Date.parse(finishedAt);
+    if (!deadline) return;
+
+    countdownEl = el;
+    countdownDeadline = deadline;
+    tickCountdown();
+    countdownTimer = setInterval(tickCountdown, 1000);
 }
 
 function makeRow(key, value) {
@@ -192,6 +281,7 @@ function makeWorkerSection(b, synced) {
 function render() {
     if (!rootEl) return;
     lastSignature = signature();
+    stopCountdown(); // 每次重建 DOM 都要先停掉旧计时器,旧节点已经被丢弃
 
     const b = currentBuilding();
     if (!b) {
@@ -238,7 +328,19 @@ function render() {
     // def.category 是英文 code(v3.2 §0.2),显示时翻成中文
     if (def && def.category) body.appendChild(makeRow('分类', categoryName(def.category)));
     if (def && def.footprint) body.appendChild(makeRow('占地', def.footprint.w + ' × ' + def.footprint.h));
-    if (b.status && b.status !== 'active') body.appendChild(makeRow('状态', b.status));
+
+    // 施工 / 升级中(M2-C5):显示状态与倒计时;倒计时到点会自动拉快照由服务器确认
+    const working = isBusyStatus(b);
+    if (working) {
+        body.appendChild(makeRow('状态', BUSY_STATUS_TEXT[b.status]));
+        const row = makeRow('剩余时间', '--:--');
+        body.appendChild(row);
+        if (b.construction_finished_at) {
+            startCountdown(row.querySelector('.bldg-row-value'), b.construction_finished_at);
+        }
+    } else if (b.status && b.status !== 'active') {
+        body.appendChild(makeRow('状态', b.status));
+    }
 
     const outputText = formatOutput(def && def.level1 && def.level1.output);
     if (outputText) body.appendChild(makeRow('L1 产出', outputText));
@@ -254,9 +356,16 @@ function render() {
     actions.className = 'bldg-actions';
 
     const maxed = level >= MAX_LEVEL;
-    const upgradeBtn = makeButton('bldg-btn-upgrade', maxed ? '已满级' : '升级到 Lv' + (level + 1), () => doUpgrade(b));
-    upgradeBtn.disabled = maxed || busy || !synced;
-    actions.appendChild(upgradeBtn);
+    // 升级中显示"取消升级(退 70%)",其余情况显示升级按钮;施工中两者都不可用
+    if (b.status === 'upgrading') {
+        const cancelBtn = makeButton('bldg-btn-upgrade', '取消升级(退 ' + CANCEL_REFUND_PERCENT + '%)', () => doCancelUpgrade(b));
+        cancelBtn.disabled = busy || !synced;
+        actions.appendChild(cancelBtn);
+    } else {
+        const upgradeBtn = makeButton('bldg-btn-upgrade', maxed ? '已满级' : '升级到 Lv' + (level + 1), () => doUpgrade(b));
+        upgradeBtn.disabled = maxed || busy || !synced || working;
+        actions.appendChild(upgradeBtn);
+    }
 
     const demolishBtn = makeButton('bldg-btn-demolish', '拆除', () => {
         confirming = true;
@@ -281,7 +390,8 @@ function render() {
 
         const text = document.createElement('div');
         text.className = 'bldg-confirm-text';
-        text.textContent = '确定拆除?拆除不返还资源';
+        // 预计返还只说比例(v3.2 §10.9 / §3.2),实际数量由服务器算完在成功提示里回报
+        text.textContent = '确定拆除?' + refundHint(b);
         confirm.appendChild(text);
 
         const row = document.createElement('div');
@@ -336,10 +446,34 @@ async function doUpgrade(b) {
             expected_revision: state.city ? state.city.revision : undefined,
         });
         applyUpgradeDiff(diff);
-        const level = (diff.building && diff.building.level) || null;
-        notifySuccess(level ? '升级成功,当前 Lv' + level : '升级成功');
+        // M2-C5:升级不再瞬间完成,响应回的是"开工了",目标等级在 target_level
+        const target = (diff.building && diff.building.target_level) || null;
+        notifySuccess(target ? '开始升级到 Lv' + target + ',完工前暂停生产' : '已开始升级');
     } catch (err) {
         await handleMutationError(err, '升级失败,请重试', UPGRADE_ERRORS);
+    } finally {
+        busy = false;
+        render();
+    }
+}
+
+// 取消升级(M2-C5):退还该次升级材料的 70%(资金不返还),状态回 active
+async function doCancelUpgrade(b) {
+    if (busy || !isSynced(b)) return;
+    busy = true;
+    render();
+
+    try {
+        const diff = await api.post('/api/city/upgrade/cancel', {
+            instance_id: Number(b.id),
+            idempotency_key: newIdempotencyKey(),
+            expected_revision: state.city ? state.city.revision : undefined,
+        });
+        applyUpgradeDiff(diff);
+        const refunded = refundText(diff.delta);
+        notifySuccess(refunded ? '已取消升级,返还 ' + refunded : '已取消升级');
+    } catch (err) {
+        await handleMutationError(err, '取消升级失败,请重试', CANCEL_ERRORS);
     } finally {
         busy = false;
         render();
@@ -358,7 +492,8 @@ async function doDemolish(b) {
             expected_revision: state.city ? state.city.revision : undefined,
         });
         applyDemolishDiff(diff);
-        notifySuccess('已拆除');
+        const refunded = refundText(diff.delta);
+        notifySuccess(refunded ? '已拆除,返还 ' + refunded : '已拆除');
     } catch (err) {
         await handleMutationError(err, '拆除失败,请重试');
     } finally {
@@ -428,8 +563,8 @@ function applyWorkerDiff(diff) {
     updateHud(state.city); // HUD 的人口与「劳动力 已用/可用」跟着刷新,不整页刷新
 }
 
-// 升级响应:{ revision, building:{id,level}, resources, money, delta }
-// 等级/资源/资金一律用服务器返回值覆盖,不做任何本地推算。
+// 升级 / 取消升级响应:{ revision, building:{id,level,status,construction_finished_at[,target_level]}, resources, money, delta }
+// 等级/状态/资源/资金一律用服务器返回值覆盖,不做任何本地推算。
 // 注:升级后新等级的 worker_required 不在响应里,派工区块的上限会略微滞后到下一次快照;
 // 由于需求只增不减,滞后期间只会「少派」不会「多派」,服务器侧也另有校验,不做本地猜测。
 function applyUpgradeDiff(diff) {
@@ -440,7 +575,11 @@ function applyUpgradeDiff(diff) {
     const changed = diff.building || null;
     const buildings = (city.buildings || []).map((b) => {
         if (!changed || String(b.id) !== String(changed.id)) return b;
-        return Object.assign({}, b, { level: changed.level });
+        return Object.assign({}, b, {
+            level: changed.level,
+            status: changed.status,
+            construction_finished_at: changed.construction_finished_at,
+        });
     });
 
     setState({
@@ -456,7 +595,8 @@ function applyUpgradeDiff(diff) {
     updateHud(state.city);
 }
 
-// 拆除响应:{ revision, demolished_id };M1 不返还资源,所以只动 buildings 与 revision
+// 拆除响应:{ revision, demolished_id, resources, money, delta, truncated }
+// M2-C5 起拆除会返还材料,resources / money 一律用服务器返回值覆盖,不做本地推算
 function applyDemolishDiff(diff) {
     const city = state.city;
     if (!city || !diff) return;
@@ -474,6 +614,9 @@ function applyDemolishDiff(diff) {
     setState({
         city: Object.assign({}, city, {
             revision: diff.revision,
+            // 返还入库后的资源 / 资金:服务器已按仓储上限夹过,前端只负责显示
+            resources: diff.resources ? Object.assign({}, city.resources, diff.resources) : city.resources,
+            money: diff.money !== undefined ? diff.money : city.money,
             assigned_workers: assignedWorkers,
             buildings,
         }),
@@ -513,6 +656,7 @@ export function closeBuildingPanel() {
     if (openId === null && (!rootEl || rootEl.hidden)) return;
     openId = null;
     confirming = false;
+    stopCountdown(); // 面板收起就别再逐秒跑计时器 / 拉快照
     if (rootEl) {
         rootEl.hidden = true;
         rootEl.innerHTML = '';

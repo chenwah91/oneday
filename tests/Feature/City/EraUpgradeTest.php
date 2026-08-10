@@ -121,6 +121,9 @@ class EraUpgradeTest extends TestCase
     public function test_upgrade_opens_next_era_build_and_research(): void
     {
         [$u, $city] = $this->makeQualifiedCity('eraB');
+        // 建造闸门是「时代 → 科技」两道(v3.2 §4);本用例验的是时代那一道,
+        // 所以先把 F02 的前置科技 TECH_II_SUST 铺好,免得升级后被科技闸门顶替着挡下
+        $this->unlockTechFor($city->id, 'F02');
 
         // 升级前:时代 II 的 F02 被拒
         $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 12, 'y' => 12])
@@ -131,15 +134,12 @@ class EraUpgradeTest extends TestCase
         // 升级后:同一次建造放行
         $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 12, 'y' => 12])->assertOk();
 
-        // 研究闸门同样跟着放开(TECH_II_SUST 需前置 TECH_I_SUST,先铺上)
+        // 研究闸门同样跟着放开(TECH_II_CIV 需前置 TECH_I_CIV,先铺上)
         DB::table('city_resources')->updateOrInsert(
             ['city_id' => $city->id, 'resource_id' => 'knowledge'], ['amount' => 500]
         );
-        DB::table('city_technologies')->insert([
-            'city_id' => $city->id, 'tech_id' => 'TECH_I_SUST', 'status' => 'unlocked',
-            'started_at' => now(), 'finished_at' => now(), 'created_at' => now(), 'updated_at' => now(),
-        ]);
-        $this->actingAs($u)->postJson('/api/city/research', ['tech_id' => 'TECH_II_SUST'])->assertOk();
+        $this->unlockTech($city->id, 'TECH_I_CIV');
+        $this->actingAs($u)->postJson('/api/city/research', ['tech_id' => 'TECH_II_CIV'])->assertOk();
     }
 
     // ---- 逐维条件不满足 ----

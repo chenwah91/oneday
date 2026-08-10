@@ -112,9 +112,19 @@ function makeBuildingSprite(b, footprint, color) {
     label.eventMode = 'none';
     container.addChild(label);
 
-    // 非活跃状态(如已拆除但未清理等)降低透明度,便于区分
+    // 非活跃状态(施工中 / 升级中等)降低透明度,便于区分
     if (b.status && b.status !== 'active') {
         container.alpha = 0.45;
+    }
+
+    // 施工 / 升级中(M2-C5):在等级标签旁加一个 ⏳ 标记,一眼看出这栋楼还没开工/在改造。
+    // 只是视觉提示,是否完工一律以服务器快照的 status 为准(客户端时间不可信)
+    if (b.status === 'constructing' || b.status === 'upgrading') {
+        const busy = new PIXI.Text('⏳', { fontSize: 13, fill: 0xffffff, fontFamily: 'sans-serif' });
+        busy.anchor.set(0.5);
+        busy.position.set(center.sx, center.sy - 13);
+        busy.eventMode = 'none'; // 与等级标签同理:不参与命中,免得吃掉建筑中心的点击
+        container.addChild(busy);
     }
 
     // 点击回调挂在 Container 上:子节点(色块/标签)的命中都会冒泡上来,

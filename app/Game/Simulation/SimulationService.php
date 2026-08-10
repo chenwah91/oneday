@@ -2,6 +2,7 @@
 
 namespace App\Game\Simulation;
 
+use App\Game\Building\ConstructionService;
 use App\Game\Resource\ResourceCode;
 use App\Models\City;
 use App\Support\GameSetting;
@@ -17,11 +18,12 @@ class SimulationService
 {
     // 逐建筑实例的乘区初始值(全部 1.0 = 无影响)。
     // M2 各生产系统(科技/NPC/工具/电力/物流/事件)各占一个乘区,只写自己那一格,互不覆盖。
-    // C1 起 worker 一格由「已分配工人 / 该级需求工人」填充,其余六项仍恒为 1.0。
+    // C1 起 worker 一格由「已分配工人 / 该级需求工人」填充;
+    // C4 起 logistics 一格由 §10.7 的运输负载填充。其余五项(power/tech/npc/tool/event)仍恒为 1.0。
     private const BASE_MULTIPLIERS = [
         'worker'    => 1.0, // 用工满足率(人力不足打折)
         'power'     => 1.0, // 电力满足率(按建筑)
-        'logistics' => 1.0, // 物流满足率
+        'logistics' => 1.0, // 物流满足率(C4 起由 transportLoad → logisticsFactor 填充)
         'tech'      => 1.0, // 科技加成(按建筑分支)
         'npc'       => 1.0, // NPC 加成(按实例)
         'tool'      => 1.0, // 工具加成(按实例)
@@ -40,15 +42,20 @@ class SimulationService
         });
     }
 
-    // 乘区连乘:把一栋建筑实例的七个乘区乘成一个系数。
-    // M2 各系统在此接入自己的乘区(只改 multipliers 里对应的一格,不要另起加法通道);
-    // §13 的生产倍率硬封顶(2.75×)将来也统一落在这里夹紧,不要散落进各系统内部。
-    private static function multiplierProduct(array $multipliers): float
+    // 乘区连乘:把一栋建筑实例的七个乘区乘成一个系数,并夹在 §13 的生产倍率硬上限之下。
+    // M2 各系统在此接入自己的乘区(只改 multipliers 里对应的一格,不要另起加法通道)。
+    //
+    // §13 原文:「NPC + 工具 + 科技 + 事件总生产倍率建议硬封顶在 2.75×;终局特殊建筑最多 3.25×」。
+    // 封顶只落在这一处,各系统不得在自己内部再夹一次 —— 否则「谁先夹」会改变结果,也无法一处审计。
+    // 夹的是乘数积本身(不含维护欠费率):欠费半停工是惩罚方向,不该被算进"加成上限"里。
+    // $cap 默认普通档 2.75;终局特殊建筑(M2 尚无该标记位)由调用方传 MULTIPLIER_CAP_ENDGAME
+    public static function multiplierProduct(array $multipliers, float $cap = SimConstants::MULTIPLIER_CAP): float
     {
         $product = 1.0;
         foreach ($multipliers as $m) { $product *= (float) $m; }
 
-        return $product;
+        // 加成永不超帽;打折方向(乘数积 < 1)不受影响
+        return min($product, $cap);
     }
 
     // 单栋建筑的产出/投入总系数 = 七乘区的乘数积 × 维护欠费率。
@@ -92,6 +99,50 @@ class SimulationService
         return SimConstants::GOVERNANCE_EFFICIENCY_COLLAPSE;
     }
 
+    // 运输负载(v3.2 §10.7):transportLoad = transportDemand / max(1, transportCapacity)。
+    // 分母的 max(1, …) 是 v3.2 原文写法(与 governanceLoad 同一套),运输容量为 0 时不炸除零
+    public static function transportLoad(float $transportDemand, float $transportCapacity): float
+    {
+        return max(0.0, $transportDemand) / max(1.0, $transportCapacity);
+    }
+
+    // 物流率 logisticsFactor(v3.2 §10.7 分档 + §3.3 clamp 口径合并):
+    //   <= 1.00        → 1.00(§10.7 的 <=0.80 与 0.80~1.00「轻微运输延迟」两档都不降产)
+    //   1.00 ~ 1.25    → 从 1.00 线性下降至 0.70
+    //   > 1.25         → 接 §3.3 的 clamp(运输容量 / 运输需求, 0.25, 1) = clamp(1/load, 0.25, 0.70)
+    //
+    // 最后一档为什么用 §3.3 的比例式:§10.7 对 >1.25 只写了「最低 0.25 + 拥堵警报」,没给下降曲线;
+    // §3.3 给的比例式在 load = 1.25 处恰好是 1/1.25 = 0.80,被 0.70 的上限压住 → 与上一档在拐点连续,
+    // 且单调递减、到 load = 4 触及 0.25 下限。两条公式因此拼成一条无跳变的曲线,不需要再发明第三个常量
+    public static function logisticsFactor(float $load): float
+    {
+        if ($load <= SimConstants::TRANSPORT_LOAD_TIGHT) { return SimConstants::LOGISTICS_FACTOR_MAX; }
+
+        if ($load <= SimConstants::TRANSPORT_LOAD_OVER) {
+            $span = SimConstants::TRANSPORT_LOAD_OVER - SimConstants::TRANSPORT_LOAD_TIGHT; // 0.25
+            $drop = (SimConstants::LOGISTICS_FACTOR_MAX - SimConstants::LOGISTICS_FACTOR_AT_OVER)
+                * ($load - SimConstants::TRANSPORT_LOAD_TIGHT) / $span;
+
+            return SimConstants::LOGISTICS_FACTOR_MAX - $drop;
+        }
+
+        return max(SimConstants::LOGISTICS_FACTOR_MIN, min(SimConstants::LOGISTICS_FACTOR_AT_OVER, 1.0 / $load));
+    }
+
+    // 财政预警(v3.2 §10.5「财政储备 < 10分钟总维护 → 黄色预警;< 3分钟总维护 → 红色预警」)。
+    // 口径:按结算后的资金与全城维护资金速率派生,不落库;维护速率为 0 的城市永远付得起 → none
+    public static function fiscalWarning(float $money, float $maintenanceMoneyPerMin): string
+    {
+        if ($maintenanceMoneyPerMin <= 0) { return 'none'; }
+
+        $minutes = max(0.0, $money) / $maintenanceMoneyPerMin;
+
+        if ($minutes < SimConstants::FISCAL_WARNING_RED_MINUTES) { return 'red'; }
+        if ($minutes < SimConstants::FISCAL_WARNING_YELLOW_MINUTES) { return 'yellow'; }
+
+        return 'none';
+    }
+
     // 锁内结算:把 [last_simulated_at, $now] 这段时间的产出/消耗/维护/人口结清并落库
     //
     // 前置约定:调用方必须已在事务内对该 cities 行 lockForUpdate,并把锁到的行原样传进来。
@@ -106,6 +157,15 @@ class SimulationService
         // 离线封顶:超过上限的部分不结算(但 last_simulated_at 仍推进到 $now,否则会积压反复重算)
         $elapsed = min($elapsed, SimConstants::MAX_OFFLINE_SECONDS);
 
+        // ---- M2-C5 施工 / 升级懒完工(v3.2 §16.3),必须先于下面的实例查询 ----
+        //
+        // 把 construction_finished_at 到点的实例翻正(constructing → active;upgrading → active 且 level+1),
+        // 并把「完工点已落在本次窗口起点之前」的实例清掉完工戳,从本次结算起计入生产。
+        // 细节与「不写审计」的理由见 ConstructionService::settleFinished。
+        // $settlementStart 与下面分段结算用的 $windowStart 是同一个时刻,这里提前算一次给完工判定用
+        $settlementStart = $now->copy()->subSeconds($elapsed);
+        ConstructionService::settleFinished((int) $lockedCity->id, $now, $settlementStart);
+
         // 锁后再读 active 建筑实例的每级定义,消除"锁前读实例"的竞态
         // ci.id / ci.building_id / ci.level 一并取出:M2 的乘数按实例/按建筑生效,聚合前必须能区分是哪一栋
         // ci.assigned_workers 与 bl.worker_required:workerFactor 的分子分母(§10.4)
@@ -114,7 +174,10 @@ class SimulationService
                 $j->on('ci.building_id', '=', 'bl.building_id')->on('ci.level', '=', 'bl.level');
             })
             ->where('ci.city_id', $lockedCity->id)
-            ->where('ci.status', 'active')
+            ->where('ci.status', ConstructionService::STATUS_ACTIVE)
+            // M2-C5:完工点必须已在本次窗口起点之前(戳已被 settleFinished 清成 NULL),
+            // 窗口中途才完工的实例本次不产出、下次结算才算 —— 见 ConstructionService::settleFinished
+            ->whereNull('ci.construction_finished_at')
             ->select(
                 'ci.id as instance_id', 'ci.building_id', 'ci.level', 'ci.assigned_workers',
                 'bl.output_json', 'bl.input_json', 'bl.worker_required',
@@ -141,6 +204,9 @@ class SimulationService
         // (A01 L2:output 108 / bonus 104;K01~K05 只有 bonus 没有 output),两边都读会双计。
         // 该口径分歧已进 backlog 待用户裁决,在裁决前这里坚持单一来源,绝不叠加 governance_bonus 列
         $governanceCapacity = 0.0;
+        // 运输容量(§10.7):同样是容量类产出,M2-C4 起从「暂不结算仅显示」转为真实参与 ——
+        // 它是 transportLoad 的分母,直接决定 logistics 乘区。唯一来源 = 建筑 output_json 的 transport_capacity
+        $transportCapacity = 0.0;
         $maintenanceMoneyPerMin = 0.0;
 
         // 用工闸门总开关(game_settings.worker_gate_enabled,默认 true = 维持「没派工人就不生产」)。
@@ -174,7 +240,8 @@ class SimulationService
                 if ($res === ResourceCode::MEDICAL_CAPACITY) { $medicalCapacity += $r; continue; }
                 if ($res === ResourceCode::DEFENSE_SCORE) { $defenseScore += $r; continue; }
                 if ($res === ResourceCode::GOVERNANCE_CAPACITY) { $governanceCapacity += $r; continue; }
-                if (ResourceCode::isCapacity($res)) { continue; } // 其他容量:M2-C2 阶段仍不结算
+                if ($res === ResourceCode::TRANSPORT_CAPACITY) { $transportCapacity += $r; continue; }
+                if (ResourceCode::isCapacity($res)) { continue; } // 其他容量(贸易/金融):M2-C4 阶段仍不结算
                 $grossOut[$res] = ($grossOut[$res] ?? 0) + $r;
             }
 
@@ -206,6 +273,42 @@ class SimulationService
         // 维护资金:不进配方,不受乘区与满足率影响(建筑闲置也照付),整段恒定
         foreach ($units as $u) { $maintenanceMoneyPerMin += $u['maintMoney']; }
 
+        // ---- 物流(v3.2 §10.7,M2-C4)----
+        //
+        // transportDemand = Σ(各生产建筑每分钟输入 + 输出) × distanceFactor
+        //
+        // 需求取「该级定义的基础输入/输出速率」而不是乘区折算后的速率,两个理由:
+        //   ① logistics 本身就是七乘区之一,拿折算后的速率当分母会自己吃自己(收敛都不保证);
+        //   ② §10.7 的字面口径就是建筑的每分钟输入 / 输出,即名义吞吐。
+        // 容量类产出(人口/仓储/治理/运输/医疗/国防)在上面已被提走,不在 grossIn / grossOut 里,
+        // 所以住宅、仓库、行政所、道路本身天然不占运力 —— 这正是「生产建筑」这个限定词的落地方式。
+        $transportDemandPerMin = 0.0;
+        foreach ($units as $u) {
+            $transportDemandPerMin += array_sum($u['grossIn']) + array_sum($u['grossOut']);
+        }
+        // distanceFactor:M2 恒 1.0(§10.7「M2:distanceFactor = 1.0」),地图距离惩罚留 M3 大地图
+        $transportDemandPerMin *= SimConstants::LOGISTICS_DISTANCE_FACTOR;
+
+        // 时代闸门(**本次补充假设**,依据见 SimConstants::LOGISTICS_MIN_ERA_ORDER 的注释):
+        // 时代 I 没有任何建筑能产出 transport_capacity(全表最早的运输建筑是时代 II 的 T02),
+        // 若时代 I 照样计需求,所有时代 I 城市开局即重度拥堵、且无任何手段自救。
+        // era_order 由时代升级(M2-B6)维护;列缺失 / 为空一律按时代 I 兜底(与人均税额同一约定)
+        $eraOrder = (int) ($lockedCity->era_order ?? 1);
+        if ($eraOrder < SimConstants::LOGISTICS_MIN_ERA_ORDER) { $transportDemandPerMin = 0.0; }
+
+        // 负载 → 物流率。全城一个值:M2 distanceFactor 恒 1.0 且没有分区路网,
+        // M3 大地图再改成按建筑到路网的距离逐栋算(那时这里换成逐 unit 计算即可)
+        $transportLoad = self::transportLoad($transportDemandPerMin, $transportCapacity);
+        $logisticsFactor = self::logisticsFactor($transportLoad);
+        // 拥堵警报(§10.7「> 1.25 → 产生拥堵警报」/ §15 回归表「出现拥堵警报」)
+        $transportCongestion = $transportLoad > SimConstants::TRANSPORT_LOAD_OVER;
+
+        // 写进七乘区的 logistics 一格(§10.11 生产总公式点名的那一项),从占位 1.0 变为真实值。
+        // 整段结算内建筑集合不变 → 物流率也不变,所以只在分段循环之外算一次、写一次(循环内零查库)
+        foreach ($units as $i => $u) {
+            $units[$i]['multipliers']['logistics'] = $logisticsFactor;
+        }
+
         // ---- 分段结算 ----
         //
         // 段划分:segments = min(ceil(经过分钟 / 30), 24),每段等长(12h 封顶时恰 24 段 × 30min)。
@@ -234,8 +337,9 @@ class SimulationService
 
         // 人均税额(§10.5):时代 I = 0.02,每进一个时代 ×1.5 → 0.02 × 1.5^(era_order − 1)。
         // era_order 由时代升级(M2-B6)维护;列尚未上线 / 值为空的城市按时代 I 兜底。
-        // 整段结算内时代不变,所以在循环外算一次(分段循环内零查库、零幂运算)
-        $taxPerCapita = self::taxPerCapitaPerMin((int) ($lockedCity->era_order ?? 1));
+        // 整段结算内时代不变,所以在循环外算一次(分段循环内零查库、零幂运算)。
+        // $eraOrder 在上面的物流块里已按同一套兜底口径取好,这里直接复用,避免两处各写一份兜底
+        $taxPerCapita = self::taxPerCapitaPerMin($eraOrder);
 
         $ratePerMin = [];        // 资源 => 每分钟净速率(最后一段口径,返回给前端显示)
         $grossProduction = [];   // 资源 => 每分钟 gross 产出(已含乘数与满足率)
@@ -333,6 +437,10 @@ class SimulationService
         $health = (int) round(self::coverage($medicalCapacity, $population) * 100);
         $security = (int) round(self::coverage($defenseScore, $population) * 100);
 
+        // 财政预警(§10.5):按「结算后的资金」与全城维护资金速率派生,同样不落库。
+        // 用结算后的资金而不是段起资金 —— 玩家看到的 HUD 资金就是这个值,预警必须和它同源
+        $fiscalWarning = self::fiscalWarning($money, $maintenanceMoneyPerMin);
+
         // elapsed == 0:跳过写库,但速率/容量仍照常算出返回
         if ($elapsed > 0) {
             // 批量落库:city_resources 已有复合主键 (city_id, resource_id),一次 upsert 取代逐资源往返
@@ -396,6 +504,18 @@ class SimulationService
             'maintenanceMoneyPerMin'  => $maintenanceMoneyPerMin,
             'maintenanceRate'         => $maintenanceRate,
             'maintenanceArrears'      => $maintenanceArrears,
+            //   fiscalWarning 财政预警三态 'none' | 'yellow' | 'red'(§10.5:< 10 分钟维护 → 黄;< 3 分钟 → 红)
+            'fiscalWarning'           => $fiscalWarning,
+            // 物流(§10.7),同样全是派生值,不落库:
+            //   transportCapacity 全城运输容量(唯一来源 = output_json 的 transport_capacity)
+            //   transportDemandPerMin 运输需求 = Σ(生产建筑输入 + 输出) × distanceFactor(时代 I 恒 0,见上文闸门)
+            //   transportLoad / logisticsFactor 负载与物流率(logistics 乘区里生效的就是它)
+            //   transportCongestion 拥堵警报(负载 > 1.25)
+            'transportCapacity'       => $transportCapacity,
+            'transportDemandPerMin'   => $transportDemandPerMin,
+            'transportLoad'           => $transportLoad,
+            'logisticsFactor'         => $logisticsFactor,
+            'transportCongestion'     => $transportCongestion,
         ];
     }
 
