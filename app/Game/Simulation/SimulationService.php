@@ -4,6 +4,7 @@ namespace App\Game\Simulation;
 
 use App\Game\Resource\ResourceCode;
 use App\Models\City;
+use App\Support\GameSetting;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -96,6 +97,12 @@ class SimulationService
         $populationCap = 0.0;
         $maintenanceMoneyPerMin = 0.0;
 
+        // 用工闸门总开关(game_settings.worker_gate_enabled,默认 true = 维持「没派工人就不生产」)。
+        // 关掉后 worker 乘区恒为 1.0,全服产量立刻恢复满额,供运营救急。
+        // 必须在建筑循环之外读一次:applyLocked 在事务内高频调用,逐实例查库不可接受
+        // (GameSetting 本身也带请求级缓存,这里再提出循环是第二道保险)
+        $workerGateEnabled = (bool) GameSetting::get(GameSetting::WORKER_GATE_ENABLED, true);
+
         // 逐建筑实例中间结构:M2 没有一个乘数是全局的(科技按分支、NPC/工具按实例、电力按建筑),
         // 所以产出/投入必须先落到"每栋一行",算完各自的乘区与满足率,最后才聚合成全城速率。
         // 建筑集合在整段结算内不变(建造/拆除都会先跑结算),所以这层只在循环外构建一次。
@@ -124,9 +131,10 @@ class SimulationService
 
             $multipliers = self::BASE_MULTIPLIERS;
             // workerFactor = min(1, assignedWorkers / max(1, workerRequired))(§10.4);
-            // worker_required = 0 的建筑(住宅/仓库等)不需要人,恒为 1.0
+            // worker_required = 0 的建筑(住宅/仓库等)不需要人,恒为 1.0;
+            // 闸门关闭($workerGateEnabled = false)时同样恒为 1.0
             $workerRequired = (int) $lv->worker_required;
-            $multipliers['worker'] = $workerRequired > 0
+            $multipliers['worker'] = ($workerGateEnabled && $workerRequired > 0)
                 ? min(1.0, (int) $lv->assigned_workers / $workerRequired)
                 : 1.0;
 

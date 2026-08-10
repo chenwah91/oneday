@@ -28,7 +28,7 @@ class BuildTest extends TestCase
     public function test_build_succeeds_and_deducts_and_increments_revision(): void
     {
         $u = $this->actingUser();
-        $res = $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 2, 'y' => 2]);
+        $res = $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 2, 'y' => 2]);
 
         $res->assertOk();
         $res->assertJson(['success' => true, 'data' => ['revision' => 1]]);
@@ -46,7 +46,7 @@ class BuildTest extends TestCase
         $city = CityFactory::createForUser($u);
         DB::table('city_resources')->where('city_id', $city->id)->update(['amount' => 0]);
 
-        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 1, 'y' => 1])
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 1, 'y' => 1])
             ->assertStatus(422)->assertJson(['error' => 'INSUFFICIENT_RESOURCE']);
         $this->assertDatabaseMissing('city_building_instances', ['city_id' => $city->id]);
     }
@@ -54,9 +54,9 @@ class BuildTest extends TestCase
     public function test_build_rejects_occupied_land(): void
     {
         $u = $this->actingUser();
-        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 2, 'y' => 2])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 2, 'y' => 2])->assertOk();
         // 与已建重叠(F02 占 3x3,在 2,2)
-        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 3, 'y' => 3])
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 3, 'y' => 3])
             ->assertStatus(422)->assertJson(['error' => 'LAND_OCCUPIED']);
     }
 
@@ -67,7 +67,7 @@ class BuildTest extends TestCase
         $wood = fn () => (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->value('amount');
         $before = $wood();
 
-        $body = ['buildingId' => 'F02', 'x' => 5, 'y' => 5, 'idempotencyKey' => 'fixed-key-1'];
+        $body = ['building_id' => 'F02', 'x' => 5, 'y' => 5, 'idempotency_key' => 'fixed-key-1'];
         $this->actingAs($u)->postJson('/api/city/build', $body)->assertOk();
         $this->actingAs($u)->postJson('/api/city/build', $body)->assertOk(); // 重复不再扣/不再建
         $count = DB::table('city_building_instances')->where('city_id', $city->id)->where('x', 5)->where('y', 5)->count();
@@ -88,14 +88,14 @@ class BuildTest extends TestCase
         $city = City::where('user_id', $u->id)->first();
         $key = 'cross-action-key-1';
 
-        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 2, 'y' => 2, 'idempotencyKey' => $key])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 2, 'y' => 2, 'idempotency_key' => $key])->assertOk();
         $instanceId = (int) DB::table('city_building_instances')->where('city_id', $city->id)->value('id');
         $wood = fn () => (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->value('amount');
         $money = fn () => (float) DB::table('cities')->where('id', $city->id)->value('money');
         [$woodBefore, $moneyBefore] = [$wood(), $money()];
 
         // 同一 key 换成 upgrade:必须 409,不能静默返回"成功"而什么都没做
-        $this->actingAs($u)->postJson('/api/city/upgrade', ['instanceId' => $instanceId, 'idempotencyKey' => $key])
+        $this->actingAs($u)->postJson('/api/city/upgrade', ['instance_id' => $instanceId, 'idempotency_key' => $key])
             ->assertStatus(409)->assertJson(['error' => 'IDEMPOTENCY_KEY_REUSED']);
 
         $this->assertSame(1, (int) DB::table('city_building_instances')->where('id', $instanceId)->value('level')); // 没升级
@@ -109,9 +109,9 @@ class BuildTest extends TestCase
         $city = City::where('user_id', $u->id)->first();
         $key = 'same-key-diff-params-1';
 
-        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 2, 'y' => 2, 'idempotencyKey' => $key])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 2, 'y' => 2, 'idempotency_key' => $key])->assertOk();
         // 同 key 同 action,但坐标不同 → 请求指纹不一致,拒绝
-        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 8, 'y' => 8, 'idempotencyKey' => $key])
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 8, 'y' => 8, 'idempotency_key' => $key])
             ->assertStatus(409)->assertJson(['error' => 'IDEMPOTENCY_KEY_REUSED']);
 
         $this->assertSame(1, DB::table('city_building_instances')->where('city_id', $city->id)->count());
@@ -121,7 +121,7 @@ class BuildTest extends TestCase
     public function test_build_revision_conflict(): void
     {
         $u = $this->actingUser();
-        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 8, 'y' => 8, 'expectedRevision' => 999])
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 8, 'y' => 8, 'expected_revision' => 999])
             ->assertStatus(409)->assertJson(['error' => 'REVISION_CONFLICT']);
     }
 }

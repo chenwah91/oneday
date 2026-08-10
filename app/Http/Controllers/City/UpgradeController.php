@@ -15,18 +15,19 @@ class UpgradeController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
+        // 契约字段一律 snake_case 全小写(用户 2026-08-10 拍板)
         $data = $request->validate([
-            'instanceId'       => ['required', 'integer'],
-            'idempotencyKey'   => ['nullable', 'string', 'max:100'],
-            'expectedRevision' => ['nullable', 'integer'],
+            'instance_id'       => ['required', 'integer'],
+            'idempotency_key'   => ['nullable', 'string', 'max:100'],
+            'expected_revision' => ['nullable', 'integer'],
         ]);
 
         $city = CityFactory::createForUser($request->user());
 
         $diff = UpgradeService::upgrade(
-            $city, (int) $data['instanceId'],
-            $data['idempotencyKey'] ?? null,
-            isset($data['expectedRevision']) ? (int) $data['expectedRevision'] : null
+            $city, (int) $data['instance_id'],
+            $data['idempotency_key'] ?? null,
+            isset($data['expected_revision']) ? (int) $data['expected_revision'] : null
         );
 
         return ApiResponse::ok(['data' => $diff]);

@@ -151,6 +151,84 @@
         </form>
       </section>
 
+      <!-- 玩家补偿(权限 adjust_resource:game_master 及以上;无权限时整块隐藏) -->
+      <section id="comp-panel" class="panel hidden">
+        <div class="panel-header">
+          <h2>玩家补偿 / 扣减</h2>
+        </div>
+        <form id="comp-form" class="comp-form">
+          <div class="def-row">
+            <div class="auth-field">
+              <label class="auth-label" for="comp-username">用户名</label>
+              <input id="comp-username" type="text" placeholder="玩家用户名" maxlength="190">
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="comp-city-id">city_id(可选)</label>
+              <input id="comp-city-id" type="number" min="1" placeholder="填了优先按 city_id 定位">
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="comp-lookup-btn">定位</label>
+              <button id="comp-lookup-btn" type="button" class="btn btn-ghost">查询城市与余额</button>
+            </div>
+          </div>
+          <div id="comp-city" class="status muted"></div>
+          <div class="def-row">
+            <div class="auth-field">
+              <label class="auth-label" for="comp-resource">资源</label>
+              <select id="comp-resource" required>
+                <option value="">先查询城市</option>
+              </select>
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="comp-delta">delta(可为负 = 扣减)</label>
+              <input id="comp-delta" type="number" step="any" required>
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="comp-ticket">工单号(可选)</label>
+              <input id="comp-ticket" type="text" maxlength="64" placeholder="如 TKT-1001">
+            </div>
+          </div>
+          <div class="auth-field">
+            <label class="auth-label" for="comp-reason">补偿原因(必填,至少 5 字)</label>
+            <input id="comp-reason" type="text" required minlength="5" maxlength="80" placeholder="说明本次补偿的来源与依据">
+          </div>
+          <div id="comp-error" class="auth-error hidden"></div>
+          <div id="comp-result" class="def-result hidden"></div>
+          <div class="def-actions">
+            <button id="comp-submit" type="submit" class="btn btn-primary">提交补偿</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- 规则开关(权限 edit_definition:admin 及以上;无权限时整块隐藏) -->
+      <section id="setting-panel" class="panel hidden">
+        <div class="panel-header">
+          <h2>规则开关</h2>
+          <div class="panel-actions">
+            <input id="setting-reason" type="text" placeholder="修改原因(必填,2-80 字)" maxlength="80">
+            <button id="setting-refresh" type="button" class="btn btn-ghost">刷新</button>
+          </div>
+        </div>
+        <div id="setting-status" class="status muted"></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>setting_key</th>
+                <th>说明</th>
+                <th>当前值</th>
+                <th>默认值</th>
+                <th>最后修改</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="setting-table"></tbody>
+          </table>
+        </div>
+        <div id="setting-error" class="auth-error hidden"></div>
+        <div id="setting-result" class="def-result hidden"></div>
+      </section>
+
     </div>
 
   </div>

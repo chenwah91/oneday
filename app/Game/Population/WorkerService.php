@@ -8,6 +8,7 @@ use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
 use App\Support\GameRuleException;
+use App\Support\GameSetting;
 use App\Support\Idempotency;
 use App\Support\SecurityLogger;
 use Illuminate\Support\Facades\DB;
@@ -41,7 +42,7 @@ class WorkerService
             throw new GameRuleException(ErrorCode::FORBIDDEN, 403);
         }
 
-        // 请求指纹:只含业务参数,不含 expectedRevision(重试时 revision 可能已变)
+        // 请求指纹:只含业务参数,不含 expected_revision(重试时 revision 可能已变)
         $requestHash = Idempotency::hash(AuditAction::WORKER_ASSIGN, ['instanceId' => $instanceId, 'workers' => $workers]);
 
         // 幂等:同一 user+key+action+参数已处理则直接成功返回(不重复改分配);key 被复用则 409
@@ -91,12 +92,16 @@ class WorkerService
             // 人口取结算后的最新值(不是请求进来时的旧快照)。
             // 例外:只减不增的操作永远放行 —— 人口暴跌(饥荒/迁出)会让历史分配天然超上限,
             // 此时若连撤人都拒绝,玩家会被锁死在超编状态里出不来。
+            // 这条例外是后台可配开关(game_settings.worker_assign_allow_decrease_always,默认 true):
+            // 关掉后连撤人也要满足上限,留给运营处理「超编状态被玩家当收益长期占用」这类极端情况。
             $available = SimulationService::availableWorkers($sim['population']);
             $before = (int) $inst->assigned_workers;
             $othersAssigned = (int) DB::table('city_building_instances')
                 ->where('city_id', $city->id)->where('id', '!=', $instanceId)
                 ->sum('assigned_workers');
-            if ($workers > $before && $othersAssigned + $workers > $available) {
+            $allowDecreaseAlways = (bool) GameSetting::get(GameSetting::WORKER_ASSIGN_ALLOW_DECREASE_ALWAYS, true);
+            $isIncrease = $workers > $before;
+            if (($isIncrease || ! $allowDecreaseAlways) && $othersAssigned + $workers > $available) {
                 throw new GameRuleException(ErrorCode::WORKER_NOT_AVAILABLE, 422);
             }
 
@@ -132,12 +137,13 @@ class WorkerService
                 'metadata_json' => ['buildingId' => $inst->building_id, 'level' => (int) $inst->level, 'workerRequired' => $required],
             ]);
 
+            // 返回 diff:契约字段一律 snake_case 全小写(用户 2026-08-10 拍板)
             return [
-                'revision'         => $newRevision,
-                'building'         => ['id' => $instanceId, 'assignedWorkers' => $workers, 'workerRequired' => $required],
-                'availableWorkers' => $available,
-                'assignedWorkers'  => $totalAssigned,
-                'population'       => $sim['population'],
+                'revision'          => $newRevision,
+                'building'          => ['id' => $instanceId, 'assigned_workers' => $workers, 'worker_required' => $required],
+                'available_workers' => $available,
+                'assigned_workers'  => $totalAssigned,
+                'population'        => $sim['population'],
             ];
         });
     }
@@ -158,15 +164,15 @@ class WorkerService
             : 0;
 
         return [
-            'revision'         => (int) $city->revision,
-            'building'         => [
-                'id'              => $instanceId,
-                'assignedWorkers' => $inst ? (int) $inst->assigned_workers : 0,
-                'workerRequired'  => $required,
+            'revision'          => (int) $city->revision,
+            'building'          => [
+                'id'               => $instanceId,
+                'assigned_workers' => $inst ? (int) $inst->assigned_workers : 0,
+                'worker_required'  => $required,
             ],
-            'availableWorkers' => SimulationService::availableWorkers((int) $city->population),
-            'assignedWorkers'  => self::totalAssigned((int) $city->id),
-            'population'       => (int) $city->population,
+            'available_workers' => SimulationService::availableWorkers((int) $city->population),
+            'assigned_workers'  => self::totalAssigned((int) $city->id),
+            'population'        => (int) $city->population,
         ];
     }
 }

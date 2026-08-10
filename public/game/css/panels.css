@@ -161,6 +161,79 @@
     font-variant-numeric: tabular-nums;
 }
 
+/* 派工区块(v3.2 §10.4):没派工人就不生产,玩家必须能在建筑详情里直接派人 */
+.bldg-workers {
+    padding: 8px 12px 10px;
+    border-top: 1px solid #2a3140;
+}
+
+.bldg-workers-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 13px;
+}
+
+.bldg-workers-label {
+    flex: 0 0 auto;
+    color: #9aa4b2;
+    font-size: 12px;
+}
+
+.bldg-workers-count {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.bldg-workers-count.is-full {
+    color: #8bd17c;
+}
+
+.bldg-workers-count.is-idle {
+    color: #ffb84d;
+}
+
+.bldg-workers-steps {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+/* 触控区固定 ≥ 44px(CLAUDE §22),桌面端同样适用,避免两套尺寸 */
+.bldg-worker-btn {
+    flex: 1 1 0;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 6px 4px;
+    border-radius: 8px;
+    border: 1px solid #2a3140;
+    background: #232a36;
+    color: #e8eaed;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.bldg-worker-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+/* +/− 步进钮:固定宽度,不跟着"撤空/补满"一起拉伸 */
+.bldg-worker-step {
+    flex: 0 0 44px;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.bldg-workers-hint {
+    margin-top: 6px;
+    color: #6b7484;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
 .bldg-actions {
     display: flex;
     gap: 8px;

@@ -22,26 +22,27 @@ class DemolishController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
-        // idempotencyKey / expectedRevision 保持可选:强制化会破坏已发布 PWA 的契约
+        // idempotency_key / expected_revision 保持可选:强制化会破坏已发布 PWA 的契约
+        // 契约字段一律 snake_case 全小写(用户 2026-08-10 拍板)
         $data = $request->validate([
-            'instanceId'       => ['required', 'integer'],
-            'idempotencyKey'   => ['nullable', 'string', 'max:100'],
-            'expectedRevision' => ['nullable', 'integer', 'min:0'],
+            'instance_id'       => ['required', 'integer'],
+            'idempotency_key'   => ['nullable', 'string', 'max:100'],
+            'expected_revision' => ['nullable', 'integer', 'min:0'],
         ]);
 
         $city = CityFactory::createForUser($request->user());
-        $instanceId = (int) $data['instanceId'];
-        $idempotencyKey = $data['idempotencyKey'] ?? null;
-        $expectedRevision = isset($data['expectedRevision']) ? (int) $data['expectedRevision'] : null;
-        // 请求指纹:只含业务参数,不含 expectedRevision(重试时 revision 可能已变)
+        $instanceId = (int) $data['instance_id'];
+        $idempotencyKey = $data['idempotency_key'] ?? null;
+        $expectedRevision = isset($data['expected_revision']) ? (int) $data['expected_revision'] : null;
+        // 请求指纹:只含业务参数,不含 expected_revision(重试时 revision 可能已变)
         $requestHash = Idempotency::hash(AuditAction::BUILDING_DEMOLISH, ['instanceId' => $instanceId]);
 
         // 幂等:锁前先查。必须早于"实例是否存在"判定 —— 重放时实例已被删,否则会误报 NOT_FOUND
         if ($idempotencyKey !== null
             && Idempotency::check((int) $city->user_id, $idempotencyKey, AuditAction::BUILDING_DEMOLISH, $requestHash) !== null) {
             return ApiResponse::ok(['data' => [
-                'revision'     => (int) DB::table('cities')->where('id', $city->id)->value('revision'),
-                'demolishedId' => $instanceId,
+                'revision'      => (int) DB::table('cities')->where('id', $city->id)->value('revision'),
+                'demolished_id' => $instanceId,
             ]]);
         }
 
@@ -105,6 +106,6 @@ class DemolishController extends Controller
             return $rev;
         });
 
-        return ApiResponse::ok(['data' => ['revision' => $newRevision, 'demolishedId' => $instanceId]]);
+        return ApiResponse::ok(['data' => ['revision' => $newRevision, 'demolished_id' => $instanceId]]);
     }
 }

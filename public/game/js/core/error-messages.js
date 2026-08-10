@@ -12,6 +12,9 @@ export const ERROR_MESSAGES = {
     REVISION_CONFLICT: '数据已更新,请重试',
     IDEMPOTENCY_KEY_REUSED: '操作重复提交,请刷新后重试',
 
+    // 人口 / 劳动力(v3.2 §10.4)
+    WORKER_NOT_AVAILABLE: '可用工人不足,先从别的建筑撤回工人或增加人口',
+
     // 通用 / 基础设施
     VALIDATION_ERROR: '输入有误,请检查后重试',
     AUTH_REQUIRED: '登录已过期,请刷新页面重新登录',

@@ -36,36 +36,38 @@ class CityController extends Controller
             ->orderBy('ci.id')
             ->get(['ci.id', 'ci.building_id', 'ci.level', 'ci.x', 'ci.y', 'ci.status', 'ci.assigned_workers', 'bl.worker_required'])
             ->map(fn ($b) => [
-                'id' => (int) $b->id, 'buildingId' => $b->building_id, 'level' => (int) $b->level,
+                'id' => (int) $b->id, 'building_id' => $b->building_id, 'level' => (int) $b->level,
                 'x' => (int) $b->x, 'y' => (int) $b->y, 'status' => $b->status,
-                'assignedWorkers' => (int) $b->assigned_workers,
-                'workerRequired'  => (int) $b->worker_required,
+                'assigned_workers' => (int) $b->assigned_workers,
+                'worker_required'  => (int) $b->worker_required,
             ])->all();
 
+        // 契约字段一律 snake_case 全小写(用户 2026-08-10 拍板):
+        // 这里是「结算内核内部数组」→「HTTP 契约」的唯一转换处,SimulationService 的内部键名保持原样不动
         return ApiResponse::ok(['data' => [
-            // dataVersion:当前全局数值版本(§64),前端可据此判断本地缓存的 Definition 是否过期
-            'dataVersion' => GameDataVersion::current(),
-            // serverTime:服务器权威时间(§11.1),施工倒计时等一切计时都要以它对时,绝不能用客户端时间
-            'serverTime'  => now()->toIso8601String(),
+            // data_version:当前全局数值版本(§64),前端可据此判断本地缓存的 Definition 是否过期
+            'data_version' => GameDataVersion::current(),
+            // server_time:服务器权威时间(§11.1),施工倒计时等一切计时都要以它对时,绝不能用客户端时间
+            'server_time'  => now()->toIso8601String(),
             'city' => [
-                'id'                 => $city->id,
-                'name'               => $city->name,
-                'revision'           => $city->revision,
-                'population'         => $city->population,
-                'populationCapacity' => $sim['populationCapacity'],
+                'id'                  => $city->id,
+                'name'                => $city->name,
+                'revision'            => $city->revision,
+                'population'          => $city->population,
+                'population_capacity' => $sim['populationCapacity'],
                 // 人口名义增减(人/分钟,§10.3 口径,未夹人口容量):HUD 的人口趋势用
-                'populationGrowthPerMin' => $sim['populationGrowthPerMin'],
+                'population_growth_per_min' => $sim['populationGrowthPerMin'],
                 // 劳动力(§10.4):可用 = floor(人口 × 0.60);已分配 = 全城各建筑 assigned_workers 之和
-                'availableWorkers'   => SimulationService::availableWorkers((int) $city->population),
-                'assignedWorkers'    => WorkerService::totalAssigned((int) $city->id),
-                'money'              => (float) $city->money,
-                'mapWidth'           => $city->map_width,
-                'mapHeight'          => $city->map_height,
-                'storageCapacity'    => $sim['storageCapacity'],
-                'lastSimulatedAt'    => $city->last_simulated_at->toIso8601String(),
-                'resources'          => $resources,
-                'ratesPerMin'        => $sim['ratesPerMin'],
-                'buildings'          => $buildings,
+                'available_workers'   => SimulationService::availableWorkers((int) $city->population),
+                'assigned_workers'    => WorkerService::totalAssigned((int) $city->id),
+                'money'               => (float) $city->money,
+                'map_width'           => $city->map_width,
+                'map_height'          => $city->map_height,
+                'storage_capacity'    => $sim['storageCapacity'],
+                'last_simulated_at'   => $city->last_simulated_at->toIso8601String(),
+                'resources'           => $resources,
+                'rates_per_min'       => $sim['ratesPerMin'],
+                'buildings'           => $buildings,
             ],
         ]]);
     }

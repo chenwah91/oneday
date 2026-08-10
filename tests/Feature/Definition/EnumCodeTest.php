@@ -213,7 +213,8 @@ class EnumCodeTest extends TestCase
     public function test_service_worker_precaches_enum_names(): void
     {
         $sw = file_get_contents(public_path('game/service-worker.js'));
-        $this->assertStringContainsString("const CACHE = 'apg-v4'", $sw);
+        // v5:API 契约字段全小写 + 建筑详情面板加派工控件,静态 JS 有实质变更(2026-08-10)
+        $this->assertStringContainsString("const CACHE = 'apg-v5'", $sw);
         $this->assertStringContainsString("'/game/js/core/enum-names.js'", $sw);
     }
 

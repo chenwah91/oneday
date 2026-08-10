@@ -40,4 +40,8 @@ final class AuditAction
     // 管理后台
     public const ADMIN_LOGIN = 'ADMIN.LOGIN';
     public const ADMIN_CONFIG_CHANGE = 'ADMIN.CONFIG_CHANGE';
+
+    // 管理员补偿(CLAUDE §80 / SECURITY.md「补偿统一使用 ADMIN.COMPENSATION」):
+    // actor 是管理员,user_id / city_id 是被补偿的玩家与其城市,before/after/delta/reason 齐全
+    public const ADMIN_COMPENSATION = 'ADMIN.COMPENSATION';
 }

@@ -13,7 +13,7 @@ class HealthTest extends TestCase
 
         $res->assertOk();
         $res->assertJson(['success' => true, 'data' => ['status' => 'ok']]);
-        $res->assertJsonStructure(['success', 'data' => ['status', 'serverTime']]);
+        $res->assertJsonStructure(['success', 'data' => ['status', 'server_time']]);
         $res->assertHeader('X-Request-ID');
     }
 }

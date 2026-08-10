@@ -41,6 +41,11 @@
     color: #8bd17c;
 }
 
+/* 劳动力 已用 / 可用(§10.4):与人口分开显示,派工后立即刷新 */
+.hud-labor .hud-value {
+    color: #7fc7ff;
+}
+
 .hud-revision {
     margin-left: auto;
     color: #6b7484;

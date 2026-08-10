@@ -13,7 +13,7 @@ class ExceptionRenderTest extends TestCase
 
         $res->assertStatus(500);
         $res->assertJson(['success' => false, 'error' => 'INTERNAL_ERROR']);
-        $res->assertJsonStructure(['success', 'error', 'requestId']);
+        $res->assertJsonStructure(['success', 'error', 'request_id']);
 
         // 不得泄露异常原文与堆栈
         $body = $res->getContent();
@@ -34,7 +34,7 @@ class ExceptionRenderTest extends TestCase
         $res = $this->getJson('/api/_boom', ['X-Request-ID' => 'fixed-err-id-123']);
 
         $res->assertStatus(500);
-        $res->assertJson(['requestId' => 'fixed-err-id-123']);
+        $res->assertJson(['request_id' => 'fixed-err-id-123']);
         $res->assertHeader('X-Request-ID', 'fixed-err-id-123');
     }
 

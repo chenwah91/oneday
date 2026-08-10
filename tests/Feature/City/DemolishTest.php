@@ -21,7 +21,7 @@ class DemolishTest extends TestCase
         $city = CityFactory::createForUser($u);
         $id = CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'F02', 'level' => 1, 'x' => 1, 'y' => 1, 'status' => 'active'])->id;
 
-        $this->actingAs($u)->postJson('/api/city/demolish', ['instanceId' => $id])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/demolish', ['instance_id' => $id])->assertOk();
         $this->assertDatabaseMissing('city_building_instances', ['id' => $id]);
         $this->assertSame('BUILDING.DEMOLISH', DB::table('audit_logs')->latest('id')->first()->action);
     }
@@ -32,11 +32,11 @@ class DemolishTest extends TestCase
         $city = CityFactory::createForUser($u);
         $id = CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'F02', 'level' => 1, 'x' => 1, 'y' => 1, 'status' => 'active'])->id;
 
-        $this->actingAs($u)->postJson('/api/city/demolish', ['instanceId' => $id])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/demolish', ['instance_id' => $id])->assertOk();
         $revisionAfterFirst = (int) DB::table('cities')->where('id', $city->id)->value('revision');
 
         // 同一实例再次拆除:应返回 404,且不产生"假成功"的 revision 空涨
-        $this->actingAs($u)->postJson('/api/city/demolish', ['instanceId' => $id])
+        $this->actingAs($u)->postJson('/api/city/demolish', ['instance_id' => $id])
             ->assertStatus(404)->assertJson(['error' => 'NOT_FOUND']);
         $revisionAfterSecond = (int) DB::table('cities')->where('id', $city->id)->value('revision');
 
@@ -49,16 +49,16 @@ class DemolishTest extends TestCase
         $city = CityFactory::createForUser($u);
         $id = CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'F02', 'level' => 1, 'x' => 1, 'y' => 1, 'status' => 'active'])->id;
 
-        $body = ['instanceId' => $id, 'idempotencyKey' => 'demolish-fixed-key-1'];
+        $body = ['instance_id' => $id, 'idempotency_key' => 'demolish-fixed-key-1'];
         $first = $this->actingAs($u)->postJson('/api/city/demolish', $body);
         $first->assertOk();
         $revisionAfterFirst = (int) DB::table('cities')->where('id', $city->id)->value('revision');
         $this->assertSame(1, $revisionAfterFirst);
 
-        // 同一 key 重放:返回相同 demolishedId,不再删第二次,revision 不再涨
+        // 同一 key 重放:返回相同 demolished_id,不再删第二次,revision 不再涨
         $second = $this->actingAs($u)->postJson('/api/city/demolish', $body);
-        $second->assertOk()->assertJson(['success' => true, 'data' => ['demolishedId' => $id]]);
-        $this->assertSame($first->json('data.demolishedId'), $second->json('data.demolishedId'));
+        $second->assertOk()->assertJson(['success' => true, 'data' => ['demolished_id' => $id]]);
+        $this->assertSame($first->json('data.demolished_id'), $second->json('data.demolished_id'));
         $this->assertSame($revisionAfterFirst, (int) DB::table('cities')->where('id', $city->id)->value('revision'));
     }
 
@@ -68,7 +68,7 @@ class DemolishTest extends TestCase
         $city = CityFactory::createForUser($u);
         $id = CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'F02', 'level' => 1, 'x' => 1, 'y' => 1, 'status' => 'active'])->id;
 
-        $this->actingAs($u)->postJson('/api/city/demolish', ['instanceId' => $id, 'expectedRevision' => 999])
+        $this->actingAs($u)->postJson('/api/city/demolish', ['instance_id' => $id, 'expected_revision' => 999])
             ->assertStatus(409)->assertJson(['error' => 'REVISION_CONFLICT']);
 
         // 建筑还在,revision 没变
@@ -84,7 +84,7 @@ class DemolishTest extends TestCase
         $ub = User::create(['username' => 'db', 'name' => 'db', 'email' => 'db@x.com', 'password' => 'password123']);
         CityFactory::createForUser($ub);
 
-        $this->actingAs($ub)->postJson('/api/city/demolish', ['instanceId' => $id])->assertStatus(403);
+        $this->actingAs($ub)->postJson('/api/city/demolish', ['instance_id' => $id])->assertStatus(403);
         $this->assertDatabaseHas('city_building_instances', ['id' => $id]);
     }
 }

@@ -27,6 +27,6 @@ class ApiResponseTest extends TestCase
         $this->assertSame(404, $res->getStatusCode());
         $this->assertFalse($payload['success']);
         $this->assertSame('NOT_FOUND', $payload['error']);
-        $this->assertArrayHasKey('requestId', $payload);
+        $this->assertArrayHasKey('request_id', $payload);
     }
 }

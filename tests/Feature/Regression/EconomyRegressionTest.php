@@ -85,8 +85,8 @@ class EconomyRegressionTest extends TestCase
         $city = CityFactory::createForUser($u);
         DB::table('city_resources')->where('city_id', $city->id)->update(['amount' => 100000]);
         // A01 max_count=1
-        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'A01', 'x' => 1, 'y' => 1])->assertOk();
-        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'A01', 'x' => 6, 'y' => 6])
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'A01', 'x' => 1, 'y' => 1])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'A01', 'x' => 6, 'y' => 6])
             ->assertStatus(422)->assertJson(['error' => 'BUILDING_LIMIT_REACHED']);
         $this->assertSame(1, DB::table('city_building_instances')->where('city_id', $city->id)->where('building_id', 'A01')->count());
     }
@@ -132,7 +132,7 @@ class EconomyRegressionTest extends TestCase
         Carbon::setTestNow($base->copy()->addMinutes(10));
 
         // 不先调快照,直接建造 F02(需木材 20):必须按结算后的 0 判定,而不是旧快照的 30
-        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 10, 'y' => 10])
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 10, 'y' => 10])
             ->assertStatus(422)->assertJson(['error' => 'INSUFFICIENT_RESOURCE']);
         $this->assertDatabaseMissing('city_building_instances', ['city_id' => $city->id, 'building_id' => 'F02']);
 
@@ -157,7 +157,7 @@ class EconomyRegressionTest extends TestCase
         Carbon::setTestNow($base->copy()->addMinutes(10));
 
         // 建造 F02(需资金 12):必须按结算后的 0 判定,而不是旧的 cities.money=30
-        $this->actingAs($city->user)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 10, 'y' => 10])
+        $this->actingAs($city->user)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 10, 'y' => 10])
             ->assertStatus(422)->assertJson(['error' => 'INSUFFICIENT_RESOURCE']);
         $this->assertSame(1, DB::table('city_building_instances')->where('city_id', $city->id)->count());
 
@@ -181,7 +181,7 @@ class EconomyRegressionTest extends TestCase
 
         // 前 10 分钟城里没有农田:只有人口吃粮 30×0.03×10 = 9,粮食 400 → 391
         Carbon::setTestNow($base->copy()->addMinutes(10));
-        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 2, 'y' => 2])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 2, 'y' => 2])->assertOk();
 
         $food = (float) CityResource::where('city_id', $city->id)->where('resource_id', 'food')->value('amount');
         $this->assertEqualsWithDelta(391, $food, 0.01, '建造时应按"建造前的建筑集合"结算');
@@ -189,7 +189,7 @@ class EconomyRegressionTest extends TestCase
         // 给新农田补满工人(否则 workerFactor=0,"不追溯"会被"本来就不产"掩盖,断言失去意义)。
         // 同一时刻分配,经过 0 秒 → 不产生任何产出
         $instanceId = (int) DB::table('city_building_instances')->where('city_id', $city->id)->value('id');
-        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instanceId' => $instanceId, 'workers' => 4])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instance_id' => $instanceId, 'workers' => 4])->assertOk();
 
         // 同一时刻(经过 0 秒)再取快照:新农田不得倒补建成之前的 10 分钟产量
         $this->actingAs($u)->getJson('/api/city')->assertOk();

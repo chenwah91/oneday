@@ -7,6 +7,8 @@ import { render as renderBuildings } from '../renderer/buildings.js';
 import { updateHud } from '../ui/hud.js';
 import { notifyError } from '../ui/notification.js';
 
+// placement 是纯客户端状态(不是 API 载荷),沿用 JS 的 camelCase;
+// 凡是发给服务器或从快照读回的字段一律 snake_case 全小写(用户 2026-08-10 拍板)
 let placement = null; // { buildingId, footprint, name } | null,非 null 即"放置模式"
 let worldRef = null; // pixi-app 的世界容器,用于建造成功后重绘建筑
 const listeners = [];
@@ -31,7 +33,7 @@ export function getPlacement() {
 
 // def:/api/definitions/buildings 返回的单条建筑定义
 export function selectBuilding(def) {
-    placement = { buildingId: def.buildingId, footprint: def.footprint, name: def.name };
+    placement = { buildingId: def.building_id, footprint: def.footprint, name: def.name };
     notify();
 }
 
@@ -46,11 +48,11 @@ export async function handleTileClick(gx, gy) {
     const buildingId = placement.buildingId;
 
     try {
-        // 幂等键防重复提交(网络重试不重复扣建);expectedRevision 防旧页面覆盖新状态
+        // 幂等键防重复提交(网络重试不重复扣建);expected_revision 防旧页面覆盖新状态
         const diff = await api.post('/api/city/build', {
-            buildingId, x: gx, y: gy,
-            idempotencyKey: newIdempotencyKey(),
-            expectedRevision: state.city ? state.city.revision : undefined,
+            building_id: buildingId, x: gx, y: gy,
+            idempotency_key: newIdempotencyKey(),
+            expected_revision: state.city ? state.city.revision : undefined,
         });
         applyDiff(diff, buildingId, gx, gy);
         cancelPlacement(); // 建造成功后退出放置模式
@@ -63,8 +65,9 @@ export async function handleTileClick(gx, gy) {
 
 // 用 /api/city/build 返回的 diff 合并进 state.city:
 // 后端 diff 目前只回传 { revision, resources, money, delta },不含新建筑实体详情,
-// 这里用本地已知的 buildingId/x/y/level(=1)/status 合成一条记录先行显示,
-// 下一次轮询 /api/city 会用服务端权威数据(含真实 id)覆盖。
+// 这里用本地已知的 building_id/x/y/level(=1)/status 合成一条记录先行显示,
+// 下一次轮询 /api/city 会用服务端权威数据(含真实 id 与工人数)覆盖。
+// 字段名必须与快照里的建筑记录完全一致,否则渲染层与详情面板读不到。
 function applyDiff(diff, buildingId, x, y) {
     const city = state.city;
     if (!city) return;
@@ -73,11 +76,13 @@ function applyDiff(diff, buildingId, x, y) {
     const buildings = city.buildings.slice();
     buildings.push({
         id: 'local-' + Date.now(),
-        buildingId,
+        building_id: buildingId,
         level: 1,
         x,
         y,
         status: 'active',
+        assigned_workers: 0,
+        worker_required: 0,
     });
 
     setState({

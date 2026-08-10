@@ -8,8 +8,10 @@ use Illuminate\Support\Facades\DB;
 final class Idempotency
 {
     // 请求指纹:同一 key 必须对应同一 action 与同一组业务参数。
-    // payload 只放业务参数(build: buildingId/x/y,upgrade/demolish: instanceId),
-    // 绝不包含 expectedRevision 与 idempotencyKey 本身 ——
+    // payload 只放业务参数(build: 建筑 ID 与坐标,upgrade/demolish: 实例 ID),
+    // 绝不包含 expected_revision 与 idempotency_key 本身 ——
+    // 注意:payload 的键名是「内部指纹标签」,不是 HTTP 契约字段,契约改名时不要跟着动,
+    // 否则历史 idempotency_keys 行的指纹会对不上,正常重放会被误判成 KEY_REUSED。
     // 客户端重试同一操作时 revision 可能已经变了,算进指纹会把正常重放误判成冲突。
     public static function hash(string $action, array $payload): string
     {

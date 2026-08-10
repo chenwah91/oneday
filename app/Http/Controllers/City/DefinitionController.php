@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
 // 定义只读:可建建筑列表(带 L1 成本/产出)、资源定义(code → 中文显示名)
+// 契约字段一律 snake_case 全小写(用户 2026-08-10 拍板)
 class DefinitionController extends Controller
 {
     // 资源定义:前端把 resource code 翻成中文显示名的唯一来源
@@ -21,7 +22,7 @@ class DefinitionController extends Controller
             ->map(fn ($r) => [
                 'code'     => $r->resource_id,
                 'name'     => $r->name,
-                'rsCode'   => $r->rs_code,
+                'rs_code'  => $r->rs_code,
                 'category' => $r->category,
                 'era'      => $r->first_era,
             ])->all();
@@ -40,13 +41,13 @@ class DefinitionController extends Controller
             ->orderBy('bd.building_id')
             ->get()
             ->map(fn ($r) => [
-                'buildingId' => $r->building_id,
-                'name'       => $r->name,
-                'category'   => $r->category,
-                'era'        => $r->era_key,
-                'maxCount'   => (int) $r->max_count,
-                'footprint'  => ['w' => (int) $r->footprint_w, 'h' => (int) $r->footprint_h],
-                'level1'     => [
+                'building_id' => $r->building_id,
+                'name'        => $r->name,
+                'category'    => $r->category,
+                'era'         => $r->era_key,
+                'max_count'   => (int) $r->max_count,
+                'footprint'   => ['w' => (int) $r->footprint_w, 'h' => (int) $r->footprint_h],
+                'level1'      => [
                     'cost'   => json_decode($r->cost_json, true),
                     'output' => json_decode($r->output_json, true),
                 ],

@@ -28,12 +28,12 @@ class UpgradeTest extends TestCase
     public function test_upgrade_l1_to_l2_to_l3(): void
     {
         [$u, $city, $id] = $this->makeUserWithFarm('upgrader');
-        $this->actingAs($u)->postJson('/api/city/upgrade', ['instanceId' => $id])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/upgrade', ['instance_id' => $id])->assertOk();
         $this->assertSame(2, (int) CityBuildingInstance::find($id)->level);
-        $this->actingAs($u)->postJson('/api/city/upgrade', ['instanceId' => $id])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/upgrade', ['instance_id' => $id])->assertOk();
         $this->assertSame(3, (int) CityBuildingInstance::find($id)->level);
         // L3 已满级,再升级被拒
-        $this->actingAs($u)->postJson('/api/city/upgrade', ['instanceId' => $id])->assertStatus(422);
+        $this->actingAs($u)->postJson('/api/city/upgrade', ['instance_id' => $id])->assertStatus(422);
     }
 
     public function test_upgrade_is_idempotent(): void
@@ -43,7 +43,7 @@ class UpgradeTest extends TestCase
         $before = $wood();
 
         // F02 L1→L2 花费:木材12/石料3/资金8
-        $body = ['instanceId' => $id, 'idempotencyKey' => 'upgrade-fixed-key-1'];
+        $body = ['instance_id' => $id, 'idempotency_key' => 'upgrade-fixed-key-1'];
         $this->actingAs($u)->postJson('/api/city/upgrade', $body)->assertOk();
         $this->actingAs($u)->postJson('/api/city/upgrade', $body)->assertOk(); // 重复请求:同一 key,不再扣费/不再升级
 
@@ -57,7 +57,7 @@ class UpgradeTest extends TestCase
         $ub = User::create(['username' => 'attackerB', 'name' => 'attackerB', 'email' => 'atb@x.com', 'password' => 'password123']);
         CityFactory::createForUser($ub);
 
-        $this->actingAs($ub)->postJson('/api/city/upgrade', ['instanceId' => $ida])
+        $this->actingAs($ub)->postJson('/api/city/upgrade', ['instance_id' => $ida])
             ->assertStatus(403)->assertJson(['error' => 'FORBIDDEN']);
         // A 的建筑未被改动
         $this->assertSame(1, (int) CityBuildingInstance::find($ida)->level);

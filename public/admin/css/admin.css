@@ -295,8 +295,9 @@ html, body {
     color: #ff6b6b;
 }
 
-/* Definition 表单 */
-.def-form {
+/* Definition / 补偿 表单(同一套栅格,见 .def-row / .def-actions / .def-result) */
+.def-form,
+.comp-form {
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -325,4 +326,26 @@ html, body {
     padding: 10px 12px;
     font-size: 13px;
     line-height: 1.6;
+}
+
+/* 补偿表单里那颗「查询城市」按钮:与同排输入框底部对齐 */
+.comp-form .auth-field .btn {
+    padding: 10px 12px;
+}
+
+/* 规则开关表格:说明列允许换行(其余列沿用 .data-table 的 nowrap) */
+.setting-desc {
+    white-space: normal;
+    min-width: 260px;
+    color: #9aa4b2;
+}
+
+.setting-on {
+    color: #4cd97b;
+    font-weight: 600;
+}
+
+.setting-off {
+    color: #ffb65b;
+    font-weight: 600;
 }

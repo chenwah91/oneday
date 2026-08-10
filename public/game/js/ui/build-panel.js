@@ -69,14 +69,14 @@ export async function mountBuildPanel(el) {
 
         btn.addEventListener('click', () => {
             const current = getPlacement();
-            if (current && current.buildingId === def.buildingId) {
+            if (current && current.buildingId === def.building_id) {
                 cancelPlacement(); // 再次点击同一项:取消放置模式
             } else {
                 selectBuilding(def);
             }
         });
 
-        buttons[def.buildingId] = btn;
+        buttons[def.building_id] = btn;
         list.appendChild(btn);
     });
 

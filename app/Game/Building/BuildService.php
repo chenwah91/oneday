@@ -17,7 +17,7 @@ class BuildService
 {
     public static function build(City $city, string $buildingId, int $x, int $y, ?string $idempotencyKey, ?int $expectedRevision): array
     {
-        // 请求指纹:只含业务参数,不含 expectedRevision(重试时 revision 可能已变)
+        // 请求指纹:只含业务参数,不含 expected_revision(重试时 revision 可能已变)
         $requestHash = Idempotency::hash(AuditAction::BUILDING_BUILD, ['buildingId' => $buildingId, 'x' => $x, 'y' => $y]);
 
         // 幂等:同一 user+key+action+参数已处理则直接成功返回(不重复扣建);key 被复用则 409

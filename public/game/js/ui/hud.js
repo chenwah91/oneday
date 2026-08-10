@@ -1,5 +1,6 @@
-// 顶部 HUD:资源(wood/stone/food)+ 资金 + 人口/容量 + 粮食速率 + revision
+// 顶部 HUD:资源(wood/stone/food)+ 资金 + 人口/容量 + 劳动力已用/可用 + 粮食速率 + revision
 // 资源用英文 code 索引,显示文字一律走 resourceName(code)
+// 读的字段一律是快照的 snake_case 契约字段(用户 2026-08-10 拍板)
 import { fmt } from '../utils/format.js';
 import { resourceName } from '../modules/resources.js';
 
@@ -41,6 +42,8 @@ export function mountHud(el) {
 
     const moneyVal = makeItem(bar, 'hud-money', resourceName('money'), '💰');
     const popVal = makeItem(bar, 'hud-population', '人口 / 容量', '👤');
+    // 劳动力(§10.4):已派工 / 可用工人。没派工人就不生产,这里让玩家一眼看到还有多少人闲着
+    const laborVal = makeItem(bar, 'hud-labor', '劳动力 已用 / 可用', '🛠️');
     const rateVal = makeItem(bar, 'hud-rate', resourceName(FOOD) + '速率(每分钟)', '📈');
 
     const revItem = document.createElement('div');
@@ -51,7 +54,7 @@ export function mountHud(el) {
 
     el.appendChild(bar);
 
-    refs = { resourceEls, moneyVal, popVal, rateVal, revItem };
+    refs = { resourceEls, moneyVal, popVal, laborVal, rateVal, revItem };
 }
 
 // city:GET /api/city 返回的 city 对象
@@ -64,9 +67,10 @@ export function updateHud(city) {
     });
 
     refs.moneyVal.textContent = fmt(city.money);
-    refs.popVal.textContent = fmt(city.population) + ' / ' + fmt(city.populationCapacity);
+    refs.popVal.textContent = fmt(city.population) + ' / ' + fmt(city.population_capacity);
+    refs.laborVal.textContent = fmt(city.assigned_workers) + ' / ' + fmt(city.available_workers);
 
-    const rate = (city.ratesPerMin && city.ratesPerMin[FOOD]) || 0;
+    const rate = (city.rates_per_min && city.rates_per_min[FOOD]) || 0;
     const sign = rate > 0 ? '+' : '';
     refs.rateVal.textContent = sign + fmt(rate) + '/分';
 

@@ -257,7 +257,7 @@ class PopulationTest extends TestCase
             ->pluck('assigned_workers', 'building_id');
         $total = (int) DB::table('city_building_instances')->where('city_id', $city->id)->sum('assigned_workers');
 
-        $this->assertSame(18, $total, '总分配恰好用满 18 个名额,不得超过 availableWorkers');
+        $this->assertSame(18, $total, '总分配恰好用满 18 个名额,不得超过 available_workers');
         $this->assertSame(5, (int) $assigned['A01']);
         $this->assertSame(4, (int) $assigned['D01']);
         $this->assertSame(1, (int) $assigned['P01'], '名额用尽时最后一栋只补到剩余数');

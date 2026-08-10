@@ -48,6 +48,10 @@ const ERROR_MESSAGES = {
     NOT_FOUND: '未找到对应记录',
     AUTH_REQUIRED: '请先登录',
     FORBIDDEN: '无权限执行此操作',
+    INSUFFICIENT_RESOURCE: '扣减后余额会变成负数,已拒绝',
+    STORAGE_FULL: '补偿后会超过该城市的仓储上限,已拒绝(请拆分或先扩仓)',
+    IDEMPOTENCY_KEY_REUSED: '同一幂等键被用于不同的补偿内容,已拒绝',
+    REVISION_CONFLICT: '城市状态已变化,请重新查询后再提交',
 };
 
 function errorMessage(err) {
@@ -95,6 +99,30 @@ const defResult = el('def-result');
 const defViewBtn = el('def-view-btn');
 const defSubmit = el('def-submit');
 
+// 玩家补偿(权限 adjust_resource)
+const compPanel = el('comp-panel');
+const compForm = el('comp-form');
+const compUsername = el('comp-username');
+const compCityId = el('comp-city-id');
+const compLookupBtn = el('comp-lookup-btn');
+const compCity = el('comp-city');
+const compResource = el('comp-resource');
+const compDelta = el('comp-delta');
+const compTicket = el('comp-ticket');
+const compReason = el('comp-reason');
+const compError = el('comp-error');
+const compResult = el('comp-result');
+const compSubmit = el('comp-submit');
+
+// 规则开关(权限 edit_definition)
+const settingPanel = el('setting-panel');
+const settingReason = el('setting-reason');
+const settingRefresh = el('setting-refresh');
+const settingStatus = el('setting-status');
+const settingTable = el('setting-table');
+const settingError = el('setting-error');
+const settingResult = el('setting-result');
+
 // ---------- 视图切换 ----------
 function showView(name) {
     loginView.classList.toggle('hidden', name !== 'login');
@@ -127,6 +155,18 @@ async function loadMe() {
         : '';
     // 鼠标悬停可看到本账号实际拥有的权限,便于自查为何某操作被拒
     currentRoleEl.title = currentPermissions.length ? ('权限:' + currentPermissions.join(', ')) : '';
+    applyPermissionVisibility();
+}
+
+function hasPermission(permission) {
+    return currentPermissions.indexOf(permission) !== -1;
+}
+
+// 按权限显隐面板。注意这只是体验优化(免得点了必然 403),
+// 真正的拦截始终在服务器端 EnsureAdmin 中间件 —— 前端隐藏不等于安全
+function applyPermissionVisibility() {
+    compPanel.classList.toggle('hidden', !hasPermission('adjust_resource'));
+    settingPanel.classList.toggle('hidden', !hasPermission('edit_definition'));
 }
 
 // ---------- 玩家列表 ----------
@@ -259,6 +299,199 @@ defForm.addEventListener('submit', async (e) => {
     }
 });
 
+// ---------- 玩家补偿(CLAUDE §80)----------
+
+// 数字显示:去掉浮点尾巴(1000.0000 → 1000),但保留真正的小数
+function formatAmount(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return String(value ?? '-');
+    return String(Math.round(n * 10000) / 10000);
+}
+
+// 本次补偿的幂等键:提交时生成、成功后清空。
+// 网络超时后管理员再点一次提交,带的还是同一个 key,服务器不会重复入账(CLAUDE §49)
+let compIdempotencyKey = null;
+
+function newIdempotencyKey() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return window.crypto.randomUUID();
+    }
+    return 'comp-' + Date.now() + '-' + Math.random().toString(16).slice(2);
+}
+
+// 定位目标:city_id 优先(与服务器 resolveCity 同口径)
+function compTargetPayload() {
+    const cityId = compCityId.value.trim();
+    if (cityId) return { city_id: Number(cityId) };
+    return { username: compUsername.value.trim() };
+}
+
+async function lookupCompensationTarget() {
+    compError.classList.add('hidden');
+    compResult.classList.add('hidden');
+
+    const target = compTargetPayload();
+    if (!target.city_id && !target.username) {
+        compError.textContent = '请填写用户名或 city_id';
+        compError.classList.remove('hidden');
+        return;
+    }
+
+    const qs = target.city_id
+        ? 'city_id=' + encodeURIComponent(target.city_id)
+        : 'username=' + encodeURIComponent(target.username);
+
+    compCity.textContent = '查询中…';
+    try {
+        const data = await api.get('/api/admin/compensation/lookup?' + qs);
+        compCityId.value = data.city.id;
+        compUsername.value = data.user.username;
+        compCity.textContent =
+            `玩家 ${data.user.username}(id=${data.user.id})· 城市 ${data.city.name}(id=${data.city.id})`
+            + ` · revision ${data.city.revision} · 人口 ${data.city.population}`
+            + ` · 最后结算 ${data.city.last_simulated_at}`;
+
+        // 下拉带中文显示名与当前余额,选完就知道补前是多少
+        const selected = compResource.value;
+        compResource.innerHTML = (data.resources || []).map((r) => `
+            <option value="${escapeHtml(r.code)}">${escapeHtml(r.name)}(${escapeHtml(r.code)})· 现有 ${formatAmount(r.amount)}</option>
+        `).join('');
+        if (selected) compResource.value = selected;
+    } catch (err) {
+        compCity.textContent = '';
+        compResource.innerHTML = '<option value="">先查询城市</option>';
+        compError.textContent = errorMessage(err);
+        compError.classList.remove('hidden');
+    }
+}
+
+compLookupBtn.addEventListener('click', () => { lookupCompensationTarget(); });
+
+compForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    compError.classList.add('hidden');
+    compResult.classList.add('hidden');
+
+    if (!compResource.value) {
+        compError.textContent = '请先查询城市并选择资源';
+        compError.classList.remove('hidden');
+        return;
+    }
+
+    if (compIdempotencyKey === null) compIdempotencyKey = newIdempotencyKey();
+
+    compSubmit.disabled = true;
+    try {
+        const payload = Object.assign(compTargetPayload(), {
+            resource: compResource.value,
+            delta: Number(compDelta.value),
+            reason: compReason.value.trim(),
+            ticket: compTicket.value.trim(),
+            idempotency_key: compIdempotencyKey,
+        });
+        const data = await api.post('/api/admin/compensation', payload);
+
+        compResult.textContent = data.replayed
+            ? `该补偿此前已入账(幂等重放,未重复发放):${data.resource} 当前 ${formatAmount(data.after)},revision ${data.revision}`
+            : `补偿成功:${data.resource} ${formatAmount(data.before)} → ${formatAmount(data.after)}`
+              + `(delta ${formatAmount(data.delta)})· 资金 ${formatAmount(data.money)} · 新 revision ${data.revision}`;
+        compResult.classList.remove('hidden');
+
+        // 一次操作对应一个幂等键:成功后清空,下一次补偿重新生成
+        compIdempotencyKey = null;
+        compDelta.value = '';
+        compReason.value = '';
+        compTicket.value = '';
+
+        // 刷新余额下拉与审计,让管理员立刻看到新的 ADMIN.COMPENSATION 记录
+        await lookupCompensationTarget();
+        auditActionInput.value = '';
+        await loadAudit().catch(() => {});
+    } catch (err) {
+        compError.textContent = errorMessage(err);
+        compError.classList.remove('hidden');
+    } finally {
+        compSubmit.disabled = false;
+    }
+});
+
+// ---------- 规则开关(game_settings)----------
+
+function settingValueLabel(value) {
+    if (value === true) return '<span class="setting-on">开启(true)</span>';
+    if (value === false) return '<span class="setting-off">关闭(false)</span>';
+    return escapeHtml(JSON.stringify(value));
+}
+
+async function loadSettings() {
+    settingStatus.textContent = '加载中…';
+    settingError.classList.add('hidden');
+    try {
+        const data = await api.get('/api/admin/settings');
+        const rows = data.settings || [];
+        settingTable.innerHTML = rows.map((s) => {
+            // 目前只有布尔开关可一键切换;将来出现非布尔类型时按只读展示,不猜它该变成什么
+            const toggle = s.registered && s.type === 'bool'
+                ? `<button type="button" class="btn btn-ghost" data-setting-key="${escapeHtml(s.setting_key)}" data-setting-next="${s.value === true ? 'false' : 'true'}">切换为 ${s.value === true ? '关闭' : '开启'}</button>`
+                : '<span class="muted">不可编辑</span>';
+            return `
+                <tr>
+                    <td>${escapeHtml(s.setting_key)}</td>
+                    <td class="setting-desc">${escapeHtml(s.description)}</td>
+                    <td>${settingValueLabel(s.value)}</td>
+                    <td>${s.default === null || s.default === undefined ? '-' : escapeHtml(JSON.stringify(s.default))}</td>
+                    <td>${s.updated_at ? escapeHtml(s.updated_at) : '-'}${s.updated_by ? ' · by #' + s.updated_by : ''}</td>
+                    <td>${toggle}</td>
+                </tr>
+            `;
+        }).join('');
+        settingStatus.textContent = `共 ${rows.length} 项设定`;
+    } catch (err) {
+        if (err.status === 403) throw err;
+        settingTable.innerHTML = '';
+        settingStatus.textContent = errorMessage(err);
+        throw err;
+    }
+}
+
+// 事件委托:表格内容每次刷新都会重建,不能给每行按钮单独绑事件
+settingTable.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-setting-key]');
+    if (!btn) return;
+
+    settingError.classList.add('hidden');
+    settingResult.classList.add('hidden');
+
+    const reason = settingReason.value.trim();
+    if (reason.length < 2) {
+        settingError.textContent = '请先填写修改原因(至少 2 字)';
+        settingError.classList.remove('hidden');
+        return;
+    }
+
+    btn.disabled = true;
+    try {
+        const data = await api.post('/api/admin/settings', {
+            setting_key: btn.dataset.settingKey,
+            value: btn.dataset.settingNext === 'true',
+            reason,
+        });
+        settingResult.textContent = `已修改 ${data.setting_key}:${JSON.stringify(data.before)} → ${JSON.stringify(data.after)}`;
+        settingResult.classList.remove('hidden');
+        settingReason.value = '';
+        await loadSettings().catch(() => {});
+        auditActionInput.value = '';
+        await loadAudit().catch(() => {});
+    } catch (err) {
+        settingError.textContent = errorMessage(err);
+        settingError.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+    }
+});
+
+settingRefresh.addEventListener('click', () => { loadSettings().catch(() => {}); });
+
 // ---------- 登录 / 登出 ----------
 async function loadDashboard() {
     // 先取当前管理员身份:403 表示该账号根本不是后台人员,直接给无权限视图
@@ -284,6 +517,7 @@ async function loadDashboard() {
     }
     showView('dashboard');
     loadAudit().catch(() => {});
+    if (hasPermission('edit_definition')) loadSettings().catch(() => {});
 }
 
 async function afterLogin(user) {
@@ -323,6 +557,7 @@ logoutBtn.addEventListener('click', async () => {
     currentRoleEl.title = '';
     currentRole = null;
     currentPermissions = [];
+    applyPermissionVisibility();
     loginUsername.value = '';
     loginPassword.value = '';
     showView('login');

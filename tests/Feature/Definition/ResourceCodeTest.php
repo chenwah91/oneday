@@ -116,7 +116,7 @@ class ResourceCodeTest extends TestCase
         $res = $this->actingAs($u)->getJson('/api/definitions/resources');
 
         $res->assertOk();
-        $res->assertJsonStructure(['data' => ['resources' => [['code', 'name', 'rsCode', 'category', 'era']]]]);
+        $res->assertJsonStructure(['data' => ['resources' => [['code', 'name', 'rs_code', 'category', 'era']]]]);
         $this->assertCount(31, $res->json('data.resources'));
 
         $byCode = [];
@@ -124,9 +124,9 @@ class ResourceCodeTest extends TestCase
             $byCode[$r['code']] = $r;
         }
         $this->assertSame('粮食', $byCode[ResourceCode::FOOD]['name']);
-        $this->assertSame('RS001', $byCode[ResourceCode::FOOD]['rsCode']);
+        $this->assertSame('RS001', $byCode[ResourceCode::FOOD]['rs_code']);
         $this->assertSame('木材', $byCode[ResourceCode::WOOD]['name']);
-        $this->assertNull($byCode[ResourceCode::CEMENT]['rsCode'], '§8 未收录的资源 rsCode 应为 null');
+        $this->assertNull($byCode[ResourceCode::CEMENT]['rs_code'], '§8 未收录的资源 rs_code 应为 null');
     }
 
     public function test_resources_endpoint_requires_auth(): void

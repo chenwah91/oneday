@@ -15,20 +15,21 @@ class BuildController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
+        // 契约字段一律 snake_case 全小写(用户 2026-08-10 拍板)
         $data = $request->validate([
-            'buildingId'       => ['required', 'string', 'max:16'],
-            'x'                => ['required', 'integer', 'min:0', 'max:999'],
-            'y'                => ['required', 'integer', 'min:0', 'max:999'],
-            'idempotencyKey'   => ['nullable', 'string', 'max:100'],
-            'expectedRevision' => ['nullable', 'integer'],
+            'building_id'       => ['required', 'string', 'max:16'],
+            'x'                 => ['required', 'integer', 'min:0', 'max:999'],
+            'y'                 => ['required', 'integer', 'min:0', 'max:999'],
+            'idempotency_key'   => ['nullable', 'string', 'max:100'],
+            'expected_revision' => ['nullable', 'integer'],
         ]);
 
         $city = CityFactory::createForUser($request->user());
 
         $diff = BuildService::build(
-            $city, $data['buildingId'], (int) $data['x'], (int) $data['y'],
-            $data['idempotencyKey'] ?? null,
-            isset($data['expectedRevision']) ? (int) $data['expectedRevision'] : null
+            $city, $data['building_id'], (int) $data['x'], (int) $data['y'],
+            $data['idempotency_key'] ?? null,
+            isset($data['expected_revision']) ? (int) $data['expected_revision'] : null
         );
 
         return ApiResponse::ok(['data' => $diff]);

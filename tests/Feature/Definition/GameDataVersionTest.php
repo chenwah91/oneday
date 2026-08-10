@@ -63,12 +63,12 @@ class GameDataVersionTest extends TestCase
 
         $res = $this->actingAs($user)->getJson('/api/city');
         $res->assertOk();
-        $res->assertJsonStructure(['data' => ['dataVersion', 'serverTime', 'city']]);
+        $res->assertJsonStructure(['data' => ['data_version', 'server_time', 'city']]);
 
         $body = $res->json('data');
-        $this->assertSame(DB::table('game_data_versions')->orderByDesc('id')->value('version'), $body['dataVersion']);
+        $this->assertSame(DB::table('game_data_versions')->orderByDesc('id')->value('version'), $body['data_version']);
         // ISO-8601,例:2026-08-10T12:34:56+08:00
-        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+\-]\d{2}:\d{2}$/', $body['serverTime']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+\-]\d{2}:\d{2}$/', $body['server_time']);
     }
 
     // 现有快照键一个都不能少(加字段不许顺手改契约)
@@ -80,9 +80,9 @@ class GameDataVersionTest extends TestCase
         $this->actingAs($user)->getJson('/api/city')
             ->assertOk()
             ->assertJsonStructure(['data' => ['city' => [
-                'id', 'name', 'revision', 'population', 'populationCapacity', 'money',
-                'mapWidth', 'mapHeight', 'storageCapacity', 'lastSimulatedAt',
-                'resources', 'ratesPerMin', 'buildings',
+                'id', 'name', 'revision', 'population', 'population_capacity', 'money',
+                'map_width', 'map_height', 'storage_capacity', 'last_simulated_at',
+                'resources', 'rates_per_min', 'buildings',
             ]]]);
     }
 
@@ -115,6 +115,7 @@ class GameDataVersionTest extends TestCase
     {
         $level = $this->anyBuildingLevel();
 
+        // 注意:这是「后台」端点,字段名由 Admin 侧维护,不随本次游戏侧契约改名
         $res = $this->actingAs($this->admin())->postJson('/api/admin/definitions/building-level', [
             'buildingId' => $level->building_id,
             'level'      => $level->level,

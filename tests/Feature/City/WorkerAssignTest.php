@@ -41,13 +41,13 @@ class WorkerAssignTest extends TestCase
         [$u, $city, $id] = $this->makeCityWithFarm('warm1');
         $revisionBefore = (int) DB::table('cities')->where('id', $city->id)->value('revision');
 
-        $res = $this->actingAs($u)->postJson('/api/city/workers/assign', ['instanceId' => $id, 'workers' => 4]);
+        $res = $this->actingAs($u)->postJson('/api/city/workers/assign', ['instance_id' => $id, 'workers' => 4]);
 
         $res->assertOk()->assertJson(['success' => true, 'data' => [
-            'building'         => ['id' => $id, 'assignedWorkers' => 4, 'workerRequired' => 4],
-            // 初始人口 30 → availableWorkers = floor(30 × 0.60) = 18
-            'availableWorkers' => 18,
-            'assignedWorkers'  => 4,
+            'building'          => ['id' => $id, 'assigned_workers' => 4, 'worker_required' => 4],
+            // 初始人口 30 → available_workers = floor(30 × 0.60) = 18
+            'available_workers' => 18,
+            'assigned_workers'  => 4,
         ]]);
         $this->assertSame(4, (int) DB::table('city_building_instances')->where('id', $id)->value('assigned_workers'));
         $this->assertSame($revisionBefore + 1, (int) DB::table('cities')->where('id', $city->id)->value('revision'));
@@ -57,8 +57,8 @@ class WorkerAssignTest extends TestCase
     public function test_assign_zero_unassigns(): void
     {
         [$u, $city, $id] = $this->makeCityWithFarm('warm2');
-        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instanceId' => $id, 'workers' => 4])->assertOk();
-        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instanceId' => $id, 'workers' => 0])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instance_id' => $id, 'workers' => 4])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instance_id' => $id, 'workers' => 0])->assertOk();
 
         $this->assertSame(0, (int) DB::table('city_building_instances')->where('id', $id)->value('assigned_workers'));
     }
@@ -68,23 +68,23 @@ class WorkerAssignTest extends TestCase
     {
         [$u, $city, $id] = $this->makeCityWithFarm('warm3');
 
-        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instanceId' => $id, 'workers' => 5])
+        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instance_id' => $id, 'workers' => 5])
             ->assertStatus(422)->assertJson(['error' => 'VALIDATION_ERROR']);
         $this->assertSame(0, (int) DB::table('city_building_instances')->where('id', $id)->value('assigned_workers'));
     }
 
-    // 超劳动力:人口 5 → availableWorkers = floor(5 × 0.60) = 3,派 4 人无人可派
+    // 超劳动力:人口 5 → available_workers = floor(5 × 0.60) = 3,派 4 人无人可派
     public function test_assign_more_than_available_workers_is_rejected(): void
     {
         [$u, $city, $id] = $this->makeCityWithFarm('warm4');
         DB::table('cities')->where('id', $city->id)->update(['population' => 5]);
 
-        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instanceId' => $id, 'workers' => 4])
+        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instance_id' => $id, 'workers' => 4])
             ->assertStatus(422)->assertJson(['error' => 'WORKER_NOT_AVAILABLE']);
         $this->assertSame(0, (int) DB::table('city_building_instances')->where('id', $id)->value('assigned_workers'));
 
         // 3 人(= 上限)可以派进去,证明拒绝的是"超出的那一个人",不是整条规则写错
-        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instanceId' => $id, 'workers' => 3])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instance_id' => $id, 'workers' => 3])->assertOk();
         $this->assertSame(3, (int) DB::table('city_building_instances')->where('id', $id)->value('assigned_workers'));
     }
 
@@ -98,16 +98,16 @@ class WorkerAssignTest extends TestCase
             'x' => 6, 'y' => 6, 'status' => 'active',
         ])->id;
 
-        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instanceId' => $farmId, 'workers' => 2])->assertOk();
-        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instanceId' => $adminId, 'workers' => 5])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instance_id' => $farmId, 'workers' => 2])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instance_id' => $adminId, 'workers' => 5])->assertOk();
 
         // 人口降到 10 → 可用 floor(10×0.60)=6,A01 已占 5;农田想加到 4 → 5+4=9 > 6,必须被拒
         DB::table('cities')->where('id', $city->id)->update(['population' => 10]);
-        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instanceId' => $farmId, 'workers' => 4])
+        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instance_id' => $farmId, 'workers' => 4])
             ->assertStatus(422)->assertJson(['error' => 'WORKER_NOT_AVAILABLE']);
 
         // 但"只减不增"永远放行:否则人口暴跌后玩家会被锁死在超编状态里
-        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instanceId' => $farmId, 'workers' => 1])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instance_id' => $farmId, 'workers' => 1])->assertOk();
         $this->assertSame(1, (int) DB::table('city_building_instances')->where('id', $farmId)->value('assigned_workers'));
     }
 
@@ -117,7 +117,7 @@ class WorkerAssignTest extends TestCase
         $ub = User::create(['username' => 'warmAttacker', 'name' => 'warmAttacker', 'email' => 'wa@x.com', 'password' => 'password123']);
         CityFactory::createForUser($ub);
 
-        $this->actingAs($ub)->postJson('/api/city/workers/assign', ['instanceId' => $ida, 'workers' => 4])
+        $this->actingAs($ub)->postJson('/api/city/workers/assign', ['instance_id' => $ida, 'workers' => 4])
             ->assertStatus(403)->assertJson(['error' => 'FORBIDDEN']);
 
         $this->assertSame(0, (int) DB::table('city_building_instances')->where('id', $ida)->value('assigned_workers'));
@@ -129,7 +129,7 @@ class WorkerAssignTest extends TestCase
         [$u, $city, $id] = $this->makeCityWithFarm('warm6');
         $revisionBefore = (int) DB::table('cities')->where('id', $city->id)->value('revision');
 
-        $body = ['instanceId' => $id, 'workers' => 4, 'idempotencyKey' => 'worker-fixed-key-1'];
+        $body = ['instance_id' => $id, 'workers' => 4, 'idempotency_key' => 'worker-fixed-key-1'];
         $this->actingAs($u)->postJson('/api/city/workers/assign', $body)->assertOk();
         // 之间手动改成 1 人:重放不得把它再改回 4(重放 = 回旧结果,不重复执行)
         DB::table('city_building_instances')->where('id', $id)->update(['assigned_workers' => 1]);
@@ -146,7 +146,7 @@ class WorkerAssignTest extends TestCase
         $current = (int) DB::table('cities')->where('id', $city->id)->value('revision');
 
         $this->actingAs($u)->postJson('/api/city/workers/assign', [
-            'instanceId' => $id, 'workers' => 4, 'expectedRevision' => $current + 99,
+            'instance_id' => $id, 'workers' => 4, 'expected_revision' => $current + 99,
         ])->assertStatus(409)->assertJson(['error' => 'REVISION_CONFLICT']);
 
         $this->assertSame(0, (int) DB::table('city_building_instances')->where('id', $id)->value('assigned_workers'));
@@ -155,8 +155,8 @@ class WorkerAssignTest extends TestCase
     public function test_assign_writes_audit_with_before_after(): void
     {
         [$u, $city, $id] = $this->makeCityWithFarm('warm8');
-        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instanceId' => $id, 'workers' => 2])->assertOk();
-        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instanceId' => $id, 'workers' => 4])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instance_id' => $id, 'workers' => 2])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instance_id' => $id, 'workers' => 4])->assertOk();
 
         $row = DB::table('audit_logs')->where('action', 'WORKER.ASSIGN')->latest('id')->first();
         $this->assertSame('success', $row->status);

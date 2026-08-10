@@ -48,6 +48,13 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('snapshot', function (Request $request) {
             return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip())->response(self::rejected('snapshot'));
         });
+
+        // 后台写操作限流(补偿 / 规则开关):按管理员每分钟 20 次。
+        // 这类操作是人工逐条提交的,20 次/分钟远超正常客服节奏;
+        // 单独立一个限流器是为了:管理员账号一旦被盗,批量刷补偿会先撞上限并留下 SECURITY.RATE_LIMIT
+        RateLimiter::for('admin_write', function (Request $request) {
+            return Limit::perMinute(20)->by($request->user()?->id ?: $request->ip())->response(self::rejected('admin_write'));
+        });
     }
 
     // 限流触发时的统一响应:审计 + Security Log,并保持与全局异常渲染一致的 429 响应体。

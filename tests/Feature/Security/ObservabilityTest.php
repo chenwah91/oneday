@@ -37,7 +37,7 @@ class ObservabilityTest extends TestCase
     {
         $u = $this->actingUser('revconflict');
 
-        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 8, 'y' => 8, 'expectedRevision' => 999])
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 8, 'y' => 8, 'expected_revision' => 999])
             ->assertStatus(409)->assertJson(['success' => false, 'error' => 'REVISION_CONFLICT']);
 
         $row = DB::table('audit_logs')->where('action', 'SECURITY.REVISION_CONFLICT')->first();
@@ -57,11 +57,11 @@ class ObservabilityTest extends TestCase
         $city = City::where('user_id', $u->id)->first();
         $key = 'observability-reuse-key';
 
-        $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 2, 'y' => 2, 'idempotencyKey' => $key])->assertOk();
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 2, 'y' => 2, 'idempotency_key' => $key])->assertOk();
         $instanceId = (int) DB::table('city_building_instances')->where('city_id', $city->id)->value('id');
 
         // 同一 key 换成 upgrade → 409
-        $this->actingAs($u)->postJson('/api/city/upgrade', ['instanceId' => $instanceId, 'idempotencyKey' => $key])
+        $this->actingAs($u)->postJson('/api/city/upgrade', ['instance_id' => $instanceId, 'idempotency_key' => $key])
             ->assertStatus(409)->assertJson(['success' => false, 'error' => 'IDEMPOTENCY_KEY_REUSED']);
 
         $row = DB::table('audit_logs')->where('action', 'SECURITY.SUSPICIOUS_ACTIVITY')->first();
@@ -97,11 +97,11 @@ class ObservabilityTest extends TestCase
         $city = CityFactory::createForUser($u);
         DB::table('city_resources')->where('city_id', $city->id)->update(['amount' => 0]);
 
-        $res = $this->actingAs($u)->postJson('/api/city/build', ['buildingId' => 'F02', 'x' => 1, 'y' => 1], ['X-Request-ID' => 'fixed-rule-id-9']);
+        $res = $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 1, 'y' => 1], ['X-Request-ID' => 'fixed-rule-id-9']);
 
         $res->assertStatus(422);
-        $res->assertJson(['success' => false, 'error' => 'INSUFFICIENT_RESOURCE', 'requestId' => 'fixed-rule-id-9']);
-        $res->assertJsonStructure(['success', 'error', 'requestId']);
+        $res->assertJson(['success' => false, 'error' => 'INSUFFICIENT_RESOURCE', 'request_id' => 'fixed-rule-id-9']);
+        $res->assertJsonStructure(['success', 'error', 'request_id']);
         $res->assertHeader('X-Request-ID', 'fixed-rule-id-9');
     }
 
@@ -117,7 +117,7 @@ class ObservabilityTest extends TestCase
         $res = $this->actingAs($u)->getJson('/api/city');
         $res->assertStatus(429);
         $res->assertJson(['success' => false, 'error' => 'TOO_MANY_REQUESTS']);
-        $res->assertJsonStructure(['success', 'error', 'requestId']);
+        $res->assertJsonStructure(['success', 'error', 'request_id']);
 
         // 限流触发必须留痕(CLAUDE §48)
         $row = DB::table('audit_logs')->where('action', 'SECURITY.RATE_LIMIT')->first();

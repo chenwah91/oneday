@@ -47,7 +47,7 @@ function shade(color, factor) {
 
 function defsById() {
     const map = {};
-    (state.definitions || []).forEach((d) => { map[d.buildingId] = d; });
+    (state.definitions || []).forEach((d) => { map[d.building_id] = d; });
     return map;
 }
 
@@ -144,7 +144,7 @@ export function render(world, buildings) {
 
     const defs = defsById();
     (buildings || []).forEach((b) => {
-        const def = defs[b.buildingId];
+        const def = defs[b.building_id];
         const footprint = (def && def.footprint) || { w: 1, h: 1 };
         const color = (def && CATEGORY_COLOR[def.category]) || DEFAULT_COLOR;
         buildingLayer.addChild(makeBuildingSprite(b, footprint, color));

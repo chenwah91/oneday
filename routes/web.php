@@ -17,8 +17,9 @@ Route::prefix('api')->group(function () {
     // 健康检查探针不限流,避免探活请求被节流
     Route::get('/health', fn () => ApiResponse::ok([
         'data' => [
-            'status'     => 'ok',
-            'serverTime' => now()->toIso8601String(),
+            'status'      => 'ok',
+            // 契约字段一律 snake_case 全小写(用户 2026-08-10 拍板)
+            'server_time' => now()->toIso8601String(),
         ],
     ]));
 
@@ -58,7 +59,7 @@ Route::prefix('api')->group(function () {
         // 拆除:所有权校验(越权 403 + 审计),M1 不返还资源
         Route::post('/city/demolish', \App\Http\Controllers\City\DemolishController::class)->middleware('throttle:api');
 
-        // 工人分配:绝对值设置,受实例 worker_required 与全城 availableWorkers 双重约束(v3.2 §10.4)
+        // 工人分配:绝对值设置,受实例 worker_required 与全城 available_workers 双重约束(v3.2 §10.4)
         Route::post('/city/workers/assign', \App\Http\Controllers\City\WorkerAssignController::class)->middleware('throttle:api');
     });
 });
@@ -79,6 +80,16 @@ Route::prefix('api/admin')->middleware(['auth:web', 'admin', 'throttle:api'])->g
     // 查看当前值是「调整流程」的第一步,与提交同挂 edit_definition:support / game_master 不碰游戏数值
     Route::get('/definitions/building-levels', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'buildingLevels'])->middleware('admin:edit_definition');
     Route::post('/definitions/building-level', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editBuildingLevel'])->middleware('admin:edit_definition');
+
+    // 管理员补偿(CLAUDE §80 / E7):查目标城市余额 / 提交补偿。
+    // 权限 adjust_resource(game_master 及以上);写入端点再叠一层 admin_write 限流,
+    // 「查」与「补」同权限:看得到余额才填得出 delta,不给低权角色留一个只读的经济窥探面
+    Route::get('/compensation/lookup', [\App\Http\Controllers\Admin\AdminCompensationController::class, 'lookup'])->middleware('admin:adjust_resource');
+    Route::post('/compensation', [\App\Http\Controllers\Admin\AdminCompensationController::class, 'compensate'])->middleware(['admin:adjust_resource', 'throttle:admin_write']);
+
+    // 规则开关(game_settings):开关改变全服规则,与改数值同级 → edit_definition(admin 及以上)
+    Route::get('/settings', [\App\Http\Controllers\Admin\AdminSettingController::class, 'index'])->middleware('admin:edit_definition');
+    Route::post('/settings', [\App\Http\Controllers\Admin\AdminSettingController::class, 'update'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
 });
 
 // 仅测试环境:用于验证异常渲染,绝不在生产暴露

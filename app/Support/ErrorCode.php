@@ -30,6 +30,10 @@ final class ErrorCode
     // 劳动力不足:本次分配会让全城已分配工人超过 floor(population × 0.60)(CLAUDE §32 预留码)
     public const WORKER_NOT_AVAILABLE = 'WORKER_NOT_AVAILABLE';
 
+    // 仓储已满:本次增量会让资源超过当前仓储上限。
+    // 管理员补偿走「超出即拒绝」而不是静默截断 —— 悄悄少发的补偿比发不出去更难追查
+    public const STORAGE_FULL = 'STORAGE_FULL';
+
     // 幂等:同一 key 被复用到不同操作或不同参数上(409)
     public const IDEMPOTENCY_KEY_REUSED = 'IDEMPOTENCY_KEY_REUSED';
 }

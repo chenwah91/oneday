@@ -31,7 +31,7 @@ class UpgradeService
             throw new GameRuleException(ErrorCode::FORBIDDEN, 403);
         }
 
-        // 请求指纹:只含业务参数,不含 expectedRevision(重试时 revision 可能已变)
+        // 请求指纹:只含业务参数,不含 expected_revision(重试时 revision 可能已变)
         $requestHash = Idempotency::hash(AuditAction::BUILDING_UPGRADE, ['instanceId' => $instanceId]);
 
         // 幂等:同一 user+key+action+参数已处理则直接成功返回(不重复扣费/升级),与 BuildService 对齐;key 被复用则 409

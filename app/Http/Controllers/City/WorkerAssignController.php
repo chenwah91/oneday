@@ -17,21 +17,22 @@ class WorkerAssignController extends Controller
     {
         // workers 是绝对值设置(0 = 撤光);上限不在这里判(要看实例等级的 worker_required),
         // 这里只做类型/范围的 allowlist 校验,业务上限一律由服务层在锁内判定(CLAUDE §45)
+        // 契约字段一律 snake_case 全小写(用户 2026-08-10 拍板)
         $data = $request->validate([
-            'instanceId'       => ['required', 'integer', 'min:1'],
-            'workers'          => ['required', 'integer', 'min:0', 'max:100000'],
-            'idempotencyKey'   => ['nullable', 'string', 'max:100'],
-            'expectedRevision' => ['nullable', 'integer', 'min:0'],
+            'instance_id'       => ['required', 'integer', 'min:1'],
+            'workers'           => ['required', 'integer', 'min:0', 'max:100000'],
+            'idempotency_key'   => ['nullable', 'string', 'max:100'],
+            'expected_revision' => ['nullable', 'integer', 'min:0'],
         ]);
 
         $city = CityFactory::createForUser($request->user());
 
         $diff = WorkerService::assign(
             $city,
-            (int) $data['instanceId'],
+            (int) $data['instance_id'],
             (int) $data['workers'],
-            $data['idempotencyKey'] ?? null,
-            isset($data['expectedRevision']) ? (int) $data['expectedRevision'] : null
+            $data['idempotency_key'] ?? null,
+            isset($data['expected_revision']) ? (int) $data['expected_revision'] : null
         );
 
         return ApiResponse::ok(['data' => $diff]);

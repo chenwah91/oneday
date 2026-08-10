@@ -26,9 +26,9 @@ async function bootApp() {
     // 等距地图:初始化 PixiJS,画地图 + 现有建筑
     const stageEl = document.getElementById('stage');
     const pixiApp = initPixiApp(stageEl);
-    pixiApp.centerOn(state.city.mapWidth, state.city.mapHeight);
+    pixiApp.centerOn(state.city.map_width, state.city.map_height);
 
-    renderMap(pixiApp.world, state.city.mapWidth, state.city.mapHeight, handleTileClick, pixiApp.isDragging);
+    renderMap(pixiApp.world, state.city.map_width, state.city.map_height, handleTileClick, pixiApp.isDragging);
     renderBuildings(pixiApp.world, state.city.buildings);
 
     // 建造面板:挂到 #panel;建造模块拿到 world 引用,建造成功后自行重绘

@@ -17,7 +17,7 @@ class DefinitionApiTest extends TestCase
         $u = User::create(['username' => 'defviewer', 'name' => 'defviewer', 'email' => 'd@v.com', 'password' => 'password123']);
         $res = $this->actingAs($u)->getJson('/api/definitions/buildings');
         $res->assertOk();
-        $res->assertJsonStructure(['data' => ['buildings' => [['buildingId', 'name', 'footprint' => ['w', 'h'], 'level1' => ['cost']]]]]);
+        $res->assertJsonStructure(['data' => ['buildings' => [['building_id', 'name', 'footprint' => ['w', 'h'], 'level1' => ['cost']]]]]);
         // 94 座
         $this->assertCount(94, $res->json('data.buildings'));
     }

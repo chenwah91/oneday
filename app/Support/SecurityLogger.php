@@ -17,6 +17,7 @@ final class SecurityLogger
     // 允许写入 context 的字段白名单:全部为非敏感的定位/分类信息
     private const ALLOWED_KEYS = [
         'user_id',      // 玩家 ID
+        'actor_id',     // 操作者 ID(管理员操作时 actor 与 user 不是同一个人,两者都要记)
         'city_id',      // 城市 ID
         'route',        // 路由名或路径
         'action',       // 审计 Action 码

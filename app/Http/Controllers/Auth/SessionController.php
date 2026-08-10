@@ -36,7 +36,8 @@ class SessionController extends Controller
             'user_id'  => $userId,
         ]);
 
-        return ApiResponse::ok(['data' => ['loggedOut' => true]]);
+        // 契约字段一律 snake_case 全小写(用户 2026-08-10 拍板)
+        return ApiResponse::ok(['data' => ['logged_out' => true]]);
     }
 
     // 空响应,借 web 中间件下发 XSRF-TOKEN cookie
