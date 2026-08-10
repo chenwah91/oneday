@@ -241,10 +241,17 @@
     line-height: 1.4;
 }
 
+/* 主操作(升级 / 拆除)吸底:面板本身是 overflow-y:auto 的滚动容器,
+   施工中会多出「状态 / 剩余时间」两行,手机窄屏下按钮会被顶到折叠线以下且没有滚动提示。
+   sticky 让这一行永远贴在可视区底部,内容再长也点得到(CLAUDE §22 手机可操作性)。 */
 .bldg-actions {
+    position: sticky;
+    bottom: 0;
     display: flex;
     gap: 8px;
-    padding: 4px 12px 12px;
+    padding: 8px 12px 12px;
+    background: #1b212b;
+    border-top: 1px solid #2a3140;
 }
 
 .bldg-btn {
@@ -314,13 +321,15 @@
 }
 
 @media (max-width: 480px) {
-    /* 手机:顶部铺开半屏,下半屏地图仍可见可操作;按钮触控区加大到 44px */
+    /* 手机:顶部铺开大半屏,下半屏地图仍可见可操作;按钮触控区加大到 44px。
+       62% 是按「施工中」这种最高的内容量取的(比 52% 多出的两行正好是状态+剩余时间),
+       再高就会挡住地图上被选中的那栋建筑本身 */
     .bldg-detail {
         top: 8px;
         left: 8px;
         right: 8px;
         width: auto;
-        max-height: 52%;
+        max-height: 62%;
     }
 
     .bldg-btn {

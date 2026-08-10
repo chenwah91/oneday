@@ -10,7 +10,6 @@ use App\Support\ErrorCode;
 use App\Support\GameRuleException;
 use App\Support\GameSetting;
 use App\Support\Idempotency;
-use App\Support\SecurityLogger;
 use Illuminate\Support\Facades\DB;
 
 // 工人分配(v3.2 §10.4):完整安全链(所有权/幂等/Revision/规则/事务+行锁/不变量/审计/revision+1)
@@ -34,11 +33,11 @@ class WorkerService
                 'entity_type' => 'building', 'entity_id' => (string) $instanceId,
                 'reason_code' => 'NOT_OWNER',
             ]);
-            // 审计负责业务可追溯,Security Log 负责异常检测(CLAUDE §60),两者并行不互相替代
-            SecurityLogger::log('security.authorization_failed', [
-                'user_id' => (int) $city->user_id, 'route' => 'api/city/workers/assign',
-                'reason' => 'NOT_OWNER', 'entity_type' => 'building', 'entity_id' => (string) $instanceId,
-            ]);
+            // Security Log 不在这里写:本方法抛 GameRuleException(FORBIDDEN),
+            // 全局 render 会统一补一条 security.authorization_failed(见 bootstrap/app.php)。
+            // 这里再写一条会让同一次越权在 security 通道里出现两遍,污染「异常检测」的计数口径。
+            // 与 UpgradeService(同样抛异常)一致;DemolishController 是直接 return 响应、不经 render,
+            // 所以它必须自己写那条 —— 判据是「有没有走全局 render」,不是「在不在 Service 里」。
             throw new GameRuleException(ErrorCode::FORBIDDEN, 403);
         }
 

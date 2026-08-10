@@ -30,15 +30,18 @@ Route::prefix('api')->group(function () {
     // 真正的按账号失败次数限制(每 15 分钟 5 次、与 IP 无关)在 LoginController 内实现
     Route::post('/auth/login', \App\Http\Controllers\Auth\LoginController::class)->middleware('throttle:auth');
 
-    // CSRF cookie:公开接口,供 SPA 首次取用 XSRF-TOKEN
-    Route::get('/csrf-cookie', [\App\Http\Controllers\Auth\SessionController::class, 'csrfCookie']);
+    // CSRF cookie:公开接口(未登录也能打),供 SPA 首次取用 XSRF-TOKEN。
+    // 每次调用都会由 web 组起一个 session,不限流等于给了匿名用户一个免费的 session 生成器
+    Route::get('/csrf-cookie', [\App\Http\Controllers\Auth\SessionController::class, 'csrfCookie'])->middleware('throttle:api');
 
     Route::middleware('auth:web')->group(function () {
-        // 当前登录用户
-        Route::get('/me', [\App\Http\Controllers\Auth\SessionController::class, 'me']);
+        // 当前登录用户:普通只读端点,与其它 GET 同档(throttle:api)
+        Route::get('/me', [\App\Http\Controllers\Auth\SessionController::class, 'me'])->middleware('throttle:api');
 
-        // 登出:失效 session 并写审计
-        Route::post('/auth/logout', [\App\Http\Controllers\Auth\SessionController::class, 'logout']);
+        // 登出:失效 session 并写审计。属认证域,与 login 同挂 throttle:auth(每 IP 每分钟 20 次)比 api 略严 ——
+        // 一次登出即销毁 session,后续重放会先被 auth:web 拦成 401(排在限流之前,不计数),
+        // 想刷满这档配额必须反复重新登录,而登录本身也走同一个限流器
+        Route::post('/auth/logout', [\App\Http\Controllers\Auth\SessionController::class, 'logout'])->middleware('throttle:auth');
 
         // 城市只读快照:先结算再返回聚合状态。
         // 独立限流(每用户每分钟 30 次):快照会跑结算与多表联查,是最贵的 GET(CLAUDE §48)

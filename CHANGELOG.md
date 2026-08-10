@@ -4,6 +4,100 @@
 
 > 本文件是项目第一份正式 CHANGELOG——在此之前各阶段版本号只体现在 git commit message 里(`vX.Y.Z ...`),未集中记录。下方「更早里程碑」一节按 commit 顺序补录这些历史版本供追溯,详细条目从 `v1.0.0` 开始按标准 CHANGELOG 格式维护。
 
+## [v1.1.0] — M2 深度系统版 (2026-08-10)
+
+M1 交付的是「能玩通一圈」的核心循环;M2 把这圈循环填成**有经营深度的系统**:人口与劳动力、幸福/健康/治安、财政与治理、物流、科技研究与时代升级、建筑生命周期,全部按 `docs/templates/v3.2.md` 的数值口径接入同一套分段结算内核。同期把数值主键与枚举值全面英文化、API 契约统一 snake_case,并做了一轮以 M2 新增端点为靶子的对抗式安全回归。
+
+按八个开发波次推进,测试从 **88 增至 379 个**(102 → 137 → 172 → 202 → 242 → 281 → 329 → 376 → 379)。数值版本 `game_data_version` 从 `V3.1.1` 递增到 **`V3.1.3`**;Service Worker 缓存版本 `apg-v1` → **`apg-v9`**(每个波次前端有实质改动就递增一次)。
+
+### 结算内核(波次 1)
+
+- **per-instance 化**:结算从「按建筑类型汇总」改为**逐建筑实例**计算,每个实例带一组独立乘区 `worker / power / logistics / tech / npc / tool / event`(初值全 1.0),各系统只写自己那一格、互不覆盖。M2 依次点亮 worker(C1)、logistics(C4)、tech(B3),其余四格留给 M3。
+- **分段结算**:离线时长按 `SEGMENT_MINUTES = 30` 切段(上限 24 段 = 12h 封顶),段内人口/幸福恒定、段末收敛,取代 v1.0.1 的「一整段算到底」。
+- **安全可观测性**:`SECURITY.REVISION_CONFLICT` / `SECURITY.SUSPICIOUS_ACTIVITY` 的审计改由全局异常 render 在**事务外**补写(事务内写会被 ROLLBACK 一起抹掉);业务异常统一走 `GameRuleException` + 全局 render,Controller 不再各写 try/catch。
+- 前端新增建筑详情面板(等级/位置/占地/产出/升级/拆除)。
+
+### 资源与枚举英文化(波次 2 / 3)
+
+- **资源 ID 全英文化(V3.1.2)**:`resource_definition.resource_id` 主键与 `city_resources` 存档从中文名迁到英文 code(`wood` / `stone` / `food` / `knowledge` …),中文仅作显示名,前端一律经 `/api/definitions/resources` 取名。同批把人均粮耗按 v3.1 §10.1 从 `0.1` 调到 **`0.03`/人/分**。
+- **定义表枚举值英文化(V3.1.3)**:`building_definition.category`(12 项)、`series_key`(29 项)、`building_level_definition.cost_type`、`resource_definition.category`、`technology_definition.branch` 全部换成英文 code;迁移中发现的 36 条断链按「宁可置 NULL 不可乱猜」处理,映射表见 `docs/templates/enum-code-map.md`。
+- **Game Data Version 全链贯通**:`cities.game_data_version`(这座城以哪一版数值开局)与 `audit_logs.game_data_version`(这条审计发生时线上跑哪一版)两列落地,快照响应带 `data_version`(§64 / §65)。
+- **五级管理员角色**:`player / support / game_master / admin / super_admin` 有序梯度 + 权限最低角色表(`read_player` / `read_audit` / `adjust_resource` / `edit_definition` / `ban_player` / `manage_admin`),未知角色与未知权限一律 Fail Closed。
+
+### 人口与劳动力(M2-C1,波次 3)
+
+- 初始人口 10 → **30**(v3.2 §10.4 存档兼容条款),可用劳动力 `availableWorkers = floor(population × 0.60)`。
+- 新端点 `POST /api/city/workers/assign`:**绝对值**设置该实例的工人数,受「实例 `worker_required` 上限」与「全城劳动力池」双重约束,走完整安全链(所有权 / 幂等 / Revision / 行锁 / 不变量 / 审计 `WORKER.ASSIGN`)。
+- 产出接入 `workerFactor = min(1, assigned / worker_required)` —— **没派工人就不生产**(用户 2026-08-10 拍板为预期玩法,不自动派工)。
+- 人口增长基准 `0.2%/分`,乘住房 / 粮食 / 幸福 / 健康四因子;粮食赤字三级后果(§10.1):库存低于 3 分钟消耗 → 迁出 `-0.5%/分`,库存归零满 10 分钟宽限 → 饥荒 `-1.0%/分`,损失方向的人口地板为 5。
+
+### API 契约与派工 UI(波次 4)
+
+- **游戏 API 字段一律 snake_case 全小写**(用户拍板):请求与响应全链改造,`buildingId` → `building_id`、`expectedRevision` → `expected_revision`、`idempotencyKey` → `idempotency_key` 等,前端与全部测试同步跟进。
+- 前端建筑面板新增派工控件(撤空 / − / + / 补满)与 HUD 劳动力位;409 冲突自动拉一次权威快照恢复。
+- **管理员补偿 `ADMIN.COMPENSATION`**(CLAUDE §80):后台按用户名/city_id 定位 → 查余额 → 单资源增减,强制填 `reason`(≥5 字)与可选工单号,走事务 + 幂等 + Revision + 审计(before/after/delta 齐全),写端点额外叠 `throttle:admin_write`。容量类资源不可调。
+- **`game_settings` 规则开关**:`worker_assign_allow_decrease_always`(工人「只减不增」是否永远放行)与 `worker_gate_enabled`(用工闸门总开关,运营救急用),后台可切、改动写 `ADMIN.CONFIG_CHANGE`。与 Definition 数值区分:开关不 bump `game_data_version`。
+
+### 幸福 / 健康 / 治安(M2-C2,波次 5)
+
+- `cities.happiness` 列落地,基准 60,目标值由住房宽裕度、公共服务覆盖率、食物品质等分项合成;实际值向目标**快落慢升**(上行 `+0.5`/分、下行 `-1.0`/分)。
+- 缺粮满 5 分钟起额外扣 `-1.0`/分;幸福低于 50 时人口增长因子归零,70 以上取满,中间线性。
+- 健康 / 治安为派生值(按对应建筑的服务覆盖率算),与幸福一起进快照与 HUD(😊 / ❤️ / 🛡️)。
+
+### 科技研究与时代升级(M2-B1 / B4 / B6 / B3,波次 5–8)
+
+- **研究**:`POST /api/city/research` 一次性扣知识 + 按 `research_minutes` 计时,到点由懒结算翻成 `unlocked`(审计 `TECH.RESEARCH_START` / `TECH.UNLOCK`),同一时刻只允许一项在研;新增错误码 `TECH_NOT_UNLOCKED` / `RESEARCH_IN_PROGRESS` / `ERA_REQUIRED`。前端科技面板覆盖 50 个节点,三态(可研究 / 条件未满足并说明原因 / 已解锁)+ 在研倒计时。
+- **时代升级**:`cities.era_key` / `era_order` 两列落地,`POST /api/city/era/upgrade` 按 v3.2 §5.1 逐维校验(人口 / 知识 / 粮食 / 资金 / 指定建筑数量 / 治理容量 / 幸福 / 国防),不达标返回 `422 ERA_REQUIRED` **并附逐维缺口清单**;快照带 `era` 区块,前端显示条件清单与置灰。
+- **建造科技闸门(B4)**:`building_definition.tech_id` 必须已解锁才能建,检查顺序严格对齐 v3.2「时代 → 科技 → 占地 → 上限 → 材料」。研究同时收紧为**只开放当前时代**的节点。
+- **科技乘数(B3)**:v3.2 §5 `effect_code` 口径 —— 同分支每解锁一条科技,该分支建筑产出 `+2%`;建筑按自身 `tech_id` 反查所属分支,纯数据驱动无硬编码,满分支上限 `1.20×`。
+- 存档城全部回填时代 I(靠列默认值,不写无 WHERE 的 UPDATE)。
+
+### 财政与治理(M2-C3,波次 6)
+
+- **税收**进分段结算:人均 `0.02 × 1.5^(时代-1)`,再乘治理效率。
+- **治理四档**:负载 = 人口 / 治理容量,`≤0.80 → 1.00`、`≤1.00 → 0.90`、`≤1.25 → 0.70`、超出 `→ 0.50`;治理容量统一以 `output_json` 为单一来源。
+- **维护欠费半停工**:资金不足以付维护时,对应建筑产出 `×0.50`,取代此前「欠费照常生产」的白嫖口径。
+- **财政预警**(§10.5):储备撑不满 10 分钟维护 → 黄色,撑不满 3 分钟 → 红色,进快照 `fiscal_warning` 与 HUD 变色。
+
+### 物流(M2-C4)与产量硬上限(波次 7)
+
+- 运输需求 = Σ(生产建筑每分钟输入 + 输出) × `distanceFactor`(M2 恒 1.0,地图距离惩罚留 M3);`transport_capacity` 真实参与,负载分档 `0.80 / 1.00 / 1.25` → 物流率 `1.00 → 0.70 → 最低 0.25`。
+- **时代 I 不计运输需求**(`LOGISTICS_MIN_ERA_ORDER = 2`),开局不至于一上来就被物流卡死。
+- **§13 产量硬上限**:全部乘区连乘后夹在 `2.75×`(常规)/ `3.25×`(终局)以内,防止多系统叠加突破设计天花板。
+
+### 建筑生命周期(M2-C5,波次 7)
+
+- 建筑三态 `constructing / active / upgrading` + `construction_finished_at` 计时列;完工由**懒结算**在窗口内翻牌,口径「宁可少产不可多产」。
+- `POST /api/city/upgrade/cancel`:仅 `upgrading` 可取消,退还该次升级材料的 **70%**(资金不退)。
+- 拆除返还按 v3.2 §10.9 分三态:`active` 退已完工等级累计材料 **50%**、`constructing` 退该次建造材料 70%、`upgrading` 两者相加。50% < 70% 是明文要求(防拆建套利)。
+- **升级期间停产**(§3.2 明文);住宅升级期间保留 **50%** 人口容量,不至于一升级就把居民赶出城。
+
+### 安全回归(M2-C6,波次 8)
+
+- 以 M2 新增/大改的 9 个端点为靶子实测 23 类攻击场景(越权 / 幂等滥用 / Revision / 输入边界 / 经济不变量 / 时序组合 / 开关组合态),新增 **31 条攻击测试**(`tests/Feature/Security/M2AttackTest.php`)。
+- **修复 1 个高危漏洞**:`X-Request-ID` 是客户端可控的,而 `audit_logs.request_id` 只有 `CHAR(36)`。发一个超长 ID 会让 `AuditLogger` 的 INSERT 在 `STRICT_TRANS_TABLES` 下报 1406 `Data too long`,于是后台越权探测被打成**零留痕**的 500、经济 Mutation 则因审计写不进去被整笔回滚。修复:`EnsureRequestId` 只接受 ≤36 字符的合法 ID,超长一律退回服务器生成的 UUID。
+- 新增横切防线测试(`M2SurfaceTest`):每个 M2 端点都真的挂着 CSRF 与限流、审计不可被抑制、Security Log 只写 allowlist 字段、每笔成功 Mutation 恰好一条审计。
+
+### 收官加固(本版)
+
+- **补齐限流**:`GET /api/me`、`GET /api/csrf-cookie` 挂 `throttle:api`,`POST /api/auth/logout` 挂 `throttle:auth`(比读端点略严)。`/api/csrf-cookie` 是未登录也能打的公开端点,不限流等于给匿名用户一个免费的 session 生成器。同时加了一条**遍历路由表**的结构性测试:`api/*` 下每条路由都必须挂限流,豁免要显式登记(目前只有健康检查探针 `/api/health`)。
+- **统一越权的 Security Log 口径**:`WorkerService` 在抛 `FORBIDDEN` 之前自己写过一条 `security.authorization_failed`,而全局 render 见到 `FORBIDDEN` 还会再补一条 —— 同一次越权在 security 通道里出现两遍,会把「短时间内多少次越权」这类异常检测阈值直接带偏一倍。现统一为:走全局 render 的(抛异常)由 render 写,直接 return 响应的(`DemolishController`)自己写,任一路径恰好一条,并加测试锁死。
+- **前端**:手机窄屏下建筑详情面板的主操作(升级 / 拆除)会被顶到折叠线以下且没有滚动提示 —— 操作行改为 `position: sticky` 吸底,移动端面板高度上限 52% → 62%;科技面板的时代条件清单在指纹未变时改为**原地更新数值**,不再停留在上次重绘那一刻的数字(也不会因为每 10 秒轮询就整块重建、打断滚动位置与在研进度条)。
+
+### 其他
+
+- 新增 `php artisan idempotency:prune`:清理已过期的幂等键(只删 `expires_at` 已过期的行,`NULL` 的历史行一律保留)。
+- v3.2 数值定稿入库,数值权威由 `docs/templates/v3.1.md` 切换到 `docs/templates/v3.2.md`。
+- 新增 11 支迁移(`2026_08_10_200001` 起,逐支说明与执行顺序见 `docs/deploy.md`)。迁移文件总数:M1 的 16 支 + v1.0.1 的 1 支 + 本版 11 支 = **28**。
+
+### 已知边界 / 待用户裁决(不阻塞发布)
+
+- **新号开局硬锁**(本版 E2E 实测发现,**未修**):新城初始资源只有 wood / stone / food / money,**没有 knowledge**;而时代 I 的全部 5 项科技都要 20–30 知识,时代 I 又没有任何产知识的建筑(知识按 v3.2 §8 是时代 III 才登场的资源)。结果是新注册账号**一项科技都研究不了 → 一栋建筑都建不了**。改法涉及数值/设计取舍(送初始知识?时代 I 科技改为免费或预解锁?给时代 I 加产知识的建筑?),按「不擅自改游戏数值」的约定交由项目负责人拍板。当前唯一解法是管理员用 `ADMIN.COMPENSATION` 发放种子知识。
+- 建筑详情面板的产出行固定显示 **L1** 数值(`/api/definitions/buildings` 目前只回传 L1),建筑升到 Lv2/Lv3 后该行不跟随当前等级。
+- 定义表 `governance_bonus` / `defense_score` / `happiness_bonus` 三列与 `output_json` 存在双口径(150+ 行不一致),现按 `output_json` 单一来源,三列被忽略且后台编辑无效 —— 删列还是改口径待裁决。
+- 未完工建筑可以派工并占用劳动力池(C6 裁决:预派 = 预留,维持现状);研究不受拆楼影响(维持现状)。
+- 物流「升代产量断崖」的可调参数、两份数据映射草案的审批,均待用户定。
+
 ## [v1.0.1] — M1 缺陷修复(经济安全) (2026-08-10)
 
 修复 M2 盘点时发现的 5 个 M1 遗留缺陷,其中 2 个为可刷资源的经济漏洞。测试从 76 增至 **88 个**(新增 12 个,均做过假失败验证,确认非假绿)。

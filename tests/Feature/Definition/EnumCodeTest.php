@@ -213,9 +213,10 @@ class EnumCodeTest extends TestCase
     public function test_service_worker_precaches_enum_names(): void
     {
         $sw = file_get_contents(public_path('game/service-worker.js'));
-        // v8:M2-C4 物流 + 财政预警 —— hud.js 资金按 fiscal_warning 变色并改写 title、hud.css 新增 .hud-warn;
-        //     同一波次的施工计时前端改动也并入这一次 bump(一次改动只 bump 一次,不要连着跳版本)
-        $this->assertStringContainsString("const CACHE = 'apg-v8'", $sw);
+        // v9:M2 收官 —— panels.css 的建筑详情操作行改 sticky 吸底(手机窄屏下升级/拆除会被顶到折叠线以下)、
+        //     移动端面板高度上限 52%→62%;technology-panel.js 的时代条件清单改为原地更新数值。
+        //     两处改动同属一次收尾,只 bump 一次(一次改动只 bump 一次,不要连着跳版本)
+        $this->assertStringContainsString("const CACHE = 'apg-v9'", $sw);
         $this->assertStringContainsString("'/game/js/core/enum-names.js'", $sw);
     }
 

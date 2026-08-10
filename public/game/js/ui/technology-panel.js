@@ -87,6 +87,7 @@ export class TechnologyPanel {
         this.busy = false;     // 请求进行中:禁用全部研究按钮,防重复提交
         this.filter = 'all';
         this.timer = null;     // 倒计时 ticker
+        this.eraReqRefs = null; // 时代条件清单的数值节点(syncEraValues 原地更新用)
         this.pendingRefresh = false; // 到点后只拉一次快照的哨兵
         this.lastSignature = '';
         this.unsubscribed = false;
@@ -108,10 +109,17 @@ export class TechnologyPanel {
         this.rootEl.hidden = true;
         el.appendChild(this.rootEl);
 
-        // 快照更新(轮询 / 研究成功 / 其他面板)后同步刷新;与面板无关的变化不重建 DOM
+        // 快照更新(轮询 / 研究成功 / 其他面板)后同步刷新;与面板无关的变化不重建 DOM。
+        // 指纹只含「达标与否」这类会改变结构/按钮状态的位,不含条件的具体数值 ——
+        // 数值每 10 秒都在动(粮食/幸福/资金),进指纹会让面板每轮询一次就整块重建,
+        // 滚动位置和在研进度条都会被打断。所以指纹没变时走 syncEraValues() 原地改文本,
+        // 否则条件清单会一直停在上次重建那一刻的数字(M2 收官 E2E 实测到的显示滞后)。
         onChange(() => {
             if (this.unsubscribed || !this.opened) return;
-            if (this.signature() === this.lastSignature) return;
+            if (this.signature() === this.lastSignature) {
+                this.syncEraValues();
+                return;
+            }
             this.render();
         });
     }
@@ -265,6 +273,7 @@ export class TechnologyPanel {
         this.lastSignature = this.signature();
         this._names = null; // 定义可能刚加载完,名字表重建
         this.progressRefs = null; // 旧节点即将被丢弃,ticker 不能再往上写
+        this.eraReqRefs = null;   // 同上:条件清单节点重建前先断开旧引用
         this.rootEl.innerHTML = '';
 
         const header = document.createElement('div');
@@ -396,6 +405,7 @@ export class TechnologyPanel {
 
         const reqs = era.next.requirements || [];
         const allMet = reqs.every((r) => r.met);
+        this.eraReqRefs = []; // 逐条条件的数值节点,供 syncEraValues() 原地更新
 
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -428,7 +438,24 @@ export class TechnologyPanel {
         value.textContent = fmt(req.current) + ' / ' + fmt(req.required);
         row.appendChild(value);
 
+        if (this.eraReqRefs) this.eraReqRefs.push({ row: row, value: value });
+
         return row;
+    }
+
+    // 指纹未变时的轻量同步:只改条件清单里的「当前值」文本与达标配色,不动 DOM 结构。
+    // 条件条数/顺序变了(升代)会走 signature 变化 → 整块 render,这里只处理数值漂移
+    syncEraValues() {
+        const refs = this.eraReqRefs;
+        const era = this.eraState();
+        const reqs = era && era.next ? era.next.requirements || [] : [];
+        if (!refs || refs.length !== reqs.length) return;
+
+        reqs.forEach((req, i) => {
+            const text = fmt(req.current) + ' / ' + fmt(req.required);
+            if (refs[i].value.textContent !== text) refs[i].value.textContent = text;
+            refs[i].row.className = 'era-req' + (req.met ? ' is-met' : ' is-missing');
+        });
     }
 
     // 维度标签:building 维度用建筑定义里的中文名(建造面板启动时已把定义缓存进 state.definitions)

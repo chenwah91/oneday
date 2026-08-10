@@ -119,6 +119,64 @@ class M2SurfaceTest extends TestCase
         }
     }
 
+    // 上面两条按名单查,漏写名单就查不到。这条反过来:遍历路由表,
+    // api/* 下**每一条**路由都必须挂限流,豁免必须显式登记在下面的名单里(CLAUDE §48)。
+    // 新端点忘挂 throttle 会在这里直接红,不依赖有没有人记得更新 MUTATION_ROUTES / READ_ROUTES。
+    private const UNTHROTTLED_API_ROUTES = [
+        // 健康检查探针:探活请求被节流会把监控打成误报,有意不限流(路由文件里有同样的注释)
+        'api/health',
+    ];
+
+    public function test_every_api_route_is_rate_limited(): void
+    {
+        app(HttpKernel::class);
+        $router = app(Router::class);
+        $checked = 0;
+
+        foreach ($router->getRoutes() as $route) {
+            $uri = $route->uri();
+            if (! str_starts_with($uri, 'api/')) {
+                continue;
+            }
+            // api/_boom / _forbidden / _csrf / _ping:仅非生产环境注册的探针,不算对外攻击面
+            if (str_starts_with($uri, 'api/_')) {
+                continue;
+            }
+            if (in_array($uri, self::UNTHROTTLED_API_ROUTES, true)) {
+                continue;
+            }
+
+            $throttles = array_filter(
+                $router->gatherRouteMiddleware($route),
+                fn ($m) => is_string($m) && str_starts_with($m, ThrottleRequests::class.':')
+            );
+            $this->assertNotEmpty(
+                $throttles,
+                implode('|', $route->methods())." /{$uri} 没挂任何限流器(要豁免请登记进 UNTHROTTLED_API_ROUTES 并写明理由)"
+            );
+            $checked++;
+        }
+
+        // 防止上面的过滤条件写歪导致「一条都没查却全绿」
+        $this->assertGreaterThan(15, $checked, '扫到的 api 路由太少,过滤条件可能写错了');
+    }
+
+    // 会话三兄弟的具体档位(C6 遗留:M1 时期这三条一条限流都没挂)。
+    // /api/csrf-cookie 是**未登录**也能打的公开端点,每打一次就起一个 session,不限流等于免费 session 生成器
+    public function test_session_routes_carry_expected_limiters(): void
+    {
+        $expected = [
+            ['api/me',          'GET',  ThrottleRequests::class.':api'],
+            ['api/csrf-cookie', 'GET',  ThrottleRequests::class.':api'],
+            // 登出属认证域,比读端点略严(auth = 每 IP 每分钟 20 次)
+            ['api/auth/logout', 'POST', ThrottleRequests::class.':auth'],
+        ];
+
+        foreach ($expected as [$uri, $method, $limiter]) {
+            $this->assertContains($limiter, $this->middlewareOf($uri, $method), "{$method} /{$uri} 的限流档位不对");
+        }
+    }
+
     // 认证闸门:M2 端点没有一个允许匿名访问
     public function test_no_m2_route_is_reachable_anonymously(): void
     {
@@ -207,6 +265,51 @@ class M2SurfaceTest extends TestCase
         $this->assertSame(7, $captured['user_id']);
         $this->assertStringNotContainsString('hunter2', json_encode($captured));
         $this->assertStringNotContainsString('abcdef', json_encode($captured));
+    }
+
+    // ---------- Security Log 口径:同一次越权只记一条 ----------
+
+    // C6 遗留:WorkerService 在抛 FORBIDDEN 之前自己写过一条 security.authorization_failed,
+    // 而全局 render 见到 FORBIDDEN 还会再补一条 —— 同一次越权在 security 通道里出现两遍,
+    // 「短时间内多少次越权」这类异常检测阈值直接被这条路径带偏一倍。
+    //
+    // 统一口径:走全局 render 的(抛 GameRuleException)由 render 写;
+    // 直接 return 响应、不经 render 的(DemolishController)自己写。无论哪条路径,都恰好一条。
+    public function test_authorization_failure_logs_exactly_one_security_event(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-01-01 00:00:00'));
+
+        $victim = User::create(['username' => 'sl_victim', 'name' => 'sl_victim', 'email' => 'slv@x.com', 'password' => 'password123']);
+        $victimCity = CityFactory::createForUser($victim);
+        $instance = CityBuildingInstance::create([
+            'city_id' => $victimCity->id, 'building_id' => 'F02', 'level' => 1,
+            'x' => 3, 'y' => 3, 'status' => 'active', 'assigned_workers' => 0,
+        ])->id;
+
+        $attacker = User::create(['username' => 'sl_attacker', 'name' => 'sl_attacker', 'email' => 'sla@x.com', 'password' => 'password123']);
+        CityFactory::createForUser($attacker);
+
+        // 直接换掉 security 通道的 Monolog handler(不 mock Log 门面,免得连带吃掉其它通道的调用)
+        $handler = new \Monolog\Handler\TestHandler();
+        Log::channel('security')->getLogger()->setHandlers([$handler]);
+
+        $routes = [
+            ['/api/city/workers/assign', ['instance_id' => $instance, 'workers' => 1]], // 抛异常 → render 写
+            ['/api/city/upgrade',        ['instance_id' => $instance]],                 // 抛异常 → render 写
+            ['/api/city/demolish',       ['instance_id' => $instance]],                 // 直接 return → 自己写
+        ];
+
+        foreach ($routes as [$route, $payload]) {
+            $handler->clear();
+
+            $this->actingAs($attacker)->postJson($route, $payload)->assertStatus(403);
+
+            $events = array_values(array_filter(
+                $handler->getRecords(),
+                fn ($r) => (string) $r->message === 'security.authorization_failed'
+            ));
+            $this->assertCount(1, $events, "{$route} 的 security.authorization_failed 不是恰好一条(双记会带偏异常检测阈值)");
+        }
     }
 
     // ---------- 审计口径:成功的 M2 mutation 恰好一条,字段齐全 ----------
