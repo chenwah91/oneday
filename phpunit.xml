@@ -21,6 +21,8 @@
         <env name="APP_ENV" value="testing"/>
         <env name="APP_DEBUG" value="false"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <!-- 审计 Hash Chain 用固定测试密钥:避免每次跑测试都走「从 APP_KEY 派生」的降级分支刷 warning -->
+        <env name="AUDIT_HMAC_SECRET" value="testing-audit-hmac-secret"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>

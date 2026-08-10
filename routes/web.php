@@ -76,6 +76,34 @@ Route::prefix('api')->group(function () {
 
         // 时代升级:升到下一时代,按 v3.2 §5.1 八维条件逐项校验(不达标 422 ERA_REQUIRED + 逐维清单)
         Route::post('/city/era/upgrade', \App\Http\Controllers\City\EraUpgradeController::class)->middleware('throttle:api');
+
+        // ================= M3 共享文件锚点(D0.4,W1-A 一次性预置)=================
+        //
+        // 纪律(backlog §10.2,写进每个 M3 任务的 prompt):
+        //   ① 每个任务**只在自己系统的锚点块内**增删,禁止重排、禁止格式化他人行、禁止在锚点外改动;
+        //   ② 同一波次内两个任务若都要动同一个锚点,视为切分失败,必须重新划分;
+        //   ③ 锚点是纯注释,预置本身零行为变化。
+        // 目的:把两个 agent 并行时的 git 冲突面压到最小。
+
+        // ---- M3-NPC ----(W2-A:招募 / 分配 / 辞退 / 加薪,全安全链 + Idempotency)
+        // ---- /M3-NPC ----
+
+        // ---- M3-ITEM ----(W3-A:制作 / 装备 / 卸下)
+        // ---- /M3-ITEM ----
+
+        // ---- M3-MARKET ----(W2-B:GET /market/prices 独立端点 + buy / sell,限流走独立 throttle:market)
+        // ---- /M3-MARKET ----
+
+        // ---- M3-EVENT ----(W3-B:GET /city/events + POST /city/events/{instance}/resolve)
+        // ---- /M3-EVENT ----
+
+        // ---- M3-POWER ----(W4-A:电力系统若需要独立只读端点,放这里;不塞进城市快照)
+        // ---- /M3-POWER ----
+
+        // ---- M3-DEFENSE ----(W4-B:国防 / 威胁等级相关端点)
+        // ---- /M3-DEFENSE ----
+
+        // ================= M3 锚点结束 =================
     });
 });
 

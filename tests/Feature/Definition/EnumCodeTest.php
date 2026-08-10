@@ -95,9 +95,60 @@ class EnumCodeTest extends TestCase
             );
         }
 
-        // 10 条「终局」+ 26 条断链 = 36 条置 NULL(见 docs/templates/enum-code-map.md §6)
-        $this->assertSame(36, $nulls, '置 NULL 的升级链应为 36 条(10 终局 + 26 断链)');
-        $this->assertSame(58, 94 - $nulls, '可解析的升级链应为 58 条');
+        // V3.2.0 重映射落地后的基线(见 docs/templates/enum-code-map.md §6):
+        //   10 终局 + 20 维持 NULL 的断链 + 1 条 M01(药品唯一来源,主动断开)= 31 条 NULL
+        //   58 条原有链接 + 6 条重映射新链接 - 1 条 M01 断开 = 63 条有效链接
+        $this->assertSame(31, $nulls, '置 NULL 的升级链应为 31 条(10 终局 + 20 断链 + M01)');
+        $this->assertSame(63, 94 - $nulls, '可解析的升级链应为 63 条');
+    }
+
+    // V3.2.0 重映射的 6 条新链接必须逐条落地(草案 v3.2-building-upgrade-remap.md §2)
+    public function test_v320_upgrade_remap_links_are_seeded(): void
+    {
+        $actual = DB::table('building_definition')->pluck('upgrade_to_building_id', 'building_id')->all();
+
+        foreach (['P05' => 'P07', 'E03' => 'E04', 'E04' => 'E05', 'C01' => 'C02', 'C02' => 'C04', 'K03' => 'K04'] as $from => $to) {
+            $this->assertSame($to, $actual[$from], "{$from} 的升级去向应重映射为 {$to}");
+        }
+
+        // 草案标 UNRESOLVED 的三条不猜,一律维持 NULL
+        foreach (['P03', 'P04', 'C03'] as $id) {
+            $this->assertNull($actual[$id], "{$id} 是 UNRESOLVED,必须维持 NULL");
+        }
+
+        // M01 医馆是药品唯一来源,升级掉会让医院集体停摆(资源草案 §5.4 选项 ②)
+        $this->assertNull($actual['M01'], 'M01 医馆不得再可升级成 M02 医院');
+    }
+
+    // 升级图必须无环、无自环、时代单调不减(草案 §6.3 的 V2 / V3 / V4)
+    public function test_upgrade_graph_is_acyclic_and_era_monotonic(): void
+    {
+        $eraOrder = DB::table('era')->pluck('era_order', 'era_key')->all();
+        $rows = DB::table('building_definition')->get(['building_id', 'era_key', 'upgrade_to_building_id'])
+            ->keyBy('building_id');
+
+        foreach ($rows as $id => $r) {
+            $to = $r->upgrade_to_building_id;
+            if ($to === null) {
+                continue;
+            }
+            $this->assertNotSame($id, $to, "{$id} 的升级去向指向自己");
+            $this->assertGreaterThanOrEqual(
+                $eraOrder[$r->era_key],
+                $eraOrder[$rows[$to]->era_key],
+                "{$id} → {$to} 的时代出现递减"
+            );
+        }
+
+        foreach ($rows as $id => $_r) {
+            $seen = [];
+            $cur = $id;
+            while ($cur !== null && ! isset($seen[$cur])) {
+                $seen[$cur] = true;
+                $cur = $rows[$cur]->upgrade_to_building_id;
+            }
+            $this->assertNull($cur, "从 {$id} 出发的升级链出现环:" . implode('→', array_keys($seen)));
+        }
     }
 
     // JSON 数据源里 upgrade_to 已经是 building_id / null,不再是中文名
@@ -115,7 +166,7 @@ class EnumCodeTest extends TestCase
             }
             $this->assertContains($r['upgrade_to'], $ids, "{$r['building_id']} 的 upgrade_to 不是合法 building_id");
         }
-        $this->assertSame(36, $nulls);
+        $this->assertSame(31, $nulls);
     }
 
     // ---- 3. Seeder 断链守门生效(喂假名字必须抛异常,不能静默变 NULL) ----

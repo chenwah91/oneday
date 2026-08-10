@@ -149,6 +149,8 @@ v3.2 §0.2.1 固定项,不得改名。原值里的 `/` 在 code 里改成 `_`。
 10 + 26 = 36 条置 `null`,与 `docs/templates/v3.2-building-upgrade-remap.md`(重映射草案)统计一致。
 **草案尚未审批,本次一律置 `null`,不做任何猜测性映射**;审批通过后再按草案回填。
 
+> **✅ 后续状态(2026-08-10,V3.2.0):重映射草案已批准并落地,本节 36 / 58 的数字已被取代,新基线见 §6.2。**
+
 ### 6.1 置 null 的 36 条清单
 
 「终局」10 条:
@@ -200,6 +202,39 @@ v3.2 §0.2.1 固定项,不得改名。原值里的 `/` 在 code 里改成 `_`。
 > 数据库 `building_definition.upgrade_to_building_id` 列本来就已经是 ID / NULL(旧 Seeder 解析后写入),
 > 所以本次迁移对该列只做**校验**(非 NULL 值必须是合法 building_id),不改值。
 > 真正的变化在 JSON 数据源与 Seeder:解析失败不再静默变 NULL,而是抛异常。
+
+### 6.2 V3.2.0 重映射落地后的基线(现行)
+
+依据 `docs/templates/v3.2-building-upgrade-remap.md`(策略甲,2026-08-10 批准)与
+`docs/templates/v3.2-resource-source-mapping.md` §5.4 选项 ②,迁移
+`2026_08_11_100001_migrate_v320_resource_sources_and_upgrade_remap.php` 落地后:
+
+| 情况 | 条数 |
+| --- | --- |
+| 有效升级链接(非 NULL) | **63** |
+| `null` | **31** |
+
+**6 条新增映射**(草案 §2 逐条批准):
+
+| 来源 | 目标 | 系列 | 时代 |
+| --- | --- | --- | --- |
+| P05 铁匠铺 | **P07** 钢铁厂 | 金属加工 | IV → VIII |
+| E03 燃煤发电厂 | **E04** 燃气联合电站 | 电力 | VIII → IX |
+| E04 燃气联合电站 | **E05** 先进能源中心 | 电力 | IX → X |
+| C01 村落市场 | **C02** 帝国市场 | 市场 | II → V |
+| C02 帝国市场 | **C04** 国际贸易中心 | 市场 → 全球贸易 | V → IX |
+| K03 大学 | **K04** 科研中心 | 教育 → 科研 | VI → IX |
+
+**31 条 `null` 的构成**:10 条「终局」(§6.1 上表,原样保留)
++ 17 条断链维持 NULL(R01–R07、P01/P02/P06–P10、E02、C04、M02)
++ 3 条 `PROPOSAL_UNRESOLVED` 维持 NULL 不猜(**P03 青铜作坊、P04 砖窑、C03 银行**,候选见草案 §5)
++ 1 条主动断开(**M01 医馆 → M02 医院**:M01 在 V3.2.0 成为药品唯一来源,
+留着升级去向等于给玩家一条自断医疗供应链的路,见资源补链草案 §5.4 选项 ②)。
+
+> 断言基线维护在 `tests/Feature/Definition/EnumCodeTest.php`:
+> `test_upgrade_to_is_valid_building_id_or_null`(31 / 63)、
+> `test_v320_upgrade_remap_links_are_seeded`(逐条 6 新链 + 3 UNRESOLVED + M01)、
+> `test_upgrade_graph_is_acyclic_and_era_monotonic`(无环 / 无自环 / 时代不递减)。
 
 ---
 

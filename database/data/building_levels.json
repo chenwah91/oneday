@@ -22,9 +22,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -51,9 +48,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.3,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -80,9 +74,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.7,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -109,9 +100,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -138,9 +126,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -167,9 +152,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -196,9 +178,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 150,
         "footprint_cells": 4
     },
@@ -225,9 +204,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 195,
         "footprint_cells": 4
     },
@@ -254,9 +230,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 255,
         "footprint_cells": 4
     },
@@ -284,9 +257,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1,
-        "governance_bonus": 80,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -314,9 +284,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.3,
-        "governance_bonus": 104,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -344,9 +311,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.7,
-        "governance_bonus": 136,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -374,9 +338,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 25,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -404,9 +365,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 32.5,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -434,9 +392,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 42.5,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -464,9 +419,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -494,9 +446,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.3,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -524,9 +473,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.7,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -554,9 +500,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -584,9 +527,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -614,9 +554,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -644,9 +581,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 600,
         "footprint_cells": 4
     },
@@ -674,9 +608,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 780,
         "footprint_cells": 4
     },
@@ -704,9 +635,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 1020,
         "footprint_cells": 4
     },
@@ -734,9 +662,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 140,
         "footprint_cells": 4
     },
@@ -764,9 +689,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 182,
         "footprint_cells": 4
     },
@@ -794,9 +716,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 238,
         "footprint_cells": 4
     },
@@ -824,9 +743,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1,
-        "governance_bonus": 320,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -854,9 +770,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.3,
-        "governance_bonus": 416,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -884,9 +797,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.7,
-        "governance_bonus": 544,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -914,9 +824,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 100,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -944,9 +851,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 130,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -974,9 +878,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 170,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -1005,9 +906,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 2,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -1036,9 +934,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 2.6,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -1067,9 +962,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3.4,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -1098,9 +990,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -1129,9 +1018,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -1160,9 +1046,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -1191,9 +1074,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 1350,
         "footprint_cells": 4
     },
@@ -1222,9 +1102,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 1755,
         "footprint_cells": 4
     },
@@ -1253,9 +1130,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 2295,
         "footprint_cells": 4
     },
@@ -1284,9 +1158,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 315,
         "footprint_cells": 4
     },
@@ -1315,9 +1186,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 409.5,
         "footprint_cells": 4
     },
@@ -1346,9 +1214,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 535.5,
         "footprint_cells": 4
     },
@@ -1377,9 +1242,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1,
-        "governance_bonus": 720,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -1408,9 +1270,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.3,
-        "governance_bonus": 936,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -1439,9 +1298,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.7,
-        "governance_bonus": 1224,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -1470,9 +1326,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 225,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -1501,9 +1354,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 292.5,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -1532,9 +1382,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 382.5,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -1564,9 +1411,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 2,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -1596,9 +1440,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 2.6,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -1628,9 +1469,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3.4,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -1660,9 +1498,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -1692,9 +1527,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -1724,9 +1556,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -1755,9 +1584,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 2400,
         "footprint_cells": 6
     },
@@ -1786,9 +1612,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 3120,
         "footprint_cells": 6
     },
@@ -1817,9 +1640,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 4080,
         "footprint_cells": 6
     },
@@ -1849,9 +1669,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 560,
         "footprint_cells": 4
     },
@@ -1881,9 +1698,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 728,
         "footprint_cells": 4
     },
@@ -1913,9 +1727,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 952,
         "footprint_cells": 4
     },
@@ -1945,9 +1756,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1,
-        "governance_bonus": 1280,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -1977,9 +1785,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.3,
-        "governance_bonus": 1664,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -2009,9 +1814,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.7,
-        "governance_bonus": 2176,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -2041,9 +1843,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 400,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -2073,9 +1872,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 520,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -2105,9 +1901,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 680,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -2137,9 +1930,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 2,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -2169,9 +1959,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 2.6,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -2201,9 +1988,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3.4,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -2233,9 +2017,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -2265,9 +2046,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -2297,9 +2075,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -2328,9 +2103,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 3750,
         "footprint_cells": 6
     },
@@ -2359,9 +2131,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 4875,
         "footprint_cells": 6
     },
@@ -2390,9 +2159,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 6375,
         "footprint_cells": 6
     },
@@ -2422,9 +2188,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 875,
         "footprint_cells": 4
     },
@@ -2454,9 +2217,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 1137.5,
         "footprint_cells": 4
     },
@@ -2486,9 +2246,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 1487.5,
         "footprint_cells": 4
     },
@@ -2518,9 +2275,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1,
-        "governance_bonus": 2000,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -2550,9 +2304,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.3,
-        "governance_bonus": 2600,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -2582,9 +2333,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.7,
-        "governance_bonus": 3400,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -2614,9 +2362,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 625,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -2646,9 +2391,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 812.5,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -2678,9 +2420,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 1062.5,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -2710,9 +2449,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -2742,9 +2478,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3.9,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -2774,9 +2507,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 5.1,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -2806,9 +2536,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -2838,9 +2565,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -2870,9 +2594,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -2901,9 +2622,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 5400,
         "footprint_cells": 6
     },
@@ -2932,9 +2650,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 7020,
         "footprint_cells": 6
     },
@@ -2963,9 +2678,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 9180,
         "footprint_cells": 6
     },
@@ -2995,9 +2707,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 1260,
         "footprint_cells": 4
     },
@@ -3027,9 +2736,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 1638,
         "footprint_cells": 4
     },
@@ -3059,9 +2765,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 2142,
         "footprint_cells": 4
     },
@@ -3091,9 +2794,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1,
-        "governance_bonus": 2880,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -3123,9 +2823,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.3,
-        "governance_bonus": 3744,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -3155,9 +2852,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.7,
-        "governance_bonus": 4896,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -3187,9 +2881,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 900,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -3219,9 +2910,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 1170,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -3251,9 +2939,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 1530,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -3283,9 +2968,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -3315,9 +2997,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3.9,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -3347,9 +3026,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 5.1,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -3379,9 +3055,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -3411,9 +3084,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -3443,9 +3113,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -3474,9 +3141,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 7350,
         "footprint_cells": 9
     },
@@ -3505,9 +3169,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 9555,
         "footprint_cells": 9
     },
@@ -3536,9 +3197,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 12495,
         "footprint_cells": 9
     },
@@ -3568,9 +3226,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 1715,
         "footprint_cells": 4
     },
@@ -3600,9 +3255,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 2229.5,
         "footprint_cells": 4
     },
@@ -3632,9 +3284,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 2915.5,
         "footprint_cells": 4
     },
@@ -3664,9 +3313,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1,
-        "governance_bonus": 3920,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -3696,9 +3342,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.3,
-        "governance_bonus": 5096,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -3728,9 +3371,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.7,
-        "governance_bonus": 6664,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -3761,9 +3401,6 @@
             "fuel_per_min": 2,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 1225,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -3794,9 +3431,6 @@
             "fuel_per_min": 2.36,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 1592.5,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -3827,9 +3461,6 @@
             "fuel_per_min": 2.9,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 2082.5,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -3860,9 +3491,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -3893,9 +3521,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3.9,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -3926,9 +3551,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 5.1,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -3969,9 +3591,6 @@
             "fuel_per_min": 2,
             "power_per_min": 5
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -4012,9 +3631,6 @@
             "fuel_per_min": 2.36,
             "power_per_min": 5.9
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -4055,9 +3671,6 @@
             "fuel_per_min": 2.9,
             "power_per_min": 7.25
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -4087,9 +3700,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 9600,
         "footprint_cells": 9
     },
@@ -4119,9 +3729,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 12480,
         "footprint_cells": 9
     },
@@ -4151,9 +3758,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 16320,
         "footprint_cells": 9
     },
@@ -4185,9 +3789,6 @@
             "fuel_per_min": 2,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 2240,
         "footprint_cells": 4
     },
@@ -4219,9 +3820,6 @@
             "fuel_per_min": 2.36,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 2912,
         "footprint_cells": 4
     },
@@ -4253,9 +3851,6 @@
             "fuel_per_min": 2.9,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 3808,
         "footprint_cells": 4
     },
@@ -4286,9 +3881,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1,
-        "governance_bonus": 5120,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -4319,9 +3911,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.3,
-        "governance_bonus": 6656,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -4352,9 +3941,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.7,
-        "governance_bonus": 8704,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -4386,9 +3972,6 @@
             "fuel_per_min": 2,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 1600,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -4420,9 +4003,6 @@
             "fuel_per_min": 2.36,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 2080,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -4454,9 +4034,6 @@
             "fuel_per_min": 2.9,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 2720,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -4489,9 +4066,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 4,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -4524,9 +4098,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 5.2,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -4559,9 +4130,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 6.8,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -4604,9 +4172,6 @@
             "fuel_per_min": 2,
             "power_per_min": 10
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -4649,9 +4214,6 @@
             "fuel_per_min": 2.36,
             "power_per_min": 11.8
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -4694,9 +4256,6 @@
             "fuel_per_min": 2.9,
             "power_per_min": 14.5
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -4727,9 +4286,6 @@
             "fuel_per_min": 0,
             "power_per_min": 3
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 12150,
         "footprint_cells": 9
     },
@@ -4760,9 +4316,6 @@
             "fuel_per_min": 0,
             "power_per_min": 3.54
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 15795,
         "footprint_cells": 9
     },
@@ -4793,9 +4346,6 @@
             "fuel_per_min": 0,
             "power_per_min": 4.35
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 20655,
         "footprint_cells": 9
     },
@@ -4828,9 +4378,6 @@
             "fuel_per_min": 2,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 2835,
         "footprint_cells": 4
     },
@@ -4863,9 +4410,6 @@
             "fuel_per_min": 2.36,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 3685.5,
         "footprint_cells": 4
     },
@@ -4898,9 +4442,6 @@
             "fuel_per_min": 2.9,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 4819.5,
         "footprint_cells": 4
     },
@@ -4933,9 +4474,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1,
-        "governance_bonus": 6480,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -4968,9 +4506,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.3,
-        "governance_bonus": 8424,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -5003,9 +4538,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.7,
-        "governance_bonus": 11016,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -5039,9 +4571,6 @@
             "fuel_per_min": 2,
             "power_per_min": 3
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 2025,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -5075,9 +4604,6 @@
             "fuel_per_min": 2.36,
             "power_per_min": 3.54
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 2632.5,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -5111,9 +4637,6 @@
             "fuel_per_min": 2.9,
             "power_per_min": 4.35
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 3442.5,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -5148,9 +4671,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 4,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -5185,9 +4705,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 5.2,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -5222,9 +4739,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 6.8,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -5267,9 +4781,6 @@
             "fuel_per_min": 2,
             "power_per_min": 15
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -5312,9 +4823,6 @@
             "fuel_per_min": 2.36,
             "power_per_min": 17.7
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -5357,9 +4865,6 @@
             "fuel_per_min": 2.9,
             "power_per_min": 21.75
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -5390,9 +4895,6 @@
             "fuel_per_min": 0,
             "power_per_min": 6
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 15000,
         "footprint_cells": 9
     },
@@ -5423,9 +4925,6 @@
             "fuel_per_min": 0,
             "power_per_min": 7.08
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 19500,
         "footprint_cells": 9
     },
@@ -5456,9 +4955,6 @@
             "fuel_per_min": 0,
             "power_per_min": 8.7
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 25500,
         "footprint_cells": 9
     },
@@ -5492,9 +4988,6 @@
             "fuel_per_min": 2,
             "power_per_min": 2
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 3500,
         "footprint_cells": 4
     },
@@ -5528,9 +5021,6 @@
             "fuel_per_min": 2.36,
             "power_per_min": 2.36
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 4550,
         "footprint_cells": 4
     },
@@ -5564,9 +5054,6 @@
             "fuel_per_min": 2.9,
             "power_per_min": 2.9
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 5950,
         "footprint_cells": 4
     },
@@ -5599,9 +5086,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1,
-        "governance_bonus": 8000,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -5634,9 +5118,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.3,
-        "governance_bonus": 10400,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -5669,9 +5150,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 1.7,
-        "governance_bonus": 13600,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -5706,9 +5184,6 @@
             "fuel_per_min": 2,
             "power_per_min": 6
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 2500,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -5743,9 +5218,6 @@
             "fuel_per_min": 2.36,
             "power_per_min": 7.08
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 3250,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -5780,9 +5252,6 @@
             "fuel_per_min": 2.9,
             "power_per_min": 8.7
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 4250,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -5808,9 +5277,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -5836,9 +5302,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -5864,9 +5327,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 4
     },
@@ -5885,6 +5345,14 @@
             {
                 "resource": "stone",
                 "rate_per_min": 12
+            },
+            {
+                "resource": "clay",
+                "rate_per_min": 10
+            },
+            {
+                "resource": "sand_gravel",
+                "rate_per_min": 10
             }
         ],
         "maintenance": {
@@ -5893,9 +5361,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -5914,6 +5379,14 @@
             {
                 "resource": "stone",
                 "rate_per_min": 16.2
+            },
+            {
+                "resource": "clay",
+                "rate_per_min": 13.5
+            },
+            {
+                "resource": "sand_gravel",
+                "rate_per_min": 13.5
             }
         ],
         "maintenance": {
@@ -5922,9 +5395,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -5943,6 +5413,14 @@
             {
                 "resource": "stone",
                 "rate_per_min": 21.6
+            },
+            {
+                "resource": "clay",
+                "rate_per_min": 18
+            },
+            {
+                "resource": "sand_gravel",
+                "rate_per_min": 18
             }
         ],
         "maintenance": {
@@ -5951,9 +5429,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -5980,9 +5455,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -6009,9 +5481,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -6038,9 +5507,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -6067,9 +5533,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -6096,9 +5559,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -6125,9 +5585,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -6155,9 +5612,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -6185,9 +5639,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -6215,9 +5666,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -6245,9 +5693,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -6275,9 +5720,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -6305,9 +5747,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -6335,9 +5774,6 @@
             "fuel_per_min": 0,
             "power_per_min": 6
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -6365,9 +5801,6 @@
             "fuel_per_min": 0,
             "power_per_min": 7.08
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -6395,9 +5828,6 @@
             "fuel_per_min": 0,
             "power_per_min": 8.7
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -6431,9 +5861,6 @@
             "fuel_per_min": 0,
             "power_per_min": 20
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -6467,9 +5894,6 @@
             "fuel_per_min": 0,
             "power_per_min": 23.6
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -6503,9 +5927,6 @@
             "fuel_per_min": 0,
             "power_per_min": 29
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -6537,9 +5958,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -6571,9 +5989,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -6605,9 +6020,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -6639,9 +6051,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 2,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -6673,9 +6082,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 2.6,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -6707,9 +6113,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3.4,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -6747,9 +6150,6 @@
             "fuel_per_min": 1,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -6787,9 +6187,6 @@
             "fuel_per_min": 1.18,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -6827,9 +6224,6 @@
             "fuel_per_min": 1.45,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -6866,9 +6260,6 @@
             "fuel_per_min": 1,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -6905,9 +6296,6 @@
             "fuel_per_min": 1.18,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -6944,9 +6332,6 @@
             "fuel_per_min": 1.45,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -6983,9 +6368,6 @@
             "fuel_per_min": 1,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -7022,9 +6404,6 @@
             "fuel_per_min": 1.18,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -7061,9 +6440,6 @@
             "fuel_per_min": 1.45,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -7087,12 +6463,20 @@
             {
                 "resource": "coal",
                 "rate_per_min": 5
+            },
+            {
+                "resource": "stone",
+                "rate_per_min": 6
             }
         ],
         "output": [
             {
                 "resource": "glass",
                 "rate_per_min": 8
+            },
+            {
+                "resource": "cement",
+                "rate_per_min": 6
             }
         ],
         "maintenance": {
@@ -7101,9 +6485,6 @@
             "fuel_per_min": 2,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -7127,12 +6508,20 @@
             {
                 "resource": "coal",
                 "rate_per_min": 5.9
+            },
+            {
+                "resource": "stone",
+                "rate_per_min": 7.08
             }
         ],
         "output": [
             {
                 "resource": "glass",
                 "rate_per_min": 10.8
+            },
+            {
+                "resource": "cement",
+                "rate_per_min": 8.1
             }
         ],
         "maintenance": {
@@ -7141,9 +6530,6 @@
             "fuel_per_min": 2.36,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -7167,12 +6553,20 @@
             {
                 "resource": "coal",
                 "rate_per_min": 7.25
+            },
+            {
+                "resource": "stone",
+                "rate_per_min": 8.7
             }
         ],
         "output": [
             {
                 "resource": "glass",
                 "rate_per_min": 14.4
+            },
+            {
+                "resource": "cement",
+                "rate_per_min": 10.8
             }
         ],
         "maintenance": {
@@ -7181,9 +6575,6 @@
             "fuel_per_min": 2.9,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 12
     },
@@ -7221,9 +6612,6 @@
             "fuel_per_min": 5,
             "power_per_min": 8
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 20
     },
@@ -7261,9 +6649,6 @@
             "fuel_per_min": 5.9,
             "power_per_min": 9.44
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 20
     },
@@ -7301,9 +6686,6 @@
             "fuel_per_min": 7.25,
             "power_per_min": 11.6
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 20
     },
@@ -7340,9 +6722,6 @@
             "fuel_per_min": 0,
             "power_per_min": 15
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 20
     },
@@ -7379,9 +6758,6 @@
             "fuel_per_min": 0,
             "power_per_min": 17.7
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 20
     },
@@ -7418,9 +6794,6 @@
             "fuel_per_min": 0,
             "power_per_min": 21.75
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 20
     },
@@ -7458,9 +6831,6 @@
             "fuel_per_min": 0,
             "power_per_min": 18
         },
-        "happiness_bonus": 3,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 20
     },
@@ -7498,9 +6868,6 @@
             "fuel_per_min": 0,
             "power_per_min": 21.24
         },
-        "happiness_bonus": 3.9,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 20
     },
@@ -7538,9 +6905,6 @@
             "fuel_per_min": 0,
             "power_per_min": 26.1
         },
-        "happiness_bonus": 5.1,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 20
     },
@@ -7581,9 +6945,6 @@
             "fuel_per_min": 0,
             "power_per_min": 15
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 25
     },
@@ -7624,9 +6985,6 @@
             "fuel_per_min": 0,
             "power_per_min": 17.7
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 25
     },
@@ -7667,9 +7025,6 @@
             "fuel_per_min": 0,
             "power_per_min": 21.75
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 25
     },
@@ -7708,9 +7063,6 @@
             "fuel_per_min": 0,
             "power_per_min": 45
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 30
     },
@@ -7749,9 +7101,6 @@
             "fuel_per_min": 0,
             "power_per_min": 53.1
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 30
     },
@@ -7790,9 +7139,6 @@
             "fuel_per_min": 0,
             "power_per_min": 65.25
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 30
     },
@@ -7818,9 +7164,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 50,
         "footprint_cells": 4
     },
@@ -7846,9 +7189,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 65,
         "footprint_cells": 4
     },
@@ -7874,9 +7214,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 85,
         "footprint_cells": 4
     },
@@ -7908,9 +7245,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -7942,9 +7276,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -7976,9 +7307,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 6
     },
@@ -8011,9 +7339,6 @@
             "fuel_per_min": 5,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 110,
         "footprint_cells": 25
     },
@@ -8046,9 +7371,6 @@
             "fuel_per_min": 5.9,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 143,
         "footprint_cells": 25
     },
@@ -8081,9 +7403,6 @@
             "fuel_per_min": 7.25,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 187,
         "footprint_cells": 25
     },
@@ -8117,9 +7436,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 160,
         "footprint_cells": 25
     },
@@ -8153,9 +7469,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 208,
         "footprint_cells": 25
     },
@@ -8189,9 +7502,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 0,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 272,
         "footprint_cells": 25
     },
@@ -8225,9 +7535,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 2,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 350,
         "footprint_cells": 36
     },
@@ -8261,9 +7568,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 2.6,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 455,
         "footprint_cells": 36
     },
@@ -8297,9 +7601,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3.4,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 595,
         "footprint_cells": 36
     },
@@ -8327,9 +7628,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 2,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 100,
         "footprint_cells": 9
     },
@@ -8357,9 +7655,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 2.6,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 130,
         "footprint_cells": 9
     },
@@ -8387,9 +7682,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3.4,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 170,
         "footprint_cells": 9
     },
@@ -8418,9 +7710,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 4,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 450,
         "footprint_cells": 16
     },
@@ -8449,9 +7738,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 5.2,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 585,
         "footprint_cells": 16
     },
@@ -8480,9 +7766,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 6.8,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 765,
         "footprint_cells": 16
     },
@@ -8510,9 +7793,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 800,
         "footprint_cells": 16
     },
@@ -8540,9 +7820,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3.9,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 1040,
         "footprint_cells": 16
     },
@@ -8570,9 +7847,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 5.1,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 1360,
         "footprint_cells": 16
     },
@@ -8607,9 +7881,6 @@
             "fuel_per_min": 0,
             "power_per_min": 20
         },
-        "happiness_bonus": 6,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 3000,
         "footprint_cells": 30
     },
@@ -8644,9 +7915,6 @@
             "fuel_per_min": 0,
             "power_per_min": 23.6
         },
-        "happiness_bonus": 7.8,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 3900,
         "footprint_cells": 30
     },
@@ -8681,9 +7949,6 @@
             "fuel_per_min": 0,
             "power_per_min": 29
         },
-        "happiness_bonus": 10.2,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 5100,
         "footprint_cells": 30
     },
@@ -8711,9 +7976,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3,
-        "governance_bonus": 30,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -8741,9 +8003,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 3.9,
-        "governance_bonus": 39,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -8771,9 +8030,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 5.1,
-        "governance_bonus": 51,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 9
     },
@@ -8801,9 +8057,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 5,
-        "governance_bonus": 60,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -8831,9 +8084,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 6.5,
-        "governance_bonus": 78,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -8861,9 +8111,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 8.5,
-        "governance_bonus": 102,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -8892,9 +8139,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 7,
-        "governance_bonus": 100,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -8923,9 +8167,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 9.1,
-        "governance_bonus": 130,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -8954,9 +8195,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 11.9,
-        "governance_bonus": 170,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 16
     },
@@ -8991,9 +8229,6 @@
             "fuel_per_min": 0,
             "power_per_min": 25
         },
-        "happiness_bonus": 8,
-        "governance_bonus": 180,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 25
     },
@@ -9028,9 +8263,6 @@
             "fuel_per_min": 0,
             "power_per_min": 29.5
         },
-        "happiness_bonus": 10.4,
-        "governance_bonus": 234,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 25
     },
@@ -9065,9 +8297,6 @@
             "fuel_per_min": 0,
             "power_per_min": 36.25
         },
-        "happiness_bonus": 13.6,
-        "governance_bonus": 306,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 25
     },
@@ -9106,9 +8335,6 @@
             "fuel_per_min": 0,
             "power_per_min": 70
         },
-        "happiness_bonus": 12,
-        "governance_bonus": 350,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 36
     },
@@ -9147,9 +8373,6 @@
             "fuel_per_min": 0,
             "power_per_min": 82.6
         },
-        "happiness_bonus": 15.6,
-        "governance_bonus": 455,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 36
     },
@@ -9188,9 +8411,6 @@
             "fuel_per_min": 0,
             "power_per_min": 101.5
         },
-        "happiness_bonus": 20.4,
-        "governance_bonus": 595,
-        "defense_score": 0,
         "capacity": 0,
         "footprint_cells": 36
     },
@@ -9205,11 +8425,20 @@
         },
         "duration_seconds": 120,
         "worker_required": 8,
-        "input": [],
+        "input": [
+            {
+                "resource": "food",
+                "rate_per_min": 6
+            }
+        ],
         "output": [
             {
                 "resource": "medical_capacity",
                 "rate_per_min": 120
+            },
+            {
+                "resource": "medicine",
+                "rate_per_min": 3
             }
         ],
         "maintenance": {
@@ -9218,9 +8447,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 5,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 120,
         "footprint_cells": 9
     },
@@ -9235,11 +8461,20 @@
         },
         "duration_seconds": 66,
         "worker_required": 9,
-        "input": [],
+        "input": [
+            {
+                "resource": "food",
+                "rate_per_min": 7.08
+            }
+        ],
         "output": [
             {
                 "resource": "medical_capacity",
                 "rate_per_min": 162
+            },
+            {
+                "resource": "medicine",
+                "rate_per_min": 4.05
             }
         ],
         "maintenance": {
@@ -9248,9 +8483,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 6.5,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 156,
         "footprint_cells": 9
     },
@@ -9265,11 +8497,20 @@
         },
         "duration_seconds": 96,
         "worker_required": 9,
-        "input": [],
+        "input": [
+            {
+                "resource": "food",
+                "rate_per_min": 8.7
+            }
+        ],
         "output": [
             {
                 "resource": "medical_capacity",
                 "rate_per_min": 216
+            },
+            {
+                "resource": "medicine",
+                "rate_per_min": 5.4
             }
         ],
         "maintenance": {
@@ -9278,9 +8519,6 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "happiness_bonus": 8.5,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 204,
         "footprint_cells": 9
     },
@@ -9319,9 +8557,6 @@
             "fuel_per_min": 0,
             "power_per_min": 18
         },
-        "happiness_bonus": 10,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 1000,
         "footprint_cells": 20
     },
@@ -9360,9 +8595,6 @@
             "fuel_per_min": 0,
             "power_per_min": 21.24
         },
-        "happiness_bonus": 13,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 1300,
         "footprint_cells": 20
     },
@@ -9401,9 +8633,6 @@
             "fuel_per_min": 0,
             "power_per_min": 26.1
         },
-        "happiness_bonus": 17,
-        "governance_bonus": 0,
-        "defense_score": 0,
         "capacity": 1700,
         "footprint_cells": 20
     }

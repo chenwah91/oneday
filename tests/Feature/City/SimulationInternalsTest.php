@@ -156,8 +156,9 @@ class SimulationInternalsTest extends TestCase
         // 维护资金 (4 + 2 + 4)/min × 10min = 100
         $this->assertEqualsWithDelta(9900.0, $this->moneyOf($city), 0.0001);
 
-        // 复合主键 (city_id, resource_id) 生效:每种资源只有一行,upsert 不会插出重复
-        $this->assertSame(5, DB::table('city_resources')->where('city_id', $city->id)->count());
+        // 复合主键 (city_id, resource_id) 生效:每种资源只有一行,upsert 不会插出重复。
+        // 6 行 = 开局的 木/石/粮/知识(initial_resources 默认含 knowledge)+ 结算新增的 面粉/燃料
+        $this->assertSame(6, DB::table('city_resources')->where('city_id', $city->id)->count());
         $dupes = DB::table('city_resources')->where('city_id', $city->id)
             ->select('resource_id')->groupBy('resource_id')->havingRaw('COUNT(*) > 1')->get();
         $this->assertCount(0, $dupes);
@@ -175,7 +176,7 @@ class SimulationInternalsTest extends TestCase
             SimulationService::simulate($city->fresh());
         }
 
-        $this->assertSame(4, DB::table('city_resources')->where('city_id', $city->id)->count(), '木材/石料/粮食/面粉 各一行');
+        $this->assertSame(5, DB::table('city_resources')->where('city_id', $city->id)->count(), '木材/石料/粮食/知识/面粉 各一行');
         // 三段各 10min,料一直充足(recipeRate=1):面粉 8×30 = 240,粮食 500 + (14−10)×30 = 620
         $this->assertEqualsWithDelta(240.0, $this->amountOf($city, 'flour'), 0.0001);
         $this->assertEqualsWithDelta(620.0, $this->amountOf($city, 'food'), 0.0001);

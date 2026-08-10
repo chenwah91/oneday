@@ -36,12 +36,11 @@ class GameDataVersion
         return $version;
     }
 
-    public static function bump(string $note, string $by): string
+    // $version 显式给值时按该版本号写入(次版本 / 主版本递增,例如数据形状变化 V3.1.3 → V3.2.0);
+    // 省略时沿用默认行为:在最新版本上把补丁位 +1
+    public static function bump(string $note, string $by, ?string $version = null): string
     {
-        $latest = DB::table('game_data_versions')->orderByDesc('id')->value('version') ?? 'V3.1.0';
-        $parts = explode('.', ltrim($latest, 'V'));
-        $patch = (int) ($parts[2] ?? 0) + 1;
-        $next = 'V' . ($parts[0] ?? '3') . '.' . ($parts[1] ?? '1') . '.' . $patch;
+        $next = $version ?? self::nextPatchVersion();
         DB::table('game_data_versions')->insert([
             'version'     => $next,
             'checksum'    => self::checksum(),
@@ -55,6 +54,16 @@ class GameDataVersion
         Context::forget(self::CACHE_KEY);
 
         return $next;
+    }
+
+    // 默认递增规则:最新版本的补丁位 +1(库里一条版本都没有时从 V3.1.0 起算)
+    private static function nextPatchVersion(): string
+    {
+        $latest = DB::table('game_data_versions')->orderByDesc('id')->value('version') ?? 'V3.1.0';
+        $parts = explode('.', ltrim($latest, 'V'));
+        $patch = (int) ($parts[2] ?? 0) + 1;
+
+        return 'V' . ($parts[0] ?? '3') . '.' . ($parts[1] ?? '1') . '.' . $patch;
     }
 
     // Definition 全量内容指纹:各表按主键 ORDER BY,整行 json_encode 后拼接,取 sha256。

@@ -15,10 +15,14 @@ use Illuminate\Support\Facades\DB;
 // 后台调整建筑等级数值:allowlist 字段 + 强制 reason + 审计 + 版本递增
 class AdminDefinitionController extends Controller
 {
+    // 可编辑字段 allowlist。
+    // happiness_bonus / governance_bonus / defense_score 三项已于 V3.2.1 从表里物理删除
+    // (与 output_json 双口径且不参与结算,后台改了等于没改),不得再加回来:
+    // 幸福 / 治理 / 国防的真实数值一律走 output_json。
     private const EDITABLE = [
         'duration_seconds', 'worker_required',
         'maintenance_money_per_min', 'maintenance_food_per_min', 'maintenance_fuel_per_min', 'power_per_min',
-        'happiness_bonus', 'governance_bonus', 'defense_score', 'capacity',
+        'capacity',
     ];
 
     public function buildingLevels(Request $request): JsonResponse

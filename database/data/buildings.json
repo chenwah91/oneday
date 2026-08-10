@@ -2097,6 +2097,14 @@
             {
                 "resource": "stone",
                 "rate_per_min": 12
+            },
+            {
+                "resource": "clay",
+                "rate_per_min": 10
+            },
+            {
+                "resource": "sand_gravel",
+                "rate_per_min": 10
             }
         ],
         "maintenance": {
@@ -2497,7 +2505,7 @@
             "fuel_per_min": 1,
             "power_per_min": 0
         },
-        "upgrade_to": null
+        "upgrade_to": "P07"
     },
     {
         "building_id": "P06",
@@ -2525,12 +2533,20 @@
             {
                 "resource": "coal",
                 "rate_per_min": 5
+            },
+            {
+                "resource": "stone",
+                "rate_per_min": 6
             }
         ],
         "output": [
             {
                 "resource": "glass",
                 "rate_per_min": 8
+            },
+            {
+                "resource": "cement",
+                "rate_per_min": 6
             }
         ],
         "maintenance": {
@@ -2855,7 +2871,7 @@
             "fuel_per_min": 5,
             "power_per_min": 0
         },
-        "upgrade_to": null
+        "upgrade_to": "E04"
     },
     {
         "building_id": "E04",
@@ -2893,7 +2909,7 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": null
+        "upgrade_to": "E05"
     },
     {
         "building_id": "E05",
@@ -2963,7 +2979,7 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": null
+        "upgrade_to": "C02"
     },
     {
         "building_id": "C02",
@@ -2996,7 +3012,7 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": null
+        "upgrade_to": "C04"
     },
     {
         "building_id": "C03",
@@ -3164,7 +3180,7 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": null
+        "upgrade_to": "K04"
     },
     {
         "building_id": "K04",
@@ -3265,11 +3281,20 @@
             "stone": 50,
             "money": 100
         },
-        "input": [],
+        "input": [
+            {
+                "resource": "food",
+                "rate_per_min": 6
+            }
+        ],
         "output": [
             {
                 "resource": "medical_capacity",
                 "rate_per_min": 120
+            },
+            {
+                "resource": "medicine",
+                "rate_per_min": 3
             }
         ],
         "maintenance": {
@@ -3278,7 +3303,7 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "M02"
+        "upgrade_to": null
     },
     {
         "building_id": "M02",

@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Game\Resource\ResourceCode;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 
@@ -28,19 +29,61 @@ final class GameSetting
     // 「没派工人就不生产」的总开关:关掉后 workerFactor 恒为 1.0
     public const WORKER_GATE_ENABLED = 'worker_gate_enabled';
 
+    // 建城初始资源(对象型):{resource_code: 数量},含 money 与 knowledge
+    public const INITIAL_RESOURCES = 'initial_resources';
+
+    // ---------- 设定类型 ----------
+
+    // 布尔开关(true / false 二选一)
+    public const TYPE_BOOL = 'bool';
+
+    // 资源映射对象:{资源 code: 非负数量},逐键校验 code 合法 + 数量在 [0, MAX_RESOURCE_AMOUNT]
+    public const TYPE_RESOURCE_MAP = 'resource_map';
+
+    // 对象型设定的单键数量上限(防止后台一次发出天文数字把经济打穿)
+    public const MAX_RESOURCE_AMOUNT = 1000000;
+
+    // 对象型设定的最大键数(allowlist 本身已把 code 限死在 31 种库存资源内,这里只是第二道保险)
+    private const MAX_RESOURCE_KEYS = 40;
+
+    // 建城初始资源的登记默认值(= 现行硬编码初始资源的区间中点 + knowledge 100)。
+    //
+    // 为什么是中点:SimConstants::START_RESOURCES / START_MONEY 是随机区间
+    // (money 200~400、wood 200~400、stone 100~200、food 300~500),对象型设定只存一个定值,
+    // 取中点是对「现行初始资源」最中性的折算,不偏向送多也不偏向送少。
+    //
+    // 为什么加 knowledge 100:时代 I 的 5 项科技各要 20~30 知识,时代 I 又没有任何建筑产知识 →
+    // 新号研究不了科技、也就建不了任何建筑(STATUS「新号开局硬锁」)。100 知识够研 3~4 条,
+    // 玩家能自己走通「研究 → 建造 → 派工」的第一圈。**这是测试期数值,正式上线前另调。**
+    //
+    // 注意:数量应低于 SimConstants::BASE_STORAGE(1000),否则新城建成时资源已超仓储上限,
+    // 首次结算会被夹掉一部分。后台调大时要一并考虑仓储。
+    public const INITIAL_RESOURCES_DEFAULT = [
+        ResourceCode::MONEY     => 300,
+        ResourceCode::WOOD      => 300,
+        ResourceCode::STONE     => 150,
+        ResourceCode::FOOD      => 400,
+        ResourceCode::KNOWLEDGE => 100,
+    ];
+
     // key => [默认值, 类型, 中文说明]。
-    // default 必须与「该开关未接入前的历史行为」完全一致,新增开关不得改变默认游戏表现。
-    // type 目前只用到 bool;将来加数值型开关时在 castValue / validateType 里补一个分支即可。
+    // default 必须与「该设定未接入前的历史行为」一致(初始资源是唯一例外:用户拍板测试期送知识解锁新号硬锁)。
+    // type 决定校验路径:bool 走布尔分支,resource_map 走逐键 allowlist + 数值范围校验(见 castValue)。
     public const DEFINITIONS = [
         self::WORKER_ASSIGN_ALLOW_DECREASE_ALWAYS => [
             'default'     => true,
-            'type'        => 'bool',
+            'type'        => self::TYPE_BOOL,
             'description' => '工人只减不增的操作永远放行:人口暴跌导致历史分配超上限时,玩家仍能撤人(关闭后撤人也要满足劳动力上限)',
         ],
         self::WORKER_GATE_ENABLED => [
             'default'     => true,
-            'type'        => 'bool',
+            'type'        => self::TYPE_BOOL,
             'description' => '没派工人就不生产的总开关:关闭后所有建筑的用工乘区恒为 1.0(运营救急用,会让全服产量立刻恢复满额)',
+        ],
+        self::INITIAL_RESOURCES => [
+            'default'     => self::INITIAL_RESOURCES_DEFAULT,
+            'type'        => self::TYPE_RESOURCE_MAP,
+            'description' => '建城初始资源(含 money / knowledge):只影响此后新建的城市,不回填老城。数量上限 100 万,建议低于仓储上限 1000',
         ],
     ];
 
@@ -131,6 +174,10 @@ final class GameSetting
                 'updated_by'  => $row?->updated_by === null ? null : (int) $row->updated_by,
                 'updated_at'  => $row?->updated_at,
                 'registered'  => true,
+                // 对象型设定的编辑器元数据:可选键清单 + 数量上限。
+                // 后台据此渲染「键/值表格 + 追加下拉」,不必让运营手写 JSON(手写 JSON 迟早写出脏配置)
+                'options'     => $meta['type'] === self::TYPE_RESOURCE_MAP ? self::resourceMapOptions() : null,
+                'max_value'   => $meta['type'] === self::TYPE_RESOURCE_MAP ? self::MAX_RESOURCE_AMOUNT : null,
             ];
         }
 
@@ -147,6 +194,8 @@ final class GameSetting
                 'updated_by'  => $row->updated_by === null ? null : (int) $row->updated_by,
                 'updated_at'  => $row->updated_at,
                 'registered'  => false,
+                'options'     => null,
+                'max_value'   => null,
             ];
         }
 
@@ -192,7 +241,7 @@ final class GameSetting
     {
         $type = self::DEFINITIONS[$key]['type'] ?? null;
 
-        if ($type === 'bool') {
+        if ($type === self::TYPE_BOOL) {
             if (is_bool($value)) {
                 return $value;
             }
@@ -203,6 +252,72 @@ final class GameSetting
             throw new GameRuleException(ErrorCode::VALIDATION_ERROR, 422);
         }
 
+        if ($type === self::TYPE_RESOURCE_MAP) {
+            $clean = self::normalizeResourceMap($value);
+            if ($clean !== null) {
+                return $clean;
+            }
+            if (is_array($fallback)) {
+                // 读取路径:库里是脏值 → 回退登记默认值(Fail Safe,不让脏配置改变开局)
+                return $fallback;
+            }
+            throw new GameRuleException(ErrorCode::VALIDATION_ERROR, 422);
+        }
+
         return $value;
+    }
+
+    // 对象型设定的逐键校验。合法返回规整后的映射,非法返回 null(由调用方决定回退还是拒绝)。
+    //
+    // 拒绝的输入:非对象 / 空对象 / 数组式 JSON(["wood"]) / 键数超限 /
+    //            未登记的资源 code / 容量类 code(不是库存资源,进不了 city_resources)/
+    //            非数值(字符串 "100"、true、null)/ 嵌套对象 / 负数 / 超过 100 万 / NaN·INF
+    private static function normalizeResourceMap(mixed $value): ?array
+    {
+        if (! is_array($value) || $value === [] || array_is_list($value)) {
+            return null;
+        }
+        if (count($value) > self::MAX_RESOURCE_KEYS) {
+            return null;
+        }
+
+        $clean = [];
+        foreach ($value as $code => $amount) {
+            $code = (string) $code;
+
+            // allowlist:必须是 ResourceCode 登记过的库存资源;容量类(governance_capacity 等)不是库存资源
+            if (! isset(ResourceCode::CHINESE_NAMES[$code]) || ResourceCode::isCapacity($code)) {
+                return null;
+            }
+
+            // 只收真正的数字。字符串 "100" 一律拒绝:模糊解释会让「后台填错」变成静默生效
+            if (! is_int($amount) && ! is_float($amount)) {
+                return null;
+            }
+            if (is_float($amount) && ! is_finite($amount)) {
+                return null;
+            }
+            if ($amount < 0 || $amount > self::MAX_RESOURCE_AMOUNT) {
+                return null;
+            }
+
+            $clean[$code] = $amount;
+        }
+
+        return $clean;
+    }
+
+    // 对象型设定可用的资源 code 清单(后台编辑器的下拉来源:code + 中文显示名)
+    public static function resourceMapOptions(): array
+    {
+        $options = [];
+        foreach (ResourceCode::CHINESE_NAMES as $code => $name) {
+            if (ResourceCode::isCapacity($code)) {
+                continue;
+            }
+            $options[] = ['code' => $code, 'name' => $name];
+        }
+
+        return $options;
     }
 }

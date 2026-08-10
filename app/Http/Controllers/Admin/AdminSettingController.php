@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Game\Resource\ResourceCode;
 use App\Http\Controllers\Controller;
 use App\Support\ApiResponse;
 use App\Support\ErrorCode;
@@ -38,6 +39,15 @@ class AdminSettingController extends Controller
             ]);
         }
 
+        // 对象型设定(如 initial_resources)先在这里逐键校验一次,只为把「哪一项填错了」告诉运营。
+        // 真正的把关仍在 GameSetting::castValue —— 服务层是唯一权威,这里漏判也不会写进脏配置
+        if (GameSetting::DEFINITIONS[$data['setting_key']]['type'] === GameSetting::TYPE_RESOURCE_MAP) {
+            $errors = self::resourceMapErrors($data['value']);
+            if ($errors) {
+                return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, ['errors' => $errors]);
+            }
+        }
+
         // 类型不符会由 GameSetting::set 抛 GameRuleException(422),交全局 render 统一转响应
         $result = GameSetting::set(
             (string) $data['setting_key'],
@@ -51,5 +61,34 @@ class AdminSettingController extends Controller
             'before'      => $result['before'],
             'after'       => $result['after'],
         ]]);
+    }
+
+    // 对象型设定的逐项错误信息(键 = 表单字段路径,便于后台把红字标到具体那一行)。
+    // 规则与 GameSetting::normalizeResourceMap 一一对应,只是这里附带中文说明
+    private static function resourceMapErrors(mixed $value): array
+    {
+        if (! is_array($value) || $value === [] || array_is_list($value)) {
+            return ['value' => ['必须是「资源 code → 数量」的对象,且至少一项']];
+        }
+
+        $errors = [];
+        foreach ($value as $code => $amount) {
+            $code = (string) $code;
+            $field = 'value.' . $code;
+
+            if (! isset(ResourceCode::CHINESE_NAMES[$code]) || ResourceCode::isCapacity($code)) {
+                $errors[$field] = ['不是合法的库存资源 code'];
+                continue;
+            }
+            if ((! is_int($amount) && ! is_float($amount)) || (is_float($amount) && ! is_finite($amount))) {
+                $errors[$field] = ['数量必须是数字(不接受字符串 / 布尔 / 嵌套对象)'];
+                continue;
+            }
+            if ($amount < 0 || $amount > GameSetting::MAX_RESOURCE_AMOUNT) {
+                $errors[$field] = ['数量必须在 0 ~ ' . GameSetting::MAX_RESOURCE_AMOUNT . ' 之间'];
+            }
+        }
+
+        return $errors;
     }
 }

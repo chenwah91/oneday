@@ -21,7 +21,7 @@ use Tests\TestCase;
 //
 // 常用建筑(L1,除非另注):
 //   A01 行政所  治理容量 80 / 工人 5 / 维护资金 7        A01 L2 治理容量 108 / 工人 6 / 维护资金 8.75
-//   K01 学堂    知识 3/min / 工人 8 / 维护资金 8(governance_bonus 列 30,但 output_json 没有治理容量)
+//   K01 学堂    知识 3/min / 工人 8 / 维护资金 8(output_json 里没有治理容量 → 一点治理容量都不提供)
 //   F02 农田    粮食 14/min / 工人 4 / 维护资金 4        P01 磨坊 吃粮 10 产面粉 8 / 工人 3 / 维护资金 2
 //   H10 住宅    人口容量 126 / 无工人 / 维护资金 9
 class FiscalTest extends TestCase
@@ -163,31 +163,38 @@ class FiscalTest extends TestCase
 
     // ---- 治理容量的单一来源:只认 output_json 的 governance_capacity ----
 
-    // K01 学堂在 building_level_definition 里 governance_bonus = 30,但 output_json 没有治理容量 →
-    // 它一点治理容量都不提供。若哪天有人把 governance_bonus 列也加进来,这条立刻变红
-    public function test_governance_capacity_ignores_governance_bonus_column(): void
+    // K01 学堂的 output_json 里没有治理容量 → 它一点治理容量都不提供。
+    //
+    // 该建筑曾经在已删除的 governance_bonus 列里写着 30(与 output_json 的两套口径不相等,
+    // 用户 2026-08-10 裁决物理删列,V3.2.1)。列没了,双计的可能性从数据层面被消灭 ——
+    // 这条用例现在同时守两件事:三列真的不在表里 + 治理容量仍然只认 output_json
+    public function test_governance_capacity_only_counts_output_json(): void
     {
+        // 三列必须已从定义表消失(V3.2.1 删列迁移)。若哪天有人把列加回来,这条立刻变红
+        foreach (['happiness_bonus', 'governance_bonus', 'defense_score'] as $dropped) {
+            $this->assertFalse(
+                Schema::hasColumn('building_level_definition', $dropped),
+                "{$dropped} 已于 V3.2.1 删除,不得重新出现在定义表"
+            );
+        }
+
         $base = Carbon::parse('2026-01-01 00:00:00');
         Carbon::setTestNow($base);
         $city = $this->makeCity('fiscbonus', ['K01' => 1], 20, 500.0, 10000.0);
 
-        // 前提:这一级确实有非零的 governance_bonus 列,否则本用例就不构成防双计的证据
-        $this->assertEqualsWithDelta(30.0, (float) DB::table('building_level_definition')
-            ->where('building_id', 'K01')->where('level', 1)->value('governance_bonus'), 0.0001);
-
         Carbon::setTestNow($base->copy()->addMinutes(10));
         $sim = SimulationService::simulate($city->fresh());
 
-        $this->assertEqualsWithDelta(0.0, $sim['governanceCapacity'], 0.0001, 'governance_bonus 列不得进治理容量');
+        $this->assertEqualsWithDelta(0.0, $sim['governanceCapacity'], 0.0001, 'K01 不产治理容量');
         // 容量 0 → 负载 = 20 / max(1,0) = 20 > 1.25 → 效率 0.50 → 税收 20 × 0.02 × 0.5 = 0.2/min
-        // 10000 + 0.2×10 − 8×10 = 9922(若误把 bonus 30 算进来:负载 0.667 → 效率 1.00 → 9924)
+        // 10000 + 0.2×10 − 8×10 = 9922(若误把旧列的 30 算进来:负载 0.667 → 效率 1.00 → 9924)
         $this->assertEqualsWithDelta(0.5, $sim['governanceEfficiency'], 0.0001);
         $this->assertEqualsWithDelta(9922.0, $this->moneyOf($city), 0.0001);
     }
 
-    // A01 L2:output_json 治理容量 108,governance_bonus 列 104 —— 两者数值本身就不相等,
-    // 结算必须取 108。这是「两套口径不可互换」最直接的证据
-    public function test_governance_capacity_takes_output_json_value_not_bonus(): void
+    // A01 L2:output_json 治理容量 108(删列前那一列写的是 104,两套口径数值本就不相等)。
+    // 结算必须取 108 —— 这是「删掉的那一列不可拿来替代 output_json」最直接的证据
+    public function test_governance_capacity_takes_output_json_value(): void
     {
         $base = Carbon::parse('2026-01-01 00:00:00');
         Carbon::setTestNow($base);

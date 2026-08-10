@@ -49,6 +49,12 @@ class EraUpgradeTest extends TestCase
             'population' => 60, 'money' => 500, 'happiness' => 60,
         ]);
         DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'food')->update(['amount' => 400]);
+        // 知识显式清零:建城初始资源改由后台 game_settings.initial_resources 决定(默认送 100),
+        // 本夹具要的是「知识维未达标」的城,不能跟着开局配置漂
+        DB::table('city_resources')->updateOrInsert(
+            ['city_id' => $city->id, 'resource_id' => 'knowledge'],
+            ['amount' => 0]
+        );
 
         return [$u, $city->fresh()];
     }

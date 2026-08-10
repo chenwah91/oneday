@@ -3,10 +3,12 @@
 namespace App\Game\Simulation;
 
 use App\Game\Building\ConstructionService;
+use App\Game\Modifier\ModifierBus;
+use App\Game\Modifier\ModifierContext;
+use App\Game\Modifier\ModifierTarget;
+use App\Game\Modifier\Providers\LogisticsMultiplierProvider;
 use App\Game\Resource\ResourceCode;
-use App\Game\Technology\TechService;
 use App\Models\City;
-use App\Support\GameSetting;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -17,20 +19,11 @@ use Illuminate\Support\Facades\DB;
 // 段间状态在内存滚动,全部段算完后一次性写库。人口变化会改变下一段的粮耗——这正是分段的意义。
 class SimulationService
 {
-    // 逐建筑实例的乘区初始值(全部 1.0 = 无影响)。
-    // M2 各生产系统(科技/NPC/工具/电力/物流/事件)各占一个乘区,只写自己那一格,互不覆盖。
-    // C1 起 worker 一格由「已分配工人 / 该级需求工人」填充;
-    // C4 起 logistics 一格由 §10.7 的运输负载填充;
-    // B3 起 tech 一格由 §5 的「同分支每解锁一条科技 +2%」填充。其余四项(power/npc/tool/event)仍恒为 1.0。
-    private const BASE_MULTIPLIERS = [
-        'worker'    => 1.0, // 用工满足率(人力不足打折)
-        'power'     => 1.0, // 电力满足率(按建筑)
-        'logistics' => 1.0, // 物流满足率(C4 起由 transportLoad → logisticsFactor 填充)
-        'tech'      => 1.0, // 科技加成(B3 起按建筑所属科技分支的已解锁条数)
-        'npc'       => 1.0, // NPC 加成(按实例)
-        'tool'      => 1.0, // 工具加成(按实例)
-        'event'     => 1.0, // 事件加成
-    ];
+    // 七乘区的名单、各格含义与初始值全部在 App\Game\Modifier\ModifierTarget(M3-D0.1)。
+    //
+    // M3 起「查数据 → 算乘数 → 填槽」的逻辑从这里搬进各自的 Provider,内核只做三件事:
+    //   ModifierBus::default() → prepare(准备段一次性取数)→ multipliersFor(逐实例填七格)。
+    // 于是 D1~D5 各系统接线时只新增 Provider 类,**不再改本文件**(backlog §10.2 纪律)。
 
     // 兼容包装:自开事务 + 锁城市行,再走 applyLocked(全项目唯一开结算事务的入口)
     // 只读路径(快照)用它;写路径(建造/升级/拆除)已自带事务与锁,应直接调 applyLocked
@@ -223,18 +216,12 @@ class SimulationService
         $transportCapacity = 0.0;
         $maintenanceMoneyPerMin = 0.0;
 
-        // 用工闸门总开关(game_settings.worker_gate_enabled,默认 true = 维持「没派工人就不生产」)。
-        // 关掉后 worker 乘区恒为 1.0,全服产量立刻恢复满额,供运营救急。
-        // 必须在建筑循环之外读一次:applyLocked 在事务内高频调用,逐实例查库不可接受
-        // (GameSetting 本身也带请求级缓存,这里再提出循环是第二道保险)
-        $workerGateEnabled = (bool) GameSetting::get(GameSetting::WORKER_GATE_ENABLED, true);
-
-        // 科技乘区(§5,M2-B3):building_id => 乘数。同样必须在建筑循环之外查一次,
-        // 循环内(以及分段循环内)零查库。城里一条科技都没解锁时返回空数组,乘区保持占位 1.0
-        $techMultipliers = self::techMultipliers(
-            (int) $lockedCity->id,
-            $levels->pluck('building_id')->unique()->all()
-        );
+        // ---- M3-D0.1 modifier 总线 ----
+        //
+        // 七乘区各由一个 Provider 认领(worker / logistics / tech 已接线,power / npc / tool / event 占位恒 1.0)。
+        // 取数一律在下面的 $bus->prepare()(准备段,锁内、分段循环之外)完成,
+        // 逐实例的 multiplierFor() 是纯函数、循环内零查库 —— 与 M2 的 N+1 纪律一致。
+        $bus = ModifierBus::default();
 
         // 逐建筑实例中间结构:M2 没有一个乘数是全局的(科技按分支、NPC/工具按实例、电力按建筑),
         // 所以产出/投入必须先落到"每栋一行",算完各自的乘区与满足率,最后才聚合成全城速率。
@@ -284,19 +271,6 @@ class SimulationService
             // 升级中的实例到此为止:容量已按上面的规则计入全城,但绝不进生产集合
             if ($upgrading) { continue; }
 
-            $multipliers = self::BASE_MULTIPLIERS;
-            // 科技乘区(§5):= 1 + 0.02 × 该建筑所属分支的已解锁科技条数;
-            // 没解锁(或该分支一条都没解锁)时 $techMultipliers 里没有这个键 → 保持 1.0。
-            // 研究中(researching)的科技不算数,与建造科技闸门同一口径
-            $multipliers['tech'] = (float) ($techMultipliers[$lv->building_id] ?? 1.0);
-            // workerFactor = min(1, assignedWorkers / max(1, workerRequired))(§10.4);
-            // worker_required = 0 的建筑(住宅/仓库等)不需要人,恒为 1.0;
-            // 闸门关闭($workerGateEnabled = false)时同样恒为 1.0
-            $workerRequired = (int) $lv->worker_required;
-            $multipliers['worker'] = ($workerGateEnabled && $workerRequired > 0)
-                ? min(1.0, (int) $lv->assigned_workers / $workerRequired)
-                : 1.0;
-
             $units[] = [
                 'instanceId'  => (int) $lv->instance_id,
                 'buildingId'  => $lv->building_id,
@@ -305,7 +279,12 @@ class SimulationService
                 'grossIn'     => $grossIn,
                 'maintMoney'  => (float) $lv->maintenance_money_per_min,
                 'maintFood'   => (float) $lv->maintenance_food_per_min,
-                'multipliers' => $multipliers,
+                // 用工的分子分母(§10.4):WorkerMultiplierProvider 要,别的 Provider 也可能要,
+                // 所以放进中间结构而不是在这里就算成乘数
+                'workerRequired'  => (int) $lv->worker_required,
+                'assignedWorkers' => (int) $lv->assigned_workers,
+                // 七乘区:本循环结束、容量与时代都定型之后,由 ModifierBus 一次性填满(见下)
+                'multipliers' => [],
                 // 维护欠费率(§10.5):1.0 = 维护付得起;0.5 = 本段欠费半停工。
                 // 它不占七乘区里的任何一格(七乘区是 §10.11 生产总公式的固定名单,不许扩名),
                 // 而是逐段由 applyLocked 改写、在 unitFactor 里单独乘在乘数积之后
@@ -316,41 +295,46 @@ class SimulationService
         // 维护资金:不进配方,不受乘区与满足率影响(建筑闲置也照付),整段恒定
         foreach ($units as $u) { $maintenanceMoneyPerMin += $u['maintMoney']; }
 
-        // ---- 物流(v3.2 §10.7,M2-C4)----
-        //
-        // transportDemand = Σ(各生产建筑每分钟输入 + 输出) × distanceFactor
-        //
-        // 需求取「该级定义的基础输入/输出速率」而不是乘区折算后的速率,两个理由:
-        //   ① logistics 本身就是七乘区之一,拿折算后的速率当分母会自己吃自己(收敛都不保证);
-        //   ② §10.7 的字面口径就是建筑的每分钟输入 / 输出,即名义吞吐。
-        // 容量类产出(人口/仓储/治理/运输/医疗/国防)在上面已被提走,不在 grossIn / grossOut 里,
-        // 所以住宅、仓库、行政所、道路本身天然不占运力 —— 这正是「生产建筑」这个限定词的落地方式。
-        $transportDemandPerMin = 0.0;
-        foreach ($units as $u) {
-            $transportDemandPerMin += array_sum($u['grossIn']) + array_sum($u['grossOut']);
-        }
-        // distanceFactor:M2 恒 1.0(§10.7「M2:distanceFactor = 1.0」),地图距离惩罚留 M3 大地图
-        $transportDemandPerMin *= SimConstants::LOGISTICS_DISTANCE_FACTOR;
-
-        // 时代闸门(**本次补充假设**,依据见 SimConstants::LOGISTICS_MIN_ERA_ORDER 的注释):
-        // 时代 I 没有任何建筑能产出 transport_capacity(全表最早的运输建筑是时代 II 的 T02),
-        // 若时代 I 照样计需求,所有时代 I 城市开局即重度拥堵、且无任何手段自救。
-        // era_order 由时代升级(M2-B6)维护;列缺失 / 为空一律按时代 I 兜底(与人均税额同一约定)
+        // 时代序号:era_order 由时代升级(M2-B6)维护;列缺失 / 为空一律按时代 I 兜底
+        // (人均税额与物流时代闸门共用这一份兜底,不在两处各写一遍)
         $eraOrder = (int) ($lockedCity->era_order ?? 1);
-        if ($eraOrder < SimConstants::LOGISTICS_MIN_ERA_ORDER) { $transportDemandPerMin = 0.0; }
 
-        // 负载 → 物流率。全城一个值:M2 distanceFactor 恒 1.0 且没有分区路网,
-        // M3 大地图再改成按建筑到路网的距离逐栋算(那时这里换成逐 unit 计算即可)
-        $transportLoad = self::transportLoad($transportDemandPerMin, $transportCapacity);
-        $logisticsFactor = self::logisticsFactor($transportLoad);
-        // 拥堵警报(§10.7「> 1.25 → 产生拥堵警报」/ §15 回归表「出现拥堵警报」)
-        $transportCongestion = $transportLoad > SimConstants::TRANSPORT_LOAD_OVER;
+        // ---- 准备段:各 Provider 一次性取数,然后逐实例填满七乘区(M3-D0.2 内核接线点)----
+        //
+        // 位置固定在这里的两个理由:
+        //   ① 必须在建筑实例中间结构与全城容量都定型之后 —— 物流要按全城 grossIn/grossOut 聚合需求,
+        //      再除以全城运输容量;
+        //   ② 必须在分段循环之前 —— 整段结算内建筑集合不变,乘区也就不变,循环内零查库。
+        // 建筑 ID 列表取自 $levels(含 upgrading 实例),与重构前科技乘区的入参口径一字不差。
+        $bus->prepare(new ModifierContext(
+            cityId: (int) $lockedCity->id,
+            eraOrder: $eraOrder,
+            buildingIds: $levels->pluck('building_id')->unique()->all(),
+            capacities: [
+                ModifierContext::CAP_STORAGE    => $storageCap,
+                ModifierContext::CAP_POPULATION => $populationCap,
+                ModifierContext::CAP_MEDICAL    => $medicalCapacity,
+                ModifierContext::CAP_DEFENSE    => $defenseScore,
+                ModifierContext::CAP_GOVERNANCE => $governanceCapacity,
+                ModifierContext::CAP_TRANSPORT  => $transportCapacity,
+            ],
+            city: $lockedCity,
+            now: $now,
+            totalMinutes: $elapsed / 60.0,
+        ), $units);
 
-        // 写进七乘区的 logistics 一格(§10.11 生产总公式点名的那一项),从占位 1.0 变为真实值。
-        // 整段结算内建筑集合不变 → 物流率也不变,所以只在分段循环之外算一次、写一次(循环内零查库)
         foreach ($units as $i => $u) {
-            $units[$i]['multipliers']['logistics'] = $logisticsFactor;
+            $units[$i]['multipliers'] = $bus->multipliersFor($u);
         }
+
+        // 物流读数(§10.7):需求 / 负载 / 物流率 / 拥堵警报都由 LogisticsMultiplierProvider 在准备段算好,
+        // 这里只取回来放进返回值给前端显示 —— 结算侧已经通过 logistics 那一格生效,不再二次使用
+        /** @var LogisticsMultiplierProvider $logisticsProvider */
+        $logisticsProvider = $bus->provider(ModifierTarget::SLOT_LOGISTICS);
+        $transportDemandPerMin = $logisticsProvider->demandPerMin();
+        $transportLoad = $logisticsProvider->load();
+        $logisticsFactor = $logisticsProvider->factor();
+        $transportCongestion = $logisticsProvider->congestion();
 
         // ---- 分段结算 ----
         //
@@ -381,7 +365,7 @@ class SimulationService
         // 人均税额(§10.5):时代 I = 0.02,每进一个时代 ×1.5 → 0.02 × 1.5^(era_order − 1)。
         // era_order 由时代升级(M2-B6)维护;列尚未上线 / 值为空的城市按时代 I 兜底。
         // 整段结算内时代不变,所以在循环外算一次(分段循环内零查库、零幂运算)。
-        // $eraOrder 在上面的物流块里已按同一套兜底口径取好,这里直接复用,避免两处各写一份兜底
+        // $eraOrder 在上面的准备段之前已按同一套兜底口径取好,这里直接复用,避免两处各写一份兜底
         $taxPerCapita = self::taxPerCapitaPerMin($eraOrder);
 
         $ratePerMin = [];        // 资源 => 每分钟净速率(最后一段口径,返回给前端显示)
@@ -471,14 +455,26 @@ class SimulationService
                 $medicalCapacity,
                 $defenseScore,
                 $grossProduction,
-                $deficitMinutes
+                $deficitMinutes,
+                // flat 通道(M3-D0.2):持续型事件 / NPC 特性对幸福的直接冲击,改的是**目标值**,
+                // 由 §10.2 的快落慢升自然收敛(瞬时型改当前值,由事件系统自己结算,不经这里)。
+                // 按段取值:偏移量与 foodZeroOffset 同一套口径(相对结算窗口起点的分钟数),
+                // D4 接入后用它与 modifier 的 starts_at / ends_at 求交。M3 W1 无投稿者 → 恒 0.0
+                $bus->flat(ModifierTarget::HAPPINESS_FLAT, $segStartOffset, $segEndOffset)
             );
             $happiness = self::stepHappiness($happiness, $happinessTarget, $span);
         }
 
         // health / security(§10.8):派生值,不落库,按结算后的人口与全城容量现算
         $health = (int) round(self::coverage($medicalCapacity, $population) * 100);
-        $security = (int) round(self::coverage($defenseScore, $population) * 100);
+        // security 另接 flat 通道(M3-D0.2):EVT_STRIKE 治安 -6、D5 的威胁等级等直接加减落在这里,
+        // 覆盖率映射出来的 0~100 加上 flat 之后仍夹回 [0, 100]。
+        // 取整段窗口([0, totalMinutes])的 flat:security 本身就是「结算后」的派生值,不分段。
+        // M3 W1 无投稿者 → flat 恒 0.0,夹取也就恒等于原值
+        $security = (int) round(max(0.0, min(100.0,
+            self::coverage($defenseScore, $population) * 100
+            + $bus->flat(ModifierTarget::SECURITY_FLAT, 0.0, $totalMinutes)
+        )));
 
         // 财政预警(§10.5):按「结算后的资金」与全城维护资金速率派生,同样不落库。
         // 用结算后的资金而不是段起资金 —— 玩家看到的 HUD 资金就是这个值,预警必须和它同源
@@ -560,57 +556,6 @@ class SimulationService
             'logisticsFactor'         => $logisticsFactor,
             'transportCongestion'     => $transportCongestion,
         ];
-    }
-
-    // 科技乘区(v3.2 §5,M2-B3):返回 building_id => 乘数,只含真正拿到加成的建筑。
-    //
-    // 效果口径完全照 §5 科技表的 effect_code 列:50 条科技一律 `<branch>_base_efficiency_2pct`,
-    // 即「解锁一条科技 → 该分支建筑基础效率 +2%」,同分支多条线性累加:
-    //   multiplier = 1 + 0.02 × 该分支已解锁条数
-    //
-    // 建筑 → 分支不另立映射表,直接用定义数据推:
-    //   building_definition.tech_id(§3.4 的 tech_id 列,94 栋全部非空)→ technology_definition.branch。
-    // 即「解锁这栋楼的那条科技属于哪条分支,这栋楼就吃哪条分支的加成」——
-    // 这样新增建筑只要填 tech_id 就自动归位,不必回来改代码(CLAUDE §13 数据驱动)。
-    //
-    // 两次查询都在 applyLocked 的准备段(分段循环之外)完成;
-    // 一条科技都没解锁的城(绝大多数新城)在第一次查询之后就直接返回,不发第二条 SQL。
-    private static function techMultipliers(int $cityId, array $buildingIds): array
-    {
-        if (! $buildingIds) {
-            return [];
-        }
-
-        // 已解锁科技按分支计数(researching 不算解锁,与 BuildService 的科技闸门同一口径)
-        $counts = [];
-        $rows = DB::table('city_technologies as ct')
-            ->join('technology_definition as td', 'ct.tech_id', '=', 'td.tech_id')
-            ->where('ct.city_id', $cityId)
-            ->where('ct.status', TechService::STATUS_UNLOCKED)
-            ->groupBy('td.branch')
-            ->selectRaw('td.branch as branch, count(*) as unlocked_count')
-            ->get();
-        foreach ($rows as $row) {
-            $counts[$row->branch] = (int) $row->unlocked_count;
-        }
-        if (! $counts) {
-            return [];
-        }
-
-        $branchOf = DB::table('building_definition as bd')
-            ->join('technology_definition as td', 'bd.tech_id', '=', 'td.tech_id')
-            ->whereIn('bd.building_id', $buildingIds)
-            ->pluck('td.branch', 'bd.building_id')->all();
-
-        $out = [];
-        foreach ($branchOf as $buildingId => $branch) {
-            $unlocked = $counts[$branch] ?? 0;
-            if ($unlocked > 0) {
-                $out[$buildingId] = 1.0 + $unlocked * SimConstants::TECH_BRANCH_EFFICIENCY_BONUS;
-            }
-        }
-
-        return $out;
     }
 
     // 单段速率:给定段起库存与段起人口,算出本段的资源净速率与 gross 产出/消耗。
@@ -803,6 +748,7 @@ class SimulationService
 
     // 目标幸福(§10.2 合成式):
     //   60 + housingBonus + foodQualityBonus + medicalBonus + securityBonus + taxPenalty + shortagePenalty
+    //   + flatBonus(M3-D0.2 的 flat 通道:持续型事件 / NPC 特性的直接加减,接入前恒 0)
     // 各分项都是「本段起始状态」的函数,段内恒定。最终夹在 [0,100]
     private static function happinessTarget(
         float $population,
@@ -810,7 +756,8 @@ class SimulationService
         float $medicalCapacity,
         float $defenseScore,
         array $grossProduction,
-        float $deficitMinutes
+        float $deficitMinutes,
+        float $flatBonus = 0.0
     ): float {
         // 税率惩罚:M2 税率固定、玩家不可调,§10.2 明确 taxPenalty = 0。
         // M3 开放可调税率后在这里接「每 5% 税率 → -2 happiness」,占位保留以免将来漏项
@@ -826,7 +773,8 @@ class SimulationService
             + SimConstants::HAPPINESS_COVERAGE_BONUS * self::coverage($medicalCapacity, $population)
             + SimConstants::HAPPINESS_COVERAGE_BONUS * self::coverage($defenseScore, $population)
             + $taxPenalty
-            + $shortagePenalty;
+            + $shortagePenalty
+            + $flatBonus;
 
         return max(SimConstants::HAPPINESS_MIN, min(SimConstants::HAPPINESS_MAX, $target));
     }

@@ -24,9 +24,9 @@ class BuildingLevelDefinitionSeeder extends Seeder
             'maintenance_food_per_min'  => $r['maintenance']['food_per_min'],
             'maintenance_fuel_per_min'  => $r['maintenance']['fuel_per_min'],
             'power_per_min'             => $r['maintenance']['power_per_min'],
-            'happiness_bonus'           => $r['happiness_bonus'],
-            'governance_bonus'          => $r['governance_bonus'],
-            'defense_score'             => $r['defense_score'],
+            // happiness_bonus / governance_bonus / defense_score 三列已于 V3.2.1 物理删除:
+            // 它们与 output_json 是两套不相等的口径,结算一直只认 output_json(单一来源),
+            // 留着只会让后台以为「改了有用」。JSON 数据源同步删键,详见删列迁移的说明
             'capacity'                  => $r['capacity'],
         ], $rows);
 

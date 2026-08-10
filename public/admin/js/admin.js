@@ -423,6 +423,51 @@ function settingValueLabel(value) {
     return escapeHtml(JSON.stringify(value));
 }
 
+// 对象型设定的「键/值」表格编辑器(不做成裸 JSON 文本框:手写 JSON 迟早写出脏配置)。
+// 可选键来自服务器下发的 options(= 服务端 allowlist 的同一份清单),前端不自己编一套资源码表
+function isPlainObject(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function mapRowHtml(settingKey, code, amount, label, maxValue) {
+    return `
+        <tr data-map-row="${escapeHtml(code)}">
+            <td>${escapeHtml(label)}</td>
+            <td><input type="number" step="any" min="0" max="${maxValue}" value="${Number(amount) || 0}"
+                       data-map-input="${escapeHtml(settingKey)}" data-map-key="${escapeHtml(code)}"></td>
+            <td><button type="button" class="btn btn-ghost" data-map-remove="${escapeHtml(settingKey)}">移除</button></td>
+        </tr>
+    `;
+}
+
+function mapEditorHtml(s) {
+    const key = s.setting_key;
+    const value = isPlainObject(s.value) ? s.value : {};
+    const options = Array.isArray(s.options) ? s.options : [];
+    const maxValue = s.max_value === null || s.max_value === undefined ? 1000000 : s.max_value;
+    const labelOf = (code) => {
+        const hit = options.find((o) => o.code === code);
+        return hit ? `${hit.name}(${hit.code})` : code;
+    };
+
+    const rows = Object.keys(value)
+        .map((code) => mapRowHtml(key, code, value[code], labelOf(code), maxValue))
+        .join('');
+
+    return `
+        <table class="map-editor" data-map-editor="${escapeHtml(key)}" data-map-max="${maxValue}">
+            <thead><tr><th>资源</th><th>数量</th><th></th></tr></thead>
+            <tbody data-map-body="${escapeHtml(key)}">${rows}</tbody>
+        </table>
+        <div class="map-add">
+            <select data-map-select="${escapeHtml(key)}">
+                ${options.map((o) => `<option value="${escapeHtml(o.code)}">${escapeHtml(o.name)}(${escapeHtml(o.code)})</option>`).join('')}
+            </select>
+            <button type="button" class="btn btn-ghost" data-map-add="${escapeHtml(key)}">添加资源</button>
+        </div>
+    `;
+}
+
 async function loadSettings() {
     settingStatus.textContent = '加载中…';
     settingError.classList.add('hidden');
@@ -430,18 +475,25 @@ async function loadSettings() {
         const data = await api.get('/api/admin/settings');
         const rows = data.settings || [];
         settingTable.innerHTML = rows.map((s) => {
-            // 目前只有布尔开关可一键切换;将来出现非布尔类型时按只读展示,不猜它该变成什么
-            const toggle = s.registered && s.type === 'bool'
-                ? `<button type="button" class="btn btn-ghost" data-setting-key="${escapeHtml(s.setting_key)}" data-setting-next="${s.value === true ? 'false' : 'true'}">切换为 ${s.value === true ? '关闭' : '开启'}</button>`
-                : '<span class="muted">不可编辑</span>';
+            // 布尔开关一键切换;对象型走键/值表格 + 保存;都不是则只读展示,不猜它该变成什么
+            let valueCell = settingValueLabel(s.value);
+            let actionCell = '<span class="muted">不可编辑</span>';
+
+            if (s.registered && s.type === 'bool') {
+                actionCell = `<button type="button" class="btn btn-ghost" data-setting-toggle="${escapeHtml(s.setting_key)}" data-setting-next="${s.value === true ? 'false' : 'true'}">切换为 ${s.value === true ? '关闭' : '开启'}</button>`;
+            } else if (s.registered && s.type === 'resource_map') {
+                valueCell = mapEditorHtml(s);
+                actionCell = `<button type="button" class="btn btn-ghost" data-map-save="${escapeHtml(s.setting_key)}">保存</button>`;
+            }
+
             return `
                 <tr>
                     <td>${escapeHtml(s.setting_key)}</td>
                     <td class="setting-desc">${escapeHtml(s.description)}</td>
-                    <td>${settingValueLabel(s.value)}</td>
+                    <td>${valueCell}</td>
                     <td>${s.default === null || s.default === undefined ? '-' : escapeHtml(JSON.stringify(s.default))}</td>
                     <td>${s.updated_at ? escapeHtml(s.updated_at) : '-'}${s.updated_by ? ' · by #' + s.updated_by : ''}</td>
-                    <td>${toggle}</td>
+                    <td>${actionCell}</td>
                 </tr>
             `;
         }).join('');
@@ -454,28 +506,21 @@ async function loadSettings() {
     }
 }
 
-// 事件委托:表格内容每次刷新都会重建,不能给每行按钮单独绑事件
-settingTable.addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-setting-key]');
-    if (!btn) return;
-
-    settingError.classList.add('hidden');
-    settingResult.classList.add('hidden');
-
+// 修改原因是所有设定改动的必填项(与 Definition 调整同口径),提交前统一取一次
+function settingReasonOrNull() {
     const reason = settingReason.value.trim();
     if (reason.length < 2) {
         settingError.textContent = '请先填写修改原因(至少 2 字)';
         settingError.classList.remove('hidden');
-        return;
+        return null;
     }
+    return reason;
+}
 
+async function submitSetting(btn, settingKey, value, reason) {
     btn.disabled = true;
     try {
-        const data = await api.post('/api/admin/settings', {
-            setting_key: btn.dataset.settingKey,
-            value: btn.dataset.settingNext === 'true',
-            reason,
-        });
+        const data = await api.post('/api/admin/settings', { setting_key: settingKey, value, reason });
         settingResult.textContent = `已修改 ${data.setting_key}:${JSON.stringify(data.before)} → ${JSON.stringify(data.after)}`;
         settingResult.classList.remove('hidden');
         settingReason.value = '';
@@ -488,6 +533,74 @@ settingTable.addEventListener('click', async (e) => {
     } finally {
         btn.disabled = false;
     }
+}
+
+// 事件委托:表格内容每次刷新都会重建,不能给每行按钮单独绑事件
+settingTable.addEventListener('click', async (e) => {
+    const toggleBtn = e.target.closest('[data-setting-toggle]');
+    const saveBtn = e.target.closest('[data-map-save]');
+    const addBtn = e.target.closest('[data-map-add]');
+    const removeBtn = e.target.closest('[data-map-remove]');
+    if (!toggleBtn && !saveBtn && !addBtn && !removeBtn) return;
+
+    settingError.classList.add('hidden');
+    settingResult.classList.add('hidden');
+
+    // 增删行只动 DOM,不发请求:改完整张表再一次性保存,避免中间态被写进配置
+    if (removeBtn) {
+        const row = removeBtn.closest('[data-map-row]');
+        if (row) row.remove();
+        return;
+    }
+
+    if (addBtn) {
+        const key = addBtn.dataset.mapAdd;
+        const select = settingTable.querySelector(`[data-map-select="${key}"]`);
+        const body = settingTable.querySelector(`[data-map-body="${key}"]`);
+        const editor = settingTable.querySelector(`[data-map-editor="${key}"]`);
+        if (!select || !body || !select.value) return;
+        if (body.querySelector(`[data-map-row="${select.value}"]`)) {
+            settingError.textContent = '该资源已在列表中,直接改数量即可';
+            settingError.classList.remove('hidden');
+            return;
+        }
+        const label = select.options[select.selectedIndex].textContent.trim();
+        body.insertAdjacentHTML('beforeend', mapRowHtml(key, select.value, 0, label, editor ? editor.dataset.mapMax : 1000000));
+        return;
+    }
+
+    const reason = settingReasonOrNull();
+    if (reason === null) return;
+
+    if (toggleBtn) {
+        await submitSetting(toggleBtn, toggleBtn.dataset.settingToggle, toggleBtn.dataset.settingNext === 'true', reason);
+        return;
+    }
+
+    const key = saveBtn.dataset.mapSave;
+    const value = {};
+    let invalid = false;
+    settingTable.querySelectorAll(`[data-map-input="${key}"]`).forEach((input) => {
+        const amount = Number(input.value);
+        if (input.value === '' || !Number.isFinite(amount)) {
+            invalid = true;
+            return;
+        }
+        value[input.dataset.mapKey] = amount;
+    });
+
+    if (invalid) {
+        settingError.textContent = '每一项都要填写有效数量';
+        settingError.classList.remove('hidden');
+        return;
+    }
+    if (Object.keys(value).length === 0) {
+        settingError.textContent = '至少保留一项资源';
+        settingError.classList.remove('hidden');
+        return;
+    }
+
+    await submitSetting(saveBtn, key, value, reason);
 });
 
 settingRefresh.addEventListener('click', () => { loadSettings().catch(() => {}); });

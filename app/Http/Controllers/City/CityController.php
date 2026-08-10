@@ -116,6 +116,38 @@ class CityController extends Controller
                 // 科技(M2-B1):已解锁 tech_id 列表 + 在研项 + 时代进度(时代读 cities.era_order)。
                 // 定义(名称/费用/时长/前置)不在快照里,前端从 /api/definitions/technologies 单独取一次
                 'technologies'        => TechService::snapshot((int) $city->id, (int) $city->era_order),
+
+                // ================= M3 共享文件锚点(D0.4,W1-A 一次性预置)=================
+                //
+                // 纪律(backlog §10.2):每个任务只在自己系统的锚点块内增删,
+                // 禁止重排、禁止格式化他人行、禁止在锚点外改动。锚点是纯注释,预置本身零行为变化。
+                //
+                // 另一条口径:快照体积必须可控(§15「避免每次返回完整城市」)。
+                // 各系统往这里加字段前先问一句「这个数据能不能走自己的独立端点」——
+                // 市场就是因为这条被明确挡在快照之外的(见下面的 M3-MARKET 锚点)。
+
+                // ---- M3-NPC ----(W2-A:NPC 摘要 / 未分配徽标 / 工资口粮速率)
+                // ---- /M3-NPC ----
+
+                // ---- M3-ITEM ----(W3-A:建筑装备摘要 / 耐久预警)
+                // ---- /M3-ITEM ----
+
+                // ---- M3-MARKET ----
+                // **本锚点刻意留空**:市场信息走独立端点 GET /api/market/prices,不塞进城市快照
+                // (backlog §5.3 / §10.2:既避免 CityController 成为两个 agent 的争抢点,也避免快照体积失控)。
+                // W2-B 不得在此插入任何字段。
+                // ---- /M3-MARKET ----
+
+                // ---- M3-EVENT ----(W3-B:active 事件实例数 / 最近一条通知,详情走 GET /api/city/events)
+                // ---- /M3-EVENT ----
+
+                // ---- M3-POWER ----(W4-A:发电 / 耗电 / powerFactor)
+                // ---- /M3-POWER ----
+
+                // ---- M3-DEFENSE ----(W4-B:threat_level 与国防区块,§11 的两个字段)
+                // ---- /M3-DEFENSE ----
+
+                // ================= M3 锚点结束 =================
             ],
         ]]);
     }

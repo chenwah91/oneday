@@ -61,6 +61,38 @@ class AdminDefinitionTest extends TestCase
         $this->assertEquals($before, DB::table('building_level_definition')->where('building_id', 'F02')->where('level', 1)->value('maintenance_money_per_min'));
     }
 
+    // V3.2.1 删掉的三列双口径:既不在表里,也不能再从后台编辑。
+    // 假如哪天有人把它们加回 EDITABLE(列却已不存在),这里会先在 422 断言处变红,
+    // 而不是等到线上 UPDATE 报「Unknown column」
+    public function test_dropped_double_source_fields_are_not_editable(): void
+    {
+        $admin = $this->admin();
+
+        foreach (['happiness_bonus', 'governance_bonus', 'defense_score'] as $dropped) {
+            $this->assertFalse(
+                \Illuminate\Support\Facades\Schema::hasColumn('building_level_definition', $dropped),
+                "{$dropped} 应已于 V3.2.1 从定义表删除"
+            );
+
+            $this->actingAs($admin)->postJson('/api/admin/definitions/building-level', [
+                'buildingId' => 'F02', 'level' => 1, 'field' => $dropped, 'value' => 10, 'reason' => '试图改已删除的列',
+            ])->assertStatus(422)->assertJson(['error' => 'VALIDATION_ERROR']);
+        }
+    }
+
+    // 查询接口也不得再回传这三列(否则后台会拿到一堆不存在的字段名)
+    public function test_building_levels_response_has_no_dropped_fields(): void
+    {
+        $res = $this->actingAs($this->admin())->getJson('/api/admin/definitions/building-levels?buildingId=F02');
+        $res->assertOk();
+
+        foreach ($res->json('data.levels') as $level) {
+            foreach (['happiness_bonus', 'governance_bonus', 'defense_score'] as $dropped) {
+                $this->assertArrayNotHasKey($dropped, $level);
+            }
+        }
+    }
+
     // reason 超过 80 字符(audit_logs.reason_code 列上限)应被拒绝,且不能留下部分写入
     public function test_rejects_overlong_reason(): void
     {

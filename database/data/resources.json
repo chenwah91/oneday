@@ -94,7 +94,7 @@
         "name": "黏土",
         "rs_code": "RS005",
         "category": "raw_material",
-        "first_era": "III",
+        "first_era": "II",
         "is_population_consumable": false,
         "is_strategic": false
     },
@@ -157,7 +157,7 @@
         "name": "砂石",
         "rs_code": "RS006",
         "category": "raw_material",
-        "first_era": "VII",
+        "first_era": "II",
         "is_population_consumable": false,
         "is_strategic": false
     },

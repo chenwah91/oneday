@@ -29,14 +29,14 @@
 | 面包 | `bread` | RS008 | 食物 | II |
 | 铜 | `copper` | RS009 | 原料 | III |
 | 锡 | `tin` | RS010 | 原料 | III |
-| 黏土 | `clay` | RS005 | 原料 | III |
+| 黏土 | `clay` | RS005 | 原料 | II |
 | 青铜 | `bronze` | RS011 | 加工品 | III |
 | 砖 | `brick` | RS014 | 加工品 | III |
 | 知识 | `knowledge` | RS023 | 知识 | III |
 | 铁 | `iron` | RS012 | 原料 | IV |
 | 煤炭 | `coal` | RS013 | 原料 | IV |
 | 铁制工具 | `iron_tools` | (§8 无) | 加工品 | IV |
-| 砂石 | `sand_gravel` | RS006 | 原料 | VII |
+| 砂石 | `sand_gravel` | RS006 | 原料 | II |
 | 玻璃 | `glass` | RS015 | 加工品 | VII |
 | 钢铁 | `steel` | RS016 | 加工品 | VIII |
 | 机械 | `machinery` | RS020 | 加工品 | VIII |
@@ -54,6 +54,9 @@
 说明:
 
 - §8 共 26 条(RS001–RS026),本表 31 种资源中有 26 种能对上;其余 5 种(铁制工具、水泥、加工食品、药品、高品质粮食)§8 未收录,`rs_code` 存 `NULL`。
+- **V3.2.0(2026-08-10)**:黏土 / 砂石的首次时代由 III / VII 统一改为 **II**——两者在
+  `v3.2-resource-source-mapping.md` §2/§3 挂到 R02 采石场(时代 II)成为其副产,首次可得时代随来源建筑走。
+  水泥 / 药品的市场编号(草案 §7 提议的 RS027 / RS028)属 M3 市场模块,本次**不写入**,`rs_code` 仍为 `NULL`。
 - §8 的 RS019「燃料」首次时代写作 `I/IX`,resources.json 取 `I`,以 resources.json 为准。
 - `知识`、`资金`按 §8 属不可交易资源;`电力`按 §8 走容量合约,当前 M1/M2 仍按普通库存资源建模,后续市场模块再区分。
 

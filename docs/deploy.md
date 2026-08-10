@@ -6,7 +6,7 @@
 
 > 本文档只讲「怎么把这份代码库正确地部署到生产环境」。发布前的检查项(自动 + 人工)见 `docs/ops/release-checklist.md`,先过完那份清单再执行本文档的步骤。
 >
-> 版本对应关系:代码 `v1.1.0` · 数值 `game_data_version = V3.1.3` · PWA 缓存 `apg-v9` · 迁移文件 28 支。
+> 版本对应关系:代码 `v1.1.0` · 数值 `game_data_version = V3.1.3` · PWA 缓存 `apg-v9` · 迁移文件 35 支(M3 开发中,每新增一支迁移同步 +1;M3 期间的数值版本已递增到 `V3.2.1`,下次发版时把上面这行的版本坐标一并更新)。
 
 ---
 
@@ -64,12 +64,40 @@ composer install --no-dev --optimize-autoloader
 | `DB_COLLATION` | `utf8mb4_unicode_ci` | |
 | `SESSION_DRIVER` | `database` | 与开发一致 |
 | `SESSION_SECURE_COOKIE` | `true` | **必须**,生产是 HTTPS,Cookie 必须标记 Secure(`.env.example` 里有中文注释提示,开发环境默认 `false`) |
+| `AUDIT_HMAC_SECRET` | (生成强随机值) | **必须**,审计 Hash Chain 的 HMAC 密钥(`CLAUDE.md` §58/§75)。见下方生成命令 |
 
 生成 `APP_KEY`:
 
 ```bash
 php artisan key:generate
 ```
+
+生成 `AUDIT_HMAC_SECRET`(64 位十六进制随机串):
+
+```bash
+php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"
+```
+
+⚠️ **关于 `AUDIT_HMAC_SECRET`**:
+
+- 只写进生产 `.env`,**绝不进数据库、绝不进 Git**;`.env.example` 里只留字段名不留值。
+- **一经设定就不能再改**:换密钥后所有旧审计行的 `event_hash` 全部对不上,`audit:verify-chain` 会把整条链报成断链。要换只能在「链重置」的前提下由人工决策。
+- 生产**不要留空**。留空时代码会退化成「从 `APP_KEY` 派生密钥」并写 warning 日志 —— 这只是本地开发的方便,生产等于把审计防篡改密钥绑死在另一个用途的密钥上。
+- 密钥与 `APP_KEY`/`DB_PASSWORD` 同级:不进日志、不进审计、不进任何返回给客户端的响应。
+
+部署后校验审计链完好(退出码非零表示有断链,可挂进 cron 定期跑):
+
+```bash
+php artisan audit:verify-chain              # 全库所有域
+php artisan audit:verify-chain --city=12    # 只看 12 号城市这条链
+php artisan audit:verify-chain --city=global # 只看全局链(登录 / 限流 / 后台配置等 city_id 为 NULL 的事件)
+```
+
+输出形如 `验证 N 条 / 跳过历史 M 条 / 断链 K 处`。首次上线时「跳过历史 M 条」会等于本次部署前已有的全部审计行数 —— 链从部署时刻开始,历史行按 append-only 纪律**不回填**,属正常现象。
+
+断链原因码含义:`CONTENT_TAMPERED` 该行内容被改过 · `PREVIOUS_MISMATCH` 接不上上一条(中间有行被删或被插) · `CHAIN_HOLE` 链中间出现未挂链的行(多半是那段时间 `AUDIT_HMAC_SECRET` 没配) · `HALF_LINKED` 两列只有一个有值 · `HEAD_MISMATCH` 链头表 `audit_chain_heads` 记的链尾与实际链尾不符(有人绕过 `AuditLogger` 直写 `audit_logs`,或整域审计被删光)。
+
+⚠️ **链尾删除检测不到**:删掉某个域最后一条审计,后面没有行来揭发它 —— 这是哈希链的固有边界。`HEAD_MISMATCH` 能兜住「整域删光」和「绕过 AuditLogger 直写」,但兜不住「精准删最后一条并同步改链头表」。要彻底堵住需要 CLAUDE §58 说的「定期把最新 Hash Anchor 存到独立存储」,尚未实现。
 
 > `php artisan release:check` 会自动确认 `.env` 未被 git 跟踪、`.env.example` 里没有真实 `APP_KEY`——但生产 `.env` 本身的值(`APP_DEBUG`/`SESSION_SECURE_COOKIE` 等)是环境项,不在代码库里,该命令不检查,必须按上表人工核对,或对照 `docs/ops/release-checklist.md`「二、人工检查」逐条勾。
 
@@ -99,7 +127,24 @@ Laravel 按**文件名排序**执行,不需要手工指定顺序;下表按实际
 
 > 第 1、2 支文件名前缀同为 `2026_08_10_200001`,Laravel 按完整文件名字典序排,`add_game_data_version_columns` 在 `add_rs_code_to_resource_definition` 之前 —— 两支互不依赖,顺序如何都不影响结果。
 >
+> 📌 M3 开发期新增的迁移不在上表 11 支之内(见下方小节)。其中审计 Hash Chain 的两支(`2026_08_10_900001` 补列 + `2026_08_11_300001` 建链头表)**必须成对上线、按序执行**:只跑前者会让「多个新城同时写第一条审计」触发 1213 死锁。历史审计行一律**不回填**(append-only,见第 3 步 `AUDIT_HMAC_SECRET` 说明)。
+>
 > ⚠️ 第 3、4 支是**数据迁移**(改内容,不只是改结构)。它们只处理「还是中文」的行,已经是英文 code 的行会跳过,所以对已升级过的库重复执行是安全的;但**中途失败仍可能留下改了一半的状态**,这是本文顶部强调「先备份」的直接原因。跑完后建议随手抽查:`SELECT resource_id FROM city_resources LIMIT 20;` 应全为英文 code。
+
+#### M3 开发期追加的迁移(按波次滚动登记)
+
+上表是 v1.1.0 的 11 支。M3 开发期每个波次把自己新增的迁移追加到下表**尾部**,不要重排、不要改别人的行。
+
+| 迁移文件 | 做什么 | 是否动存量数据 |
+|---|---|---|
+| `2026_08_11_050001_seed_initial_resources_setting` | `game_settings` 补一行 `initial_resources`(建城初始资源,对象型设定,含 `money` / `knowledge`)。已有该行的库直接跳过,**不覆盖运营改过的值** | 否(补配置行) |
+| `2026_08_11_150001_drop_double_source_columns_from_building_level_definition` | ⚠️ **表结构变更**:删 `building_level_definition` 的 `happiness_bonus` / `governance_bonus` / `defense_score` 三列(与 `output_json` 双口径且不参与结算,用户 2026-08-10 裁决删列)。单条 ALTER;`down()` 只重建列结构(允许 NULL)**不回填数值** | 是(删列,MySQL 5.7 会重建整表;282 行,代价可忽略) |
+| `2026_08_11_200001_bump_game_data_version_v321` | 删列后递增数值版本 → `V3.2.1`(带 exists 守卫,全新库由 seeder 直接写入时会跳过) | 否 |
+
+| `2026_08_10_900001_add_hash_chain_to_audit_logs` | `audit_logs` 补 `previous_hash` / `event_hash` 两列 + `idx_audit_chain (city_id, id)` 索引(审计 Hash Chain,CLAUDE §58)。历史行两列留 NULL,链从部署时刻开始 | 否(纯加列 + 加索引;MySQL 5.7 会重建整表,表大时选低峰期) |
+| `2026_08_11_300001_create_audit_chain_heads_table` | 新建 `audit_chain_heads` 链头指针表(每域一行,主键 `global` / `city:<id>`)。**并发正确性所必需**:直接在 `audit_logs` 上取链尾会在多个新城同时写第一条审计时,因 gap 锁与 insert intention 锁成环而报 1213 Deadlock(已双进程实测)。与上一支必须成对上线 | 否(建新表;会把已挂链域的链尾回填进新表,只读 `audit_logs`,不改任何审计行) |
+
+> ⚠️ 上表的删列迁移是**结构变更**:跑之前务必按本文顶部的要求**先备份数据库**。被删的三列在 `database/data/building_levels.json` 里也已同步删键,回滚后要恢复数值必须重新 seed。
 
 ### 5. 灌入定义数据(seed)
 
@@ -168,14 +213,15 @@ php artisan route:cache
 
 本地开发用的是 **MariaDB 10.4**,线上是 **MySQL 5.7.39**,两者不完全兼容。详见 `docs/ops/db-mariadb-vs-mysql57.md`,部署时至少确认以下几点:
 
-1. **JSON 列**:`building_definition`/`building_level_definition`/`technology_definition`/`game_settings` 等表用了 Laravel 的 `->json()` 字段。MariaDB 把它实现为 `LONGTEXT` + 自动加 `CHECK (json_valid(col))`;MySQL 5.7 是原生 `JSON` 类型,没有该 CHECK,而且**原生 JSON 列不能带 DEFAULT**(`game_settings.value_json` 因此声明为 NOT NULL 无默认,由迁移显式插入初始行)。**必须在真实 MySQL 5.7 环境把全部 28 个迁移文件实际跑一遍**(不能只信任本地 MariaDB 跑过的结果),迁移完成后随手 `SELECT` 几行确认 JSON 字段能正常读写、内容与本地一致。
+1. **JSON 列**:`building_definition`/`building_level_definition`/`technology_definition`/`game_settings` 等表用了 Laravel 的 `->json()` 字段。MariaDB 把它实现为 `LONGTEXT` + 自动加 `CHECK (json_valid(col))`;MySQL 5.7 是原生 `JSON` 类型,没有该 CHECK,而且**原生 JSON 列不能带 DEFAULT**(`game_settings.value_json` 因此声明为 NOT NULL 无默认,由迁移显式插入初始行)。**必须在真实 MySQL 5.7 环境把全部迁移文件实际跑一遍**(不能只信任本地 MariaDB 跑过的结果),迁移完成后随手 `SELECT` 几行确认 JSON 字段能正常读写、内容与本地一致。
 2. **禁用窗口函数 / CTE**:MySQL 5.7 不支持 `ROW_NUMBER() OVER`、`WITH ... AS` 等语法;本项目代码里未使用,迁移到生产前如有新增原生 SQL,先自查一遍。
 3. **不依赖 `CHECK` 约束的强制执行**:MySQL 5.7 会解析 `CHECK` 但不强制执行,业务校验都在应用层(Laravel Validation / 模型逻辑),不依赖数据库层 CHECK,迁移后无需担心这点导致数据变松。
 4. **字符集/排序规则**:确认 MySQL 5.7 数据库、表、连接三处都是 `utf8mb4` / `utf8mb4_unicode_ci`,避免和本地默认值不同导致排序或比较行为差异。
 5. **`ALTER TABLE` 会重建整张表**:MySQL 5.7 没有 INSTANT ADD COLUMN。M2 的补列迁移已按「同一张表的新列一次 ALTER 加齐」写好,但线上表如果已经很大,第 5 / 9 / 10 / 11 支迁移仍可能耗时较久 —— **选低峰期执行,不要中途打断**。
 6. **v1.1.0 的两支数据迁移在 5.7 上要重点看**:第 3 支(资源 ID 英文化)会逐行改写 `building_level_definition` 的三个 JSON 列;MariaDB 的 LONGTEXT 与 5.7 的原生 JSON 在写回时的转义/键序表现不同,跑完务必抽查 `SELECT building_id, level, cost_json FROM building_level_definition LIMIT 5;` 确认内容正常、能被应用正确解析。
-7. **别拿本地结构当线上结构**:动表的迁移执行前,先对目标表 `SHOW CREATE TABLE` 看一眼实际形态(列类型、collation、索引),确认与本地一致再跑;不一致的地方补记进 `docs/ops/db-mariadb-vs-mysql57.md` 的「具体差异记录」表。
-8. 部署前对照 `docs/ops/db-mariadb-vs-mysql57.md`「上线前 DB 核对清单」逐条勾选完毕(该文件的「硬约束」表是编码期约束,发布时只需确认没有新代码违反)。
+7. **审计 Hash Chain 在 5.7 上要单独验一次**:`audit_logs` 的 `before_json`/`after_json`/`delta_json`/`metadata_json` 在 5.7 是原生 JSON,**读回来的字节与写进去的不一样**(5.7 会重排 key、压掉空白)。链的 `canonical_payload` 已经按「先 decode 再规范化」实现来抵消这一点(`app/Support/AuditChain.php`),但本地 MariaDB(LONGTEXT 原样保存)验不出这条差异。上线跑完迁移后,**先在 5.7 上真实产生几条带 JSON 的审计**(建一栋楼 / 做一次补偿),再跑 `php artisan audit:verify-chain` 确认 0 断链,才算这条过。
+8. **别拿本地结构当线上结构**:动表的迁移执行前,先对目标表 `SHOW CREATE TABLE` 看一眼实际形态(列类型、collation、索引),确认与本地一致再跑;不一致的地方补记进 `docs/ops/db-mariadb-vs-mysql57.md` 的「具体差异记录」表。
+9. 部署前对照 `docs/ops/db-mariadb-vs-mysql57.md`「上线前 DB 核对清单」逐条勾选完毕(该文件的「硬约束」表是编码期约束,发布时只需确认没有新代码违反)。
 
 ---
 
@@ -187,7 +233,7 @@ php artisan route:cache
 php artisan release:check
 ```
 
-应全部 ✓(`.env` 未被跟踪、`.env.example` 无真实 `APP_KEY`、全部 `.php` git blob 纯 LF 无 BOM),并报告**迁移文件数量 = 28**、当前 `game_data_version = V3.1.3`。
+应全部 ✓(`.env` 未被跟踪、`.env.example` 无真实 `APP_KEY`、全部 `.php` git blob 纯 LF 无 BOM),并报告**迁移文件数量 = 35**(M3 开发期每新增一支迁移都要把这个数字同步 +1)、当前 `game_data_version = V3.2.1`。
 
 ### 2. 玩家端冒烟测试
 

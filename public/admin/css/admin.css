@@ -349,3 +349,46 @@ html, body {
     color: #ffb65b;
     font-weight: 600;
 }
+
+/* 对象型设定的键/值编辑器(如 initial_resources):嵌在「当前值」单元格内的小表格 */
+.map-editor {
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 260px;
+}
+
+.map-editor th,
+.map-editor td {
+    padding: 3px 8px 3px 0;
+    text-align: left;
+    color: #c7cedb;
+}
+
+.map-editor th {
+    color: #9aa4b2;
+    font-weight: 600;
+}
+
+.map-editor input[type="number"] {
+    width: 110px;
+    padding: 4px 6px;
+    background: #151a22;
+    border: 1px solid #2a3140;
+    border-radius: 4px;
+    color: #e7ecf3;
+}
+
+.map-add {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-top: 6px;
+}
+
+.map-add select {
+    padding: 4px 6px;
+    background: #151a22;
+    border: 1px solid #2a3140;
+    border-radius: 4px;
+    color: #e7ecf3;
+}
