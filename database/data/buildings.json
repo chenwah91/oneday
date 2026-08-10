@@ -2,8 +2,8 @@
     {
         "building_id": "H01",
         "era": "I",
-        "category": "居住",
-        "series": "住宅",
+        "category": "housing",
+        "series": "residence",
         "name": "兽皮帐篷",
         "max_count": 18,
         "footprint_w": 2,
@@ -28,13 +28,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "木屋"
+        "upgrade_to": "H02"
     },
     {
         "building_id": "F01",
         "era": "I",
-        "category": "粮食生产",
-        "series": "农业",
+        "category": "food_production",
+        "series": "agriculture",
         "name": "采集营地",
         "max_count": 13,
         "footprint_w": 3,
@@ -59,13 +59,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "基础农田"
+        "upgrade_to": "F02"
     },
     {
         "building_id": "S01",
         "era": "I",
-        "category": "仓储",
-        "series": "仓储",
+        "category": "storage",
+        "series": "storage",
         "name": "储藏坑",
         "max_count": 4,
         "footprint_w": 2,
@@ -90,13 +90,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "谷仓"
+        "upgrade_to": "S02"
     },
     {
         "building_id": "A01",
         "era": "I",
-        "category": "行政",
-        "series": "治理",
+        "category": "administration",
+        "series": "governance",
         "name": "部落议事火堆",
         "max_count": 1,
         "footprint_w": 3,
@@ -122,13 +122,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "议事厅"
+        "upgrade_to": "A02"
     },
     {
         "building_id": "D01",
         "era": "I",
-        "category": "国防",
-        "series": "城防",
+        "category": "defense",
+        "series": "city_defense",
         "name": "木栅栏",
         "max_count": 6,
         "footprint_w": 2,
@@ -154,13 +154,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "瞭望塔"
+        "upgrade_to": "D02"
     },
     {
         "building_id": "H02",
         "era": "II",
-        "category": "居住",
-        "series": "住宅",
+        "category": "housing",
+        "series": "residence",
         "name": "木屋",
         "max_count": 30,
         "footprint_w": 2,
@@ -186,13 +186,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "砖石民居"
+        "upgrade_to": "H03"
     },
     {
         "building_id": "F02",
         "era": "II",
-        "category": "粮食生产",
-        "series": "农业",
+        "category": "food_production",
+        "series": "agriculture",
         "name": "基础农田",
         "max_count": 18,
         "footprint_w": 3,
@@ -218,13 +218,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "灌溉农田"
+        "upgrade_to": "F03"
     },
     {
         "building_id": "S02",
         "era": "II",
-        "category": "仓储",
-        "series": "仓储",
+        "category": "storage",
+        "series": "storage",
         "name": "谷仓",
         "max_count": 5,
         "footprint_w": 2,
@@ -250,13 +250,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "公共仓库"
+        "upgrade_to": "S03"
     },
     {
         "building_id": "T02",
         "era": "II",
-        "category": "运输",
-        "series": "陆路运输",
+        "category": "transport",
+        "series": "land_transport",
         "name": "土路",
         "max_count": 50,
         "footprint_w": 1,
@@ -282,13 +282,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "石板路"
+        "upgrade_to": "T03"
     },
     {
         "building_id": "A02",
         "era": "II",
-        "category": "行政",
-        "series": "治理",
+        "category": "administration",
+        "series": "governance",
         "name": "议事厅",
         "max_count": 1,
         "footprint_w": 3,
@@ -314,13 +314,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "行政厅"
+        "upgrade_to": "A03"
     },
     {
         "building_id": "D02",
         "era": "II",
-        "category": "国防",
-        "series": "城防",
+        "category": "defense",
+        "series": "city_defense",
         "name": "瞭望塔",
         "max_count": 8,
         "footprint_w": 2,
@@ -346,13 +346,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "青铜城墙"
+        "upgrade_to": "D03"
     },
     {
         "building_id": "H03",
         "era": "III",
-        "category": "居住",
-        "series": "住宅",
+        "category": "housing",
+        "series": "residence",
         "name": "砖石民居",
         "max_count": 42,
         "footprint_w": 2,
@@ -379,13 +379,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "城市住宅"
+        "upgrade_to": "H04"
     },
     {
         "building_id": "F03",
         "era": "III",
-        "category": "粮食生产",
-        "series": "农业",
+        "category": "food_production",
+        "series": "agriculture",
         "name": "灌溉农田",
         "max_count": 23,
         "footprint_w": 3,
@@ -412,13 +412,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "大型农庄"
+        "upgrade_to": "F04"
     },
     {
         "building_id": "S03",
         "era": "III",
-        "category": "仓储",
-        "series": "仓储",
+        "category": "storage",
+        "series": "storage",
         "name": "公共仓库",
         "max_count": 6,
         "footprint_w": 2,
@@ -445,13 +445,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "大型仓库"
+        "upgrade_to": "S04"
     },
     {
         "building_id": "T03",
         "era": "III",
-        "category": "运输",
-        "series": "陆路运输",
+        "category": "transport",
+        "series": "land_transport",
         "name": "石板路",
         "max_count": 65,
         "footprint_w": 1,
@@ -478,13 +478,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "铺装道路"
+        "upgrade_to": "T04"
     },
     {
         "building_id": "A03",
         "era": "III",
-        "category": "行政",
-        "series": "治理",
+        "category": "administration",
+        "series": "governance",
         "name": "行政厅",
         "max_count": 1,
         "footprint_w": 3,
@@ -511,13 +511,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "城镇官署"
+        "upgrade_to": "A04"
     },
     {
         "building_id": "D03",
         "era": "III",
-        "category": "国防",
-        "series": "城防",
+        "category": "defense",
+        "series": "city_defense",
         "name": "青铜城墙",
         "max_count": 10,
         "footprint_w": 3,
@@ -544,13 +544,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "铁制城门"
+        "upgrade_to": "D04"
     },
     {
         "building_id": "H04",
         "era": "IV",
-        "category": "居住",
-        "series": "住宅",
+        "category": "housing",
+        "series": "residence",
         "name": "城市住宅",
         "max_count": 54,
         "footprint_w": 2,
@@ -578,13 +578,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "公寓民居"
+        "upgrade_to": "H05"
     },
     {
         "building_id": "F04",
         "era": "IV",
-        "category": "粮食生产",
-        "series": "农业",
+        "category": "food_production",
+        "series": "agriculture",
         "name": "大型农庄",
         "max_count": 28,
         "footprint_w": 4,
@@ -612,13 +612,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "帝国农场"
+        "upgrade_to": "F05"
     },
     {
         "building_id": "S04",
         "era": "IV",
-        "category": "仓储",
-        "series": "仓储",
+        "category": "storage",
+        "series": "storage",
         "name": "大型仓库",
         "max_count": 7,
         "footprint_w": 3,
@@ -645,13 +645,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "帝国仓储所"
+        "upgrade_to": "S05"
     },
     {
         "building_id": "T04",
         "era": "IV",
-        "category": "运输",
-        "series": "陆路运输",
+        "category": "transport",
+        "series": "land_transport",
         "name": "铺装道路",
         "max_count": 80,
         "footprint_w": 1,
@@ -679,13 +679,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "帝国大道"
+        "upgrade_to": "T05"
     },
     {
         "building_id": "A04",
         "era": "IV",
-        "category": "行政",
-        "series": "治理",
+        "category": "administration",
+        "series": "governance",
         "name": "城镇官署",
         "max_count": 1,
         "footprint_w": 3,
@@ -713,13 +713,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "总督府"
+        "upgrade_to": "A05"
     },
     {
         "building_id": "D04",
         "era": "IV",
-        "category": "国防",
-        "series": "城防",
+        "category": "defense",
+        "series": "city_defense",
         "name": "铁制城门",
         "max_count": 12,
         "footprint_w": 3,
@@ -747,13 +747,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "军团要塞"
+        "upgrade_to": "D05"
     },
     {
         "building_id": "H05",
         "era": "V",
-        "category": "居住",
-        "series": "住宅",
+        "category": "housing",
+        "series": "residence",
         "name": "公寓民居",
         "max_count": 66,
         "footprint_w": 3,
@@ -781,13 +781,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "市民住宅"
+        "upgrade_to": "H06"
     },
     {
         "building_id": "F05",
         "era": "V",
-        "category": "粮食生产",
-        "series": "农业",
+        "category": "food_production",
+        "series": "agriculture",
         "name": "帝国农场",
         "max_count": 33,
         "footprint_w": 4,
@@ -815,13 +815,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "庄园农场"
+        "upgrade_to": "F06"
     },
     {
         "building_id": "S05",
         "era": "V",
-        "category": "仓储",
-        "series": "仓储",
+        "category": "storage",
+        "series": "storage",
         "name": "帝国仓储所",
         "max_count": 8,
         "footprint_w": 3,
@@ -848,13 +848,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "城镇仓库"
+        "upgrade_to": "S06"
     },
     {
         "building_id": "T05",
         "era": "V",
-        "category": "运输",
-        "series": "陆路运输",
+        "category": "transport",
+        "series": "land_transport",
         "name": "帝国大道",
         "max_count": 95,
         "footprint_w": 1,
@@ -882,13 +882,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "驿道"
+        "upgrade_to": "T06"
     },
     {
         "building_id": "A05",
         "era": "V",
-        "category": "行政",
-        "series": "治理",
+        "category": "administration",
+        "series": "governance",
         "name": "总督府",
         "max_count": 2,
         "footprint_w": 4,
@@ -916,13 +916,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "领主大厅"
+        "upgrade_to": "A06"
     },
     {
         "building_id": "D05",
         "era": "V",
-        "category": "国防",
-        "series": "城防",
+        "category": "defense",
+        "series": "city_defense",
         "name": "军团要塞",
         "max_count": 14,
         "footprint_w": 3,
@@ -950,13 +950,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "城堡"
+        "upgrade_to": "D06"
     },
     {
         "building_id": "H06",
         "era": "VI",
-        "category": "居住",
-        "series": "住宅",
+        "category": "housing",
+        "series": "residence",
         "name": "市民住宅",
         "max_count": 78,
         "footprint_w": 3,
@@ -984,13 +984,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "联排公寓"
+        "upgrade_to": "H07"
     },
     {
         "building_id": "F06",
         "era": "VI",
-        "category": "粮食生产",
-        "series": "农业",
+        "category": "food_production",
+        "series": "agriculture",
         "name": "庄园农场",
         "max_count": 38,
         "footprint_w": 4,
@@ -1018,13 +1018,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "商业农场"
+        "upgrade_to": "F07"
     },
     {
         "building_id": "S06",
         "era": "VI",
-        "category": "仓储",
-        "series": "仓储",
+        "category": "storage",
+        "series": "storage",
         "name": "城镇仓库",
         "max_count": 9,
         "footprint_w": 3,
@@ -1051,13 +1051,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "商贸仓库"
+        "upgrade_to": "S07"
     },
     {
         "building_id": "T06",
         "era": "VI",
-        "category": "运输",
-        "series": "陆路运输",
+        "category": "transport",
+        "series": "land_transport",
         "name": "驿道",
         "max_count": 110,
         "footprint_w": 1,
@@ -1085,13 +1085,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "商贸大道"
+        "upgrade_to": "T07"
     },
     {
         "building_id": "A06",
         "era": "VI",
-        "category": "行政",
-        "series": "治理",
+        "category": "administration",
+        "series": "governance",
         "name": "领主大厅",
         "max_count": 2,
         "footprint_w": 4,
@@ -1119,13 +1119,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "市政厅"
+        "upgrade_to": "A07"
     },
     {
         "building_id": "D06",
         "era": "VI",
-        "category": "国防",
-        "series": "城防",
+        "category": "defense",
+        "series": "city_defense",
         "name": "城堡",
         "max_count": 10,
         "footprint_w": 3,
@@ -1153,13 +1153,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "火炮堡垒"
+        "upgrade_to": "D07"
     },
     {
         "building_id": "H07",
         "era": "VII",
-        "category": "居住",
-        "series": "住宅",
+        "category": "housing",
+        "series": "residence",
         "name": "联排公寓",
         "max_count": 90,
         "footprint_w": 3,
@@ -1187,13 +1187,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "工人公寓"
+        "upgrade_to": "H08"
     },
     {
         "building_id": "F07",
         "era": "VII",
-        "category": "粮食生产",
-        "series": "农业",
+        "category": "food_production",
+        "series": "agriculture",
         "name": "商业农场",
         "max_count": 43,
         "footprint_w": 4,
@@ -1221,13 +1221,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "机械化农场"
+        "upgrade_to": "F08"
     },
     {
         "building_id": "S07",
         "era": "VII",
-        "category": "仓储",
-        "series": "仓储",
+        "category": "storage",
+        "series": "storage",
         "name": "商贸仓库",
         "max_count": 10,
         "footprint_w": 3,
@@ -1254,13 +1254,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "工业仓库"
+        "upgrade_to": "S08"
     },
     {
         "building_id": "T07",
         "era": "VII",
-        "category": "运输",
-        "series": "陆路运输",
+        "category": "transport",
+        "series": "land_transport",
         "name": "商贸大道",
         "max_count": 125,
         "footprint_w": 1,
@@ -1288,13 +1288,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "铁路"
+        "upgrade_to": "T08"
     },
     {
         "building_id": "A07",
         "era": "VII",
-        "category": "行政",
-        "series": "治理",
+        "category": "administration",
+        "series": "governance",
         "name": "市政厅",
         "max_count": 2,
         "footprint_w": 4,
@@ -1322,13 +1322,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "城市管理局"
+        "upgrade_to": "A08"
     },
     {
         "building_id": "D07",
         "era": "VII",
-        "category": "国防",
-        "series": "城防",
+        "category": "defense",
+        "series": "city_defense",
         "name": "火炮堡垒",
         "max_count": 11,
         "footprint_w": 3,
@@ -1357,13 +1357,13 @@
             "fuel_per_min": 2,
             "power_per_min": 0
         },
-        "upgrade_to": "工业军营"
+        "upgrade_to": "D08"
     },
     {
         "building_id": "H08",
         "era": "VIII",
-        "category": "居住",
-        "series": "住宅",
+        "category": "housing",
+        "series": "residence",
         "name": "工人公寓",
         "max_count": 102,
         "footprint_w": 3,
@@ -1392,13 +1392,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "现代住宅楼"
+        "upgrade_to": "H09"
     },
     {
         "building_id": "F08",
         "era": "VIII",
-        "category": "粮食生产",
-        "series": "农业",
+        "category": "food_production",
+        "series": "agriculture",
         "name": "机械化农场",
         "max_count": 48,
         "footprint_w": 4,
@@ -1437,13 +1437,13 @@
             "fuel_per_min": 2,
             "power_per_min": 5
         },
-        "upgrade_to": "智慧农业基地"
+        "upgrade_to": "F09"
     },
     {
         "building_id": "S08",
         "era": "VIII",
-        "category": "仓储",
-        "series": "仓储",
+        "category": "storage",
+        "series": "storage",
         "name": "工业仓库",
         "max_count": 11,
         "footprint_w": 3,
@@ -1471,13 +1471,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "自动物流中心"
+        "upgrade_to": "S09"
     },
     {
         "building_id": "T08",
         "era": "VIII",
-        "category": "运输",
-        "series": "陆路运输",
+        "category": "transport",
+        "series": "land_transport",
         "name": "铁路",
         "max_count": 140,
         "footprint_w": 1,
@@ -1507,13 +1507,13 @@
             "fuel_per_min": 2,
             "power_per_min": 0
         },
-        "upgrade_to": "高速公路"
+        "upgrade_to": "T09"
     },
     {
         "building_id": "A08",
         "era": "VIII",
-        "category": "行政",
-        "series": "治理",
+        "category": "administration",
+        "series": "governance",
         "name": "城市管理局",
         "max_count": 2,
         "footprint_w": 4,
@@ -1542,13 +1542,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "中央行政中心"
+        "upgrade_to": "A09"
     },
     {
         "building_id": "D08",
         "era": "VIII",
-        "category": "国防",
-        "series": "城防",
+        "category": "defense",
+        "series": "city_defense",
         "name": "工业军营",
         "max_count": 12,
         "footprint_w": 3,
@@ -1578,13 +1578,13 @@
             "fuel_per_min": 2,
             "power_per_min": 0
         },
-        "upgrade_to": "现代防卫基地"
+        "upgrade_to": "D09"
     },
     {
         "building_id": "H09",
         "era": "IX",
-        "category": "居住",
-        "series": "住宅",
+        "category": "housing",
+        "series": "residence",
         "name": "现代住宅楼",
         "max_count": 114,
         "footprint_w": 3,
@@ -1615,13 +1615,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "生态超级社区"
+        "upgrade_to": "H10"
     },
     {
         "building_id": "F09",
         "era": "IX",
-        "category": "粮食生产",
-        "series": "农业",
+        "category": "food_production",
+        "series": "agriculture",
         "name": "智慧农业基地",
         "max_count": 53,
         "footprint_w": 4,
@@ -1662,13 +1662,13 @@
             "fuel_per_min": 2,
             "power_per_min": 10
         },
-        "upgrade_to": "垂直农业中心"
+        "upgrade_to": "F10"
     },
     {
         "building_id": "S09",
         "era": "IX",
-        "category": "仓储",
-        "series": "仓储",
+        "category": "storage",
+        "series": "storage",
         "name": "自动物流中心",
         "max_count": 12,
         "footprint_w": 3,
@@ -1697,13 +1697,13 @@
             "fuel_per_min": 0,
             "power_per_min": 3
         },
-        "upgrade_to": "全球物流枢纽"
+        "upgrade_to": "S10"
     },
     {
         "building_id": "T09",
         "era": "IX",
-        "category": "运输",
-        "series": "陆路运输",
+        "category": "transport",
+        "series": "land_transport",
         "name": "高速公路",
         "max_count": 155,
         "footprint_w": 1,
@@ -1734,13 +1734,13 @@
             "fuel_per_min": 2,
             "power_per_min": 0
         },
-        "upgrade_to": "智能运输网络"
+        "upgrade_to": "T10"
     },
     {
         "building_id": "A09",
         "era": "IX",
-        "category": "行政",
-        "series": "治理",
+        "category": "administration",
+        "series": "governance",
         "name": "中央行政中心",
         "max_count": 2,
         "footprint_w": 4,
@@ -1771,13 +1771,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "世界议会中心"
+        "upgrade_to": "A10"
     },
     {
         "building_id": "D09",
         "era": "IX",
-        "category": "国防",
-        "series": "城防",
+        "category": "defense",
+        "series": "city_defense",
         "name": "现代防卫基地",
         "max_count": 13,
         "footprint_w": 3,
@@ -1809,13 +1809,13 @@
             "fuel_per_min": 2,
             "power_per_min": 3
         },
-        "upgrade_to": "联合防卫司令部"
+        "upgrade_to": "D10"
     },
     {
         "building_id": "H10",
         "era": "X",
-        "category": "居住",
-        "series": "住宅",
+        "category": "housing",
+        "series": "residence",
         "name": "生态超级社区",
         "max_count": 126,
         "footprint_w": 3,
@@ -1848,13 +1848,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "终局"
+        "upgrade_to": null
     },
     {
         "building_id": "F10",
         "era": "X",
-        "category": "粮食生产",
-        "series": "农业",
+        "category": "food_production",
+        "series": "agriculture",
         "name": "垂直农业中心",
         "max_count": 58,
         "footprint_w": 4,
@@ -1895,13 +1895,13 @@
             "fuel_per_min": 2,
             "power_per_min": 15
         },
-        "upgrade_to": "终局"
+        "upgrade_to": null
     },
     {
         "building_id": "S10",
         "era": "X",
-        "category": "仓储",
-        "series": "仓储",
+        "category": "storage",
+        "series": "storage",
         "name": "全球物流枢纽",
         "max_count": 13,
         "footprint_w": 3,
@@ -1930,13 +1930,13 @@
             "fuel_per_min": 0,
             "power_per_min": 6
         },
-        "upgrade_to": "终局"
+        "upgrade_to": null
     },
     {
         "building_id": "T10",
         "era": "X",
-        "category": "运输",
-        "series": "陆路运输",
+        "category": "transport",
+        "series": "land_transport",
         "name": "智能运输网络",
         "max_count": 170,
         "footprint_w": 1,
@@ -1968,13 +1968,13 @@
             "fuel_per_min": 2,
             "power_per_min": 2
         },
-        "upgrade_to": "终局"
+        "upgrade_to": null
     },
     {
         "building_id": "A10",
         "era": "X",
-        "category": "行政",
-        "series": "治理",
+        "category": "administration",
+        "series": "governance",
         "name": "世界议会中心",
         "max_count": 2,
         "footprint_w": 4,
@@ -2005,13 +2005,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "终局"
+        "upgrade_to": null
     },
     {
         "building_id": "D10",
         "era": "X",
-        "category": "国防",
-        "series": "城防",
+        "category": "defense",
+        "series": "city_defense",
         "name": "联合防卫司令部",
         "max_count": 14,
         "footprint_w": 3,
@@ -2044,13 +2044,13 @@
             "fuel_per_min": 2,
             "power_per_min": 6
         },
-        "upgrade_to": "终局"
+        "upgrade_to": null
     },
     {
         "building_id": "R01",
         "era": "I",
-        "category": "原料采集",
-        "series": "木材",
+        "category": "raw_material_extraction",
+        "series": "wood",
         "name": "伐木营地",
         "max_count": 5,
         "footprint_w": 2,
@@ -2074,13 +2074,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "伐木场"
+        "upgrade_to": null
     },
     {
         "building_id": "R02",
         "era": "II",
-        "category": "原料采集",
-        "series": "石料",
+        "category": "raw_material_extraction",
+        "series": "stone",
         "name": "采石场",
         "max_count": 6,
         "footprint_w": 3,
@@ -2105,13 +2105,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "大型采石场"
+        "upgrade_to": null
     },
     {
         "building_id": "R03",
         "era": "III",
-        "category": "原料采集",
-        "series": "铜矿",
+        "category": "raw_material_extraction",
+        "series": "copper_mine",
         "name": "铜矿",
         "max_count": 5,
         "footprint_w": 3,
@@ -2136,13 +2136,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "深层铜矿"
+        "upgrade_to": null
     },
     {
         "building_id": "R04",
         "era": "III",
-        "category": "原料采集",
-        "series": "锡矿",
+        "category": "raw_material_extraction",
+        "series": "tin_mine",
         "name": "锡矿",
         "max_count": 3,
         "footprint_w": 3,
@@ -2167,13 +2167,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "深层锡矿"
+        "upgrade_to": null
     },
     {
         "building_id": "R05",
         "era": "IV",
-        "category": "原料采集",
-        "series": "铁矿",
+        "category": "raw_material_extraction",
+        "series": "iron_mine",
         "name": "铁矿",
         "max_count": 6,
         "footprint_w": 4,
@@ -2199,13 +2199,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "深井铁矿"
+        "upgrade_to": null
     },
     {
         "building_id": "R06",
         "era": "IV",
-        "category": "原料采集",
-        "series": "煤矿",
+        "category": "raw_material_extraction",
+        "series": "coal_mine",
         "name": "煤矿",
         "max_count": 5,
         "footprint_w": 4,
@@ -2231,13 +2231,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "机械煤矿"
+        "upgrade_to": null
     },
     {
         "building_id": "R07",
         "era": "IX",
-        "category": "原料采集",
-        "series": "石油",
+        "category": "raw_material_extraction",
+        "series": "oil",
         "name": "油井",
         "max_count": 8,
         "footprint_w": 3,
@@ -2263,13 +2263,13 @@
             "fuel_per_min": 0,
             "power_per_min": 6
         },
-        "upgrade_to": "自动油田"
+        "upgrade_to": null
     },
     {
         "building_id": "R08",
         "era": "X",
-        "category": "原料采集",
-        "series": "稀有金属",
+        "category": "raw_material_extraction",
+        "series": "rare_metals",
         "name": "稀有金属矿场",
         "max_count": 4,
         "footprint_w": 4,
@@ -2301,13 +2301,13 @@
             "fuel_per_min": 0,
             "power_per_min": 20
         },
-        "upgrade_to": "终局"
+        "upgrade_to": null
     },
     {
         "building_id": "P01",
         "era": "II",
-        "category": "加工",
-        "series": "粮食加工",
+        "category": "processing",
+        "series": "grain_processing",
         "name": "磨坊",
         "max_count": 6,
         "footprint_w": 3,
@@ -2337,13 +2337,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "水力磨坊"
+        "upgrade_to": null
     },
     {
         "building_id": "P02",
         "era": "II",
-        "category": "加工",
-        "series": "粮食加工",
+        "category": "processing",
+        "series": "grain_processing",
         "name": "烘焙坊",
         "max_count": 6,
         "footprint_w": 3,
@@ -2373,13 +2373,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "城市烘焙所"
+        "upgrade_to": null
     },
     {
         "building_id": "P03",
         "era": "III",
-        "category": "加工",
-        "series": "金属加工",
+        "category": "processing",
+        "series": "metal_processing",
         "name": "青铜作坊",
         "max_count": 5,
         "footprint_w": 3,
@@ -2415,13 +2415,13 @@
             "fuel_per_min": 1,
             "power_per_min": 0
         },
-        "upgrade_to": "铸造工坊"
+        "upgrade_to": null
     },
     {
         "building_id": "P04",
         "era": "III",
-        "category": "加工",
-        "series": "建材加工",
+        "category": "processing",
+        "series": "building_material_processing",
         "name": "砖窑",
         "max_count": 7,
         "footprint_w": 3,
@@ -2456,13 +2456,13 @@
             "fuel_per_min": 1,
             "power_per_min": 0
         },
-        "upgrade_to": "砖石工坊"
+        "upgrade_to": null
     },
     {
         "building_id": "P05",
         "era": "IV",
-        "category": "加工",
-        "series": "金属加工",
+        "category": "processing",
+        "series": "metal_processing",
         "name": "铁匠铺",
         "max_count": 8,
         "footprint_w": 3,
@@ -2497,13 +2497,13 @@
             "fuel_per_min": 1,
             "power_per_min": 0
         },
-        "upgrade_to": "锻造工坊"
+        "upgrade_to": null
     },
     {
         "building_id": "P06",
         "era": "VII",
-        "category": "加工",
-        "series": "建材加工",
+        "category": "processing",
+        "series": "building_material_processing",
         "name": "玻璃工坊",
         "max_count": 6,
         "footprint_w": 4,
@@ -2539,13 +2539,13 @@
             "fuel_per_min": 2,
             "power_per_min": 0
         },
-        "upgrade_to": "玻璃厂"
+        "upgrade_to": null
     },
     {
         "building_id": "P07",
         "era": "VIII",
-        "category": "加工",
-        "series": "金属加工",
+        "category": "processing",
+        "series": "metal_processing",
         "name": "钢铁厂",
         "max_count": 8,
         "footprint_w": 5,
@@ -2581,13 +2581,13 @@
             "fuel_per_min": 5,
             "power_per_min": 8
         },
-        "upgrade_to": "自动钢铁联合厂"
+        "upgrade_to": null
     },
     {
         "building_id": "P08",
         "era": "VIII",
-        "category": "加工",
-        "series": "机械制造",
+        "category": "processing",
+        "series": "machinery_manufacturing",
         "name": "机械厂",
         "max_count": 6,
         "footprint_w": 5,
@@ -2622,13 +2622,13 @@
             "fuel_per_min": 0,
             "power_per_min": 15
         },
-        "upgrade_to": "自动化机械厂"
+        "upgrade_to": null
     },
     {
         "building_id": "P09",
         "era": "IX",
-        "category": "加工",
-        "series": "食品加工",
+        "category": "processing",
+        "series": "food_processing",
         "name": "食品加工厂",
         "max_count": 8,
         "footprint_w": 5,
@@ -2664,13 +2664,13 @@
             "fuel_per_min": 0,
             "power_per_min": 18
         },
-        "upgrade_to": "智能食品工厂"
+        "upgrade_to": null
     },
     {
         "building_id": "P10",
         "era": "IX",
-        "category": "加工",
-        "series": "石化加工",
+        "category": "processing",
+        "series": "petrochemical_processing",
         "name": "炼油厂",
         "max_count": 6,
         "footprint_w": 5,
@@ -2709,13 +2709,13 @@
             "fuel_per_min": 0,
             "power_per_min": 15
         },
-        "upgrade_to": "综合石化厂"
+        "upgrade_to": null
     },
     {
         "building_id": "P11",
         "era": "X",
-        "category": "加工",
-        "series": "高科技",
+        "category": "processing",
+        "series": "high_tech",
         "name": "先进材料工厂",
         "max_count": 5,
         "footprint_w": 6,
@@ -2752,13 +2752,13 @@
             "fuel_per_min": 0,
             "power_per_min": 45
         },
-        "upgrade_to": "终局"
+        "upgrade_to": null
     },
     {
         "building_id": "E01",
         "era": "I",
-        "category": "能源",
-        "series": "基础能源",
+        "category": "energy",
+        "series": "basic_energy",
         "name": "柴火堆",
         "max_count": 5,
         "footprint_w": 2,
@@ -2782,13 +2782,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "木炭窑"
+        "upgrade_to": "E02"
     },
     {
         "building_id": "E02",
         "era": "III",
-        "category": "能源",
-        "series": "基础能源",
+        "category": "energy",
+        "series": "basic_energy",
         "name": "木炭窑",
         "max_count": 5,
         "footprint_w": 3,
@@ -2818,13 +2818,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "煤炭作坊"
+        "upgrade_to": null
     },
     {
         "building_id": "E03",
         "era": "VIII",
-        "category": "能源",
-        "series": "电力",
+        "category": "energy",
+        "series": "electricity",
         "name": "燃煤发电厂",
         "max_count": 5,
         "footprint_w": 5,
@@ -2855,13 +2855,13 @@
             "fuel_per_min": 5,
             "power_per_min": 0
         },
-        "upgrade_to": "燃油/燃气电站"
+        "upgrade_to": null
     },
     {
         "building_id": "E04",
         "era": "IX",
-        "category": "能源",
-        "series": "电力",
+        "category": "energy",
+        "series": "electricity",
         "name": "燃气联合电站",
         "max_count": 5,
         "footprint_w": 5,
@@ -2893,13 +2893,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "清洁能源中心"
+        "upgrade_to": null
     },
     {
         "building_id": "E05",
         "era": "X",
-        "category": "能源",
-        "series": "电力",
+        "category": "energy",
+        "series": "electricity",
         "name": "先进能源中心",
         "max_count": 3,
         "footprint_w": 6,
@@ -2931,13 +2931,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "终局"
+        "upgrade_to": null
     },
     {
         "building_id": "C01",
         "era": "II",
-        "category": "商贸",
-        "series": "市场",
+        "category": "commerce",
+        "series": "market",
         "name": "村落市场",
         "max_count": 4,
         "footprint_w": 3,
@@ -2963,13 +2963,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "城市市场"
+        "upgrade_to": null
     },
     {
         "building_id": "C02",
         "era": "V",
-        "category": "商贸",
-        "series": "市场",
+        "category": "commerce",
+        "series": "market",
         "name": "帝国市场",
         "max_count": 5,
         "footprint_w": 4,
@@ -2996,13 +2996,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "商贸中心"
+        "upgrade_to": null
     },
     {
         "building_id": "C03",
         "era": "VII",
-        "category": "商贸",
-        "series": "金融",
+        "category": "commerce",
+        "series": "finance",
         "name": "银行",
         "max_count": 4,
         "footprint_w": 4,
@@ -3028,13 +3028,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "中央银行"
+        "upgrade_to": null
     },
     {
         "building_id": "C04",
         "era": "IX",
-        "category": "商贸",
-        "series": "全球贸易",
+        "category": "commerce",
+        "series": "global_trade",
         "name": "国际贸易中心",
         "max_count": 3,
         "footprint_w": 6,
@@ -3067,13 +3067,13 @@
             "fuel_per_min": 0,
             "power_per_min": 20
         },
-        "upgrade_to": "世界贸易中心"
+        "upgrade_to": null
     },
     {
         "building_id": "K01",
         "era": "III",
-        "category": "科研教育",
-        "series": "教育",
+        "category": "research_education",
+        "series": "education",
         "name": "学堂",
         "max_count": 3,
         "footprint_w": 3,
@@ -3099,13 +3099,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "学院"
+        "upgrade_to": "K02"
     },
     {
         "building_id": "K02",
         "era": "V",
-        "category": "科研教育",
-        "series": "教育",
+        "category": "research_education",
+        "series": "education",
         "name": "学院",
         "max_count": 4,
         "footprint_w": 4,
@@ -3131,13 +3131,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "大学"
+        "upgrade_to": "K03"
     },
     {
         "building_id": "K03",
         "era": "VI",
-        "category": "科研教育",
-        "series": "教育",
+        "category": "research_education",
+        "series": "education",
         "name": "大学",
         "max_count": 5,
         "footprint_w": 4,
@@ -3164,13 +3164,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "研究院"
+        "upgrade_to": null
     },
     {
         "building_id": "K04",
         "era": "IX",
-        "category": "科研教育",
-        "series": "科研",
+        "category": "research_education",
+        "series": "research",
         "name": "科研中心",
         "max_count": 5,
         "footprint_w": 5,
@@ -3203,13 +3203,13 @@
             "fuel_per_min": 0,
             "power_per_min": 25
         },
-        "upgrade_to": "超级科研中心"
+        "upgrade_to": "K05"
     },
     {
         "building_id": "K05",
         "era": "X",
-        "category": "科研教育",
-        "series": "科研",
+        "category": "research_education",
+        "series": "research",
         "name": "超级科研中心",
         "max_count": 3,
         "footprint_w": 6,
@@ -3246,13 +3246,13 @@
             "fuel_per_min": 0,
             "power_per_min": 70
         },
-        "upgrade_to": "终局"
+        "upgrade_to": null
     },
     {
         "building_id": "M01",
         "era": "V",
-        "category": "公共服务",
-        "series": "医疗",
+        "category": "public_service",
+        "series": "medical",
         "name": "医馆",
         "max_count": 5,
         "footprint_w": 3,
@@ -3278,13 +3278,13 @@
             "fuel_per_min": 0,
             "power_per_min": 0
         },
-        "upgrade_to": "医院"
+        "upgrade_to": "M02"
     },
     {
         "building_id": "M02",
         "era": "IX",
-        "category": "公共服务",
-        "series": "医疗",
+        "category": "public_service",
+        "series": "medical",
         "name": "医院",
         "max_count": 8,
         "footprint_w": 5,
@@ -3321,6 +3321,6 @@
             "fuel_per_min": 0,
             "power_per_min": 18
         },
-        "upgrade_to": "综合医疗中心"
+        "upgrade_to": null
     }
 ]

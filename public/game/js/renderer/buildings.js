@@ -2,14 +2,15 @@
 import { gridToScreen } from './iso.js';
 import { state } from '../core/state.js';
 
-// 按分类上色;未在表中的分类统一用灰色兜底
+// 按分类上色(键是 building_definition.category 的英文 code,见 core/enum-names.js);
+// 未在表中的分类统一用灰色兜底
 const CATEGORY_COLOR = {
-    '居住': 0x5b8def,
-    '粮食生产': 0x8bd17c,
-    '仓储': 0xffb84d,
-    '原料采集': 0x8a5a3b,
-    '行政': 0x9b6bd6,
-    '国防': 0xff6b6b,
+    housing: 0x5b8def,
+    food_production: 0x8bd17c,
+    storage: 0xffb84d,
+    raw_material_extraction: 0x8a5a3b,
+    administration: 0x9b6bd6,
+    defense: 0xff6b6b,
 };
 const DEFAULT_COLOR = 0x9aa4b2;
 const BLOCK_HEIGHT = 14; // 伪 3D 建筑体的侧面高度(像素)

@@ -2,7 +2,7 @@
     {
         "building_id": "H01",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 12,
             "money": 8
@@ -31,7 +31,7 @@
     {
         "building_id": "H01",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 8,
             "money": 5
@@ -60,7 +60,7 @@
     {
         "building_id": "H01",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 12,
             "money": 8
@@ -89,7 +89,7 @@
     {
         "building_id": "F01",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 10,
             "money": 6
@@ -118,7 +118,7 @@
     {
         "building_id": "F01",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 6,
             "money": 4
@@ -147,7 +147,7 @@
     {
         "building_id": "F01",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 10,
             "money": 6
@@ -176,7 +176,7 @@
     {
         "building_id": "S01",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 15,
             "money": 10
@@ -205,7 +205,7 @@
     {
         "building_id": "S01",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 9,
             "money": 6
@@ -234,7 +234,7 @@
     {
         "building_id": "S01",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 15,
             "money": 10
@@ -263,7 +263,7 @@
     {
         "building_id": "A01",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 20,
             "stone": 12,
@@ -293,7 +293,7 @@
     {
         "building_id": "A01",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 12,
             "stone": 8,
@@ -323,7 +323,7 @@
     {
         "building_id": "A01",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 20,
             "stone": 12,
@@ -353,7 +353,7 @@
     {
         "building_id": "D01",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 18,
             "stone": 15,
@@ -383,7 +383,7 @@
     {
         "building_id": "D01",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 11,
             "stone": 9,
@@ -413,7 +413,7 @@
     {
         "building_id": "D01",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 18,
             "stone": 15,
@@ -443,7 +443,7 @@
     {
         "building_id": "H02",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 24,
             "stone": 10,
@@ -473,7 +473,7 @@
     {
         "building_id": "H02",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 15,
             "stone": 6,
@@ -503,7 +503,7 @@
     {
         "building_id": "H02",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 24,
             "stone": 10,
@@ -533,7 +533,7 @@
     {
         "building_id": "F02",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 20,
             "stone": 5,
@@ -563,7 +563,7 @@
     {
         "building_id": "F02",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 12,
             "stone": 3,
@@ -593,7 +593,7 @@
     {
         "building_id": "F02",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 20,
             "stone": 5,
@@ -623,7 +623,7 @@
     {
         "building_id": "S02",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 30,
             "stone": 7,
@@ -653,7 +653,7 @@
     {
         "building_id": "S02",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 18,
             "stone": 5,
@@ -683,7 +683,7 @@
     {
         "building_id": "S02",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 30,
             "stone": 7,
@@ -713,7 +713,7 @@
     {
         "building_id": "T02",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 10,
             "stone": 16,
@@ -743,7 +743,7 @@
     {
         "building_id": "T02",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 6,
             "stone": 10,
@@ -773,7 +773,7 @@
     {
         "building_id": "T02",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 10,
             "stone": 16,
@@ -803,7 +803,7 @@
     {
         "building_id": "A02",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 40,
             "stone": 24,
@@ -833,7 +833,7 @@
     {
         "building_id": "A02",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 24,
             "stone": 15,
@@ -863,7 +863,7 @@
     {
         "building_id": "A02",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 40,
             "stone": 24,
@@ -893,7 +893,7 @@
     {
         "building_id": "D02",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 36,
             "stone": 30,
@@ -923,7 +923,7 @@
     {
         "building_id": "D02",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 22,
             "stone": 18,
@@ -953,7 +953,7 @@
     {
         "building_id": "D02",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 36,
             "stone": 30,
@@ -983,7 +983,7 @@
     {
         "building_id": "H03",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 36,
             "stone": 20,
@@ -1014,7 +1014,7 @@
     {
         "building_id": "H03",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 22,
             "stone": 12,
@@ -1045,7 +1045,7 @@
     {
         "building_id": "H03",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 36,
             "stone": 20,
@@ -1076,7 +1076,7 @@
     {
         "building_id": "F03",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 30,
             "stone": 10,
@@ -1107,7 +1107,7 @@
     {
         "building_id": "F03",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 18,
             "stone": 6,
@@ -1138,7 +1138,7 @@
     {
         "building_id": "F03",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 30,
             "stone": 10,
@@ -1169,7 +1169,7 @@
     {
         "building_id": "S03",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 45,
             "stone": 14,
@@ -1200,7 +1200,7 @@
     {
         "building_id": "S03",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 27,
             "stone": 9,
@@ -1231,7 +1231,7 @@
     {
         "building_id": "S03",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 45,
             "stone": 14,
@@ -1262,7 +1262,7 @@
     {
         "building_id": "T03",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 15,
             "stone": 24,
@@ -1293,7 +1293,7 @@
     {
         "building_id": "T03",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 9,
             "stone": 15,
@@ -1324,7 +1324,7 @@
     {
         "building_id": "T03",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 15,
             "stone": 24,
@@ -1355,7 +1355,7 @@
     {
         "building_id": "A03",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 60,
             "stone": 36,
@@ -1386,7 +1386,7 @@
     {
         "building_id": "A03",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 36,
             "stone": 22,
@@ -1417,7 +1417,7 @@
     {
         "building_id": "A03",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 60,
             "stone": 36,
@@ -1448,7 +1448,7 @@
     {
         "building_id": "D03",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 54,
             "stone": 45,
@@ -1479,7 +1479,7 @@
     {
         "building_id": "D03",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 33,
             "stone": 27,
@@ -1510,7 +1510,7 @@
     {
         "building_id": "D03",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 54,
             "stone": 45,
@@ -1541,7 +1541,7 @@
     {
         "building_id": "H04",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 48,
             "stone": 30,
@@ -1573,7 +1573,7 @@
     {
         "building_id": "H04",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 29,
             "stone": 18,
@@ -1605,7 +1605,7 @@
     {
         "building_id": "H04",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 48,
             "stone": 30,
@@ -1637,7 +1637,7 @@
     {
         "building_id": "F04",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 40,
             "stone": 15,
@@ -1669,7 +1669,7 @@
     {
         "building_id": "F04",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 24,
             "stone": 9,
@@ -1701,7 +1701,7 @@
     {
         "building_id": "F04",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 40,
             "stone": 15,
@@ -1733,7 +1733,7 @@
     {
         "building_id": "S04",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 60,
             "stone": 21,
@@ -1764,7 +1764,7 @@
     {
         "building_id": "S04",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 36,
             "stone": 13,
@@ -1795,7 +1795,7 @@
     {
         "building_id": "S04",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 60,
             "stone": 21,
@@ -1826,7 +1826,7 @@
     {
         "building_id": "T04",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 20,
             "stone": 32,
@@ -1858,7 +1858,7 @@
     {
         "building_id": "T04",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 12,
             "stone": 20,
@@ -1890,7 +1890,7 @@
     {
         "building_id": "T04",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 20,
             "stone": 32,
@@ -1922,7 +1922,7 @@
     {
         "building_id": "A04",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 80,
             "stone": 48,
@@ -1954,7 +1954,7 @@
     {
         "building_id": "A04",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 48,
             "stone": 29,
@@ -1986,7 +1986,7 @@
     {
         "building_id": "A04",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 80,
             "stone": 48,
@@ -2018,7 +2018,7 @@
     {
         "building_id": "D04",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 72,
             "stone": 60,
@@ -2050,7 +2050,7 @@
     {
         "building_id": "D04",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 44,
             "stone": 36,
@@ -2082,7 +2082,7 @@
     {
         "building_id": "D04",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 72,
             "stone": 60,
@@ -2114,7 +2114,7 @@
     {
         "building_id": "H05",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 60,
             "stone": 40,
@@ -2146,7 +2146,7 @@
     {
         "building_id": "H05",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 36,
             "stone": 24,
@@ -2178,7 +2178,7 @@
     {
         "building_id": "H05",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 60,
             "stone": 40,
@@ -2210,7 +2210,7 @@
     {
         "building_id": "F05",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 50,
             "stone": 20,
@@ -2242,7 +2242,7 @@
     {
         "building_id": "F05",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 30,
             "stone": 12,
@@ -2274,7 +2274,7 @@
     {
         "building_id": "F05",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 50,
             "stone": 20,
@@ -2306,7 +2306,7 @@
     {
         "building_id": "S05",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 75,
             "stone": 28,
@@ -2337,7 +2337,7 @@
     {
         "building_id": "S05",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 45,
             "stone": 17,
@@ -2368,7 +2368,7 @@
     {
         "building_id": "S05",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 75,
             "stone": 28,
@@ -2399,7 +2399,7 @@
     {
         "building_id": "T05",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 25,
             "stone": 40,
@@ -2431,7 +2431,7 @@
     {
         "building_id": "T05",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 15,
             "stone": 24,
@@ -2463,7 +2463,7 @@
     {
         "building_id": "T05",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 25,
             "stone": 40,
@@ -2495,7 +2495,7 @@
     {
         "building_id": "A05",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 100,
             "stone": 60,
@@ -2527,7 +2527,7 @@
     {
         "building_id": "A05",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 60,
             "stone": 36,
@@ -2559,7 +2559,7 @@
     {
         "building_id": "A05",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 100,
             "stone": 60,
@@ -2591,7 +2591,7 @@
     {
         "building_id": "D05",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 90,
             "stone": 75,
@@ -2623,7 +2623,7 @@
     {
         "building_id": "D05",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 54,
             "stone": 45,
@@ -2655,7 +2655,7 @@
     {
         "building_id": "D05",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 90,
             "stone": 75,
@@ -2687,7 +2687,7 @@
     {
         "building_id": "H06",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 72,
             "stone": 50,
@@ -2719,7 +2719,7 @@
     {
         "building_id": "H06",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 44,
             "stone": 30,
@@ -2751,7 +2751,7 @@
     {
         "building_id": "H06",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 72,
             "stone": 50,
@@ -2783,7 +2783,7 @@
     {
         "building_id": "F06",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 60,
             "stone": 25,
@@ -2815,7 +2815,7 @@
     {
         "building_id": "F06",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 36,
             "stone": 15,
@@ -2847,7 +2847,7 @@
     {
         "building_id": "F06",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 60,
             "stone": 25,
@@ -2879,7 +2879,7 @@
     {
         "building_id": "S06",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 90,
             "stone": 35,
@@ -2910,7 +2910,7 @@
     {
         "building_id": "S06",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 54,
             "stone": 21,
@@ -2941,7 +2941,7 @@
     {
         "building_id": "S06",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 90,
             "stone": 35,
@@ -2972,7 +2972,7 @@
     {
         "building_id": "T06",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 30,
             "stone": 48,
@@ -3004,7 +3004,7 @@
     {
         "building_id": "T06",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 18,
             "stone": 29,
@@ -3036,7 +3036,7 @@
     {
         "building_id": "T06",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 30,
             "stone": 48,
@@ -3068,7 +3068,7 @@
     {
         "building_id": "A06",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 120,
             "stone": 72,
@@ -3100,7 +3100,7 @@
     {
         "building_id": "A06",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 72,
             "stone": 44,
@@ -3132,7 +3132,7 @@
     {
         "building_id": "A06",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 120,
             "stone": 72,
@@ -3164,7 +3164,7 @@
     {
         "building_id": "D06",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 108,
             "stone": 90,
@@ -3196,7 +3196,7 @@
     {
         "building_id": "D06",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 65,
             "stone": 54,
@@ -3228,7 +3228,7 @@
     {
         "building_id": "D06",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 108,
             "stone": 90,
@@ -3260,7 +3260,7 @@
     {
         "building_id": "H07",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 84,
             "stone": 60,
@@ -3292,7 +3292,7 @@
     {
         "building_id": "H07",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 51,
             "stone": 36,
@@ -3324,7 +3324,7 @@
     {
         "building_id": "H07",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 84,
             "stone": 60,
@@ -3356,7 +3356,7 @@
     {
         "building_id": "F07",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 70,
             "stone": 30,
@@ -3388,7 +3388,7 @@
     {
         "building_id": "F07",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 42,
             "stone": 18,
@@ -3420,7 +3420,7 @@
     {
         "building_id": "F07",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 70,
             "stone": 30,
@@ -3452,7 +3452,7 @@
     {
         "building_id": "S07",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 105,
             "stone": 42,
@@ -3483,7 +3483,7 @@
     {
         "building_id": "S07",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 63,
             "stone": 26,
@@ -3514,7 +3514,7 @@
     {
         "building_id": "S07",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 105,
             "stone": 42,
@@ -3545,7 +3545,7 @@
     {
         "building_id": "T07",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 35,
             "stone": 56,
@@ -3577,7 +3577,7 @@
     {
         "building_id": "T07",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 21,
             "stone": 34,
@@ -3609,7 +3609,7 @@
     {
         "building_id": "T07",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 35,
             "stone": 56,
@@ -3641,7 +3641,7 @@
     {
         "building_id": "A07",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 140,
             "stone": 84,
@@ -3673,7 +3673,7 @@
     {
         "building_id": "A07",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 84,
             "stone": 51,
@@ -3705,7 +3705,7 @@
     {
         "building_id": "A07",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 140,
             "stone": 84,
@@ -3737,7 +3737,7 @@
     {
         "building_id": "D07",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 126,
             "stone": 105,
@@ -3770,7 +3770,7 @@
     {
         "building_id": "D07",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 76,
             "stone": 63,
@@ -3803,7 +3803,7 @@
     {
         "building_id": "D07",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 126,
             "stone": 105,
@@ -3836,7 +3836,7 @@
     {
         "building_id": "H08",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 96,
             "stone": 70,
@@ -3869,7 +3869,7 @@
     {
         "building_id": "H08",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 58,
             "stone": 42,
@@ -3902,7 +3902,7 @@
     {
         "building_id": "H08",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 96,
             "stone": 70,
@@ -3935,7 +3935,7 @@
     {
         "building_id": "F08",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 80,
             "stone": 35,
@@ -3978,7 +3978,7 @@
     {
         "building_id": "F08",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 48,
             "stone": 21,
@@ -4021,7 +4021,7 @@
     {
         "building_id": "F08",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 80,
             "stone": 35,
@@ -4064,7 +4064,7 @@
     {
         "building_id": "S08",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 120,
             "stone": 49,
@@ -4096,7 +4096,7 @@
     {
         "building_id": "S08",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 72,
             "stone": 30,
@@ -4128,7 +4128,7 @@
     {
         "building_id": "S08",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 120,
             "stone": 49,
@@ -4160,7 +4160,7 @@
     {
         "building_id": "T08",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 40,
             "stone": 64,
@@ -4194,7 +4194,7 @@
     {
         "building_id": "T08",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 24,
             "stone": 39,
@@ -4228,7 +4228,7 @@
     {
         "building_id": "T08",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 40,
             "stone": 64,
@@ -4262,7 +4262,7 @@
     {
         "building_id": "A08",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 160,
             "stone": 96,
@@ -4295,7 +4295,7 @@
     {
         "building_id": "A08",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 96,
             "stone": 58,
@@ -4328,7 +4328,7 @@
     {
         "building_id": "A08",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 160,
             "stone": 96,
@@ -4361,7 +4361,7 @@
     {
         "building_id": "D08",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 144,
             "stone": 120,
@@ -4395,7 +4395,7 @@
     {
         "building_id": "D08",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 87,
             "stone": 72,
@@ -4429,7 +4429,7 @@
     {
         "building_id": "D08",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 144,
             "stone": 120,
@@ -4463,7 +4463,7 @@
     {
         "building_id": "H09",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 108,
             "stone": 80,
@@ -4498,7 +4498,7 @@
     {
         "building_id": "H09",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 65,
             "stone": 48,
@@ -4533,7 +4533,7 @@
     {
         "building_id": "H09",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 108,
             "stone": 80,
@@ -4568,7 +4568,7 @@
     {
         "building_id": "F09",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 90,
             "stone": 40,
@@ -4613,7 +4613,7 @@
     {
         "building_id": "F09",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 54,
             "stone": 24,
@@ -4658,7 +4658,7 @@
     {
         "building_id": "F09",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 90,
             "stone": 40,
@@ -4703,7 +4703,7 @@
     {
         "building_id": "S09",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 135,
             "stone": 56,
@@ -4736,7 +4736,7 @@
     {
         "building_id": "S09",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 81,
             "stone": 34,
@@ -4769,7 +4769,7 @@
     {
         "building_id": "S09",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 135,
             "stone": 56,
@@ -4802,7 +4802,7 @@
     {
         "building_id": "T09",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 45,
             "stone": 72,
@@ -4837,7 +4837,7 @@
     {
         "building_id": "T09",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 27,
             "stone": 44,
@@ -4872,7 +4872,7 @@
     {
         "building_id": "T09",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 45,
             "stone": 72,
@@ -4907,7 +4907,7 @@
     {
         "building_id": "A09",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 180,
             "stone": 108,
@@ -4942,7 +4942,7 @@
     {
         "building_id": "A09",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 108,
             "stone": 65,
@@ -4977,7 +4977,7 @@
     {
         "building_id": "A09",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 180,
             "stone": 108,
@@ -5012,7 +5012,7 @@
     {
         "building_id": "D09",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 162,
             "stone": 135,
@@ -5048,7 +5048,7 @@
     {
         "building_id": "D09",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 98,
             "stone": 81,
@@ -5084,7 +5084,7 @@
     {
         "building_id": "D09",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 162,
             "stone": 135,
@@ -5120,7 +5120,7 @@
     {
         "building_id": "H10",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 120,
             "stone": 90,
@@ -5157,7 +5157,7 @@
     {
         "building_id": "H10",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 72,
             "stone": 54,
@@ -5194,7 +5194,7 @@
     {
         "building_id": "H10",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 120,
             "stone": 90,
@@ -5231,7 +5231,7 @@
     {
         "building_id": "F10",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 100,
             "stone": 45,
@@ -5276,7 +5276,7 @@
     {
         "building_id": "F10",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 60,
             "stone": 27,
@@ -5321,7 +5321,7 @@
     {
         "building_id": "F10",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 100,
             "stone": 45,
@@ -5366,7 +5366,7 @@
     {
         "building_id": "S10",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 150,
             "stone": 63,
@@ -5399,7 +5399,7 @@
     {
         "building_id": "S10",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 90,
             "stone": 38,
@@ -5432,7 +5432,7 @@
     {
         "building_id": "S10",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 150,
             "stone": 63,
@@ -5465,7 +5465,7 @@
     {
         "building_id": "T10",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 50,
             "stone": 80,
@@ -5501,7 +5501,7 @@
     {
         "building_id": "T10",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 30,
             "stone": 48,
@@ -5537,7 +5537,7 @@
     {
         "building_id": "T10",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 50,
             "stone": 80,
@@ -5573,7 +5573,7 @@
     {
         "building_id": "A10",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 200,
             "stone": 120,
@@ -5608,7 +5608,7 @@
     {
         "building_id": "A10",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 120,
             "stone": 72,
@@ -5643,7 +5643,7 @@
     {
         "building_id": "A10",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 200,
             "stone": 120,
@@ -5678,7 +5678,7 @@
     {
         "building_id": "D10",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 180,
             "stone": 150,
@@ -5715,7 +5715,7 @@
     {
         "building_id": "D10",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 108,
             "stone": 90,
@@ -5752,7 +5752,7 @@
     {
         "building_id": "D10",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 180,
             "stone": 150,
@@ -5789,7 +5789,7 @@
     {
         "building_id": "R01",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 15
         },
@@ -5817,7 +5817,7 @@
     {
         "building_id": "R01",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 9
         },
@@ -5845,7 +5845,7 @@
     {
         "building_id": "R01",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 15
         },
@@ -5873,7 +5873,7 @@
     {
         "building_id": "R02",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 35,
             "stone": 10
@@ -5902,7 +5902,7 @@
     {
         "building_id": "R02",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 21,
             "stone": 6
@@ -5931,7 +5931,7 @@
     {
         "building_id": "R02",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 35,
             "stone": 10
@@ -5960,7 +5960,7 @@
     {
         "building_id": "R03",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 45,
             "stone": 30
@@ -5989,7 +5989,7 @@
     {
         "building_id": "R03",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 27,
             "stone": 18
@@ -6018,7 +6018,7 @@
     {
         "building_id": "R03",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 45,
             "stone": 30
@@ -6047,7 +6047,7 @@
     {
         "building_id": "R04",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 50,
             "stone": 35
@@ -6076,7 +6076,7 @@
     {
         "building_id": "R04",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 30,
             "stone": 21
@@ -6105,7 +6105,7 @@
     {
         "building_id": "R04",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 50,
             "stone": 35
@@ -6134,7 +6134,7 @@
     {
         "building_id": "R05",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 60,
             "stone": 50,
@@ -6164,7 +6164,7 @@
     {
         "building_id": "R05",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 36,
             "stone": 30,
@@ -6194,7 +6194,7 @@
     {
         "building_id": "R05",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 60,
             "stone": 50,
@@ -6224,7 +6224,7 @@
     {
         "building_id": "R06",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 60,
             "stone": 45,
@@ -6254,7 +6254,7 @@
     {
         "building_id": "R06",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 36,
             "stone": 27,
@@ -6284,7 +6284,7 @@
     {
         "building_id": "R06",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 60,
             "stone": 45,
@@ -6314,7 +6314,7 @@
     {
         "building_id": "R07",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "steel": 45,
             "cement": 35,
@@ -6344,7 +6344,7 @@
     {
         "building_id": "R07",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "steel": 27,
             "cement": 21,
@@ -6374,7 +6374,7 @@
     {
         "building_id": "R07",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "steel": 45,
             "cement": 35,
@@ -6404,7 +6404,7 @@
     {
         "building_id": "R08",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "steel": 120,
             "cement": 80,
@@ -6440,7 +6440,7 @@
     {
         "building_id": "R08",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "steel": 72,
             "cement": 48,
@@ -6476,7 +6476,7 @@
     {
         "building_id": "R08",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "steel": 120,
             "cement": 80,
@@ -6512,7 +6512,7 @@
     {
         "building_id": "P01",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 35,
             "stone": 15
@@ -6546,7 +6546,7 @@
     {
         "building_id": "P01",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 21,
             "stone": 9
@@ -6580,7 +6580,7 @@
     {
         "building_id": "P01",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 35,
             "stone": 15
@@ -6614,7 +6614,7 @@
     {
         "building_id": "P02",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 30,
             "stone": 20
@@ -6648,7 +6648,7 @@
     {
         "building_id": "P02",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 18,
             "stone": 12
@@ -6682,7 +6682,7 @@
     {
         "building_id": "P02",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 30,
             "stone": 20
@@ -6716,7 +6716,7 @@
     {
         "building_id": "P03",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 40,
             "stone": 30,
@@ -6756,7 +6756,7 @@
     {
         "building_id": "P03",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 24,
             "stone": 18,
@@ -6796,7 +6796,7 @@
     {
         "building_id": "P03",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 40,
             "stone": 30,
@@ -6836,7 +6836,7 @@
     {
         "building_id": "P04",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 40,
             "stone": 20,
@@ -6875,7 +6875,7 @@
     {
         "building_id": "P04",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 24,
             "stone": 12,
@@ -6914,7 +6914,7 @@
     {
         "building_id": "P04",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 40,
             "stone": 20,
@@ -6953,7 +6953,7 @@
     {
         "building_id": "P05",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 45,
             "stone": 40,
@@ -6992,7 +6992,7 @@
     {
         "building_id": "P05",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 27,
             "stone": 24,
@@ -7031,7 +7031,7 @@
     {
         "building_id": "P05",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 45,
             "stone": 40,
@@ -7070,7 +7070,7 @@
     {
         "building_id": "P06",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "stone": 70,
             "brick": 50,
@@ -7110,7 +7110,7 @@
     {
         "building_id": "P06",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "stone": 42,
             "brick": 30,
@@ -7150,7 +7150,7 @@
     {
         "building_id": "P06",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "stone": 70,
             "brick": 50,
@@ -7190,7 +7190,7 @@
     {
         "building_id": "P07",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "brick": 80,
             "iron": 60,
@@ -7230,7 +7230,7 @@
     {
         "building_id": "P07",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "brick": 48,
             "iron": 36,
@@ -7270,7 +7270,7 @@
     {
         "building_id": "P07",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "brick": 80,
             "iron": 60,
@@ -7310,7 +7310,7 @@
     {
         "building_id": "P08",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "steel": 60,
             "glass": 20,
@@ -7349,7 +7349,7 @@
     {
         "building_id": "P08",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "steel": 36,
             "glass": 12,
@@ -7388,7 +7388,7 @@
     {
         "building_id": "P08",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "steel": 60,
             "glass": 20,
@@ -7427,7 +7427,7 @@
     {
         "building_id": "P09",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "steel": 40,
             "glass": 30,
@@ -7467,7 +7467,7 @@
     {
         "building_id": "P09",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "steel": 24,
             "glass": 18,
@@ -7507,7 +7507,7 @@
     {
         "building_id": "P09",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "steel": 40,
             "glass": 30,
@@ -7547,7 +7547,7 @@
     {
         "building_id": "P10",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "steel": 80,
             "cement": 60,
@@ -7590,7 +7590,7 @@
     {
         "building_id": "P10",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "steel": 48,
             "cement": 36,
@@ -7633,7 +7633,7 @@
     {
         "building_id": "P10",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "steel": 80,
             "cement": 60,
@@ -7676,7 +7676,7 @@
     {
         "building_id": "P11",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "steel": 150,
             "glass": 80,
@@ -7717,7 +7717,7 @@
     {
         "building_id": "P11",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "steel": 90,
             "glass": 48,
@@ -7758,7 +7758,7 @@
     {
         "building_id": "P11",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "steel": 150,
             "glass": 80,
@@ -7799,7 +7799,7 @@
     {
         "building_id": "E01",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 20
         },
@@ -7827,7 +7827,7 @@
     {
         "building_id": "E01",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 12
         },
@@ -7855,7 +7855,7 @@
     {
         "building_id": "E01",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 20
         },
@@ -7883,7 +7883,7 @@
     {
         "building_id": "E02",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 40,
             "stone": 20
@@ -7917,7 +7917,7 @@
     {
         "building_id": "E02",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 24,
             "stone": 12
@@ -7951,7 +7951,7 @@
     {
         "building_id": "E02",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 40,
             "stone": 20
@@ -7985,7 +7985,7 @@
     {
         "building_id": "E03",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "brick": 80,
             "steel": 70,
@@ -8020,7 +8020,7 @@
     {
         "building_id": "E03",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "brick": 48,
             "steel": 42,
@@ -8055,7 +8055,7 @@
     {
         "building_id": "E03",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "brick": 80,
             "steel": 70,
@@ -8090,7 +8090,7 @@
     {
         "building_id": "E04",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "steel": 80,
             "cement": 70,
@@ -8126,7 +8126,7 @@
     {
         "building_id": "E04",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "steel": 48,
             "cement": 42,
@@ -8162,7 +8162,7 @@
     {
         "building_id": "E04",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "steel": 80,
             "cement": 70,
@@ -8198,7 +8198,7 @@
     {
         "building_id": "E05",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "steel": 180,
             "electronic_components": 60,
@@ -8234,7 +8234,7 @@
     {
         "building_id": "E05",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "steel": 108,
             "electronic_components": 36,
@@ -8270,7 +8270,7 @@
     {
         "building_id": "E05",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "steel": 180,
             "electronic_components": 60,
@@ -8306,7 +8306,7 @@
     {
         "building_id": "C01",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 50,
             "stone": 20,
@@ -8336,7 +8336,7 @@
     {
         "building_id": "C01",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 30,
             "stone": 12,
@@ -8366,7 +8366,7 @@
     {
         "building_id": "C01",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 50,
             "stone": 20,
@@ -8396,7 +8396,7 @@
     {
         "building_id": "C02",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "stone": 100,
             "brick": 80,
@@ -8427,7 +8427,7 @@
     {
         "building_id": "C02",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "stone": 60,
             "brick": 48,
@@ -8458,7 +8458,7 @@
     {
         "building_id": "C02",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "stone": 100,
             "brick": 80,
@@ -8489,7 +8489,7 @@
     {
         "building_id": "C03",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "stone": 120,
             "glass": 30,
@@ -8519,7 +8519,7 @@
     {
         "building_id": "C03",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "stone": 72,
             "glass": 18,
@@ -8549,7 +8549,7 @@
     {
         "building_id": "C03",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "stone": 120,
             "glass": 30,
@@ -8579,7 +8579,7 @@
     {
         "building_id": "C04",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "steel": 100,
             "glass": 80,
@@ -8616,7 +8616,7 @@
     {
         "building_id": "C04",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "steel": 60,
             "glass": 48,
@@ -8653,7 +8653,7 @@
     {
         "building_id": "C04",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "steel": 100,
             "glass": 80,
@@ -8690,7 +8690,7 @@
     {
         "building_id": "K01",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 70,
             "stone": 50,
@@ -8720,7 +8720,7 @@
     {
         "building_id": "K01",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 42,
             "stone": 30,
@@ -8750,7 +8750,7 @@
     {
         "building_id": "K01",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 70,
             "stone": 50,
@@ -8780,7 +8780,7 @@
     {
         "building_id": "K02",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "stone": 120,
             "brick": 80,
@@ -8810,7 +8810,7 @@
     {
         "building_id": "K02",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "stone": 72,
             "brick": 48,
@@ -8840,7 +8840,7 @@
     {
         "building_id": "K02",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "stone": 120,
             "brick": 80,
@@ -8870,7 +8870,7 @@
     {
         "building_id": "K03",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "stone": 160,
             "brick": 100,
@@ -8901,7 +8901,7 @@
     {
         "building_id": "K03",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "stone": 96,
             "brick": 60,
@@ -8932,7 +8932,7 @@
     {
         "building_id": "K03",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "stone": 160,
             "brick": 100,
@@ -8963,7 +8963,7 @@
     {
         "building_id": "K04",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "steel": 100,
             "glass": 80,
@@ -9000,7 +9000,7 @@
     {
         "building_id": "K04",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "steel": 60,
             "glass": 48,
@@ -9037,7 +9037,7 @@
     {
         "building_id": "K04",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "steel": 100,
             "glass": 80,
@@ -9074,7 +9074,7 @@
     {
         "building_id": "K05",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "steel": 180,
             "glass": 100,
@@ -9115,7 +9115,7 @@
     {
         "building_id": "K05",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "steel": 108,
             "glass": 60,
@@ -9156,7 +9156,7 @@
     {
         "building_id": "K05",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "steel": 180,
             "glass": 100,
@@ -9197,7 +9197,7 @@
     {
         "building_id": "M01",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "wood": 60,
             "stone": 50,
@@ -9227,7 +9227,7 @@
     {
         "building_id": "M01",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "wood": 36,
             "stone": 30,
@@ -9257,7 +9257,7 @@
     {
         "building_id": "M01",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "wood": 60,
             "stone": 50,
@@ -9287,7 +9287,7 @@
     {
         "building_id": "M02",
         "level": 1,
-        "cost_type": "建造",
+        "cost_type": "build",
         "cost": {
             "steel": 70,
             "glass": 50,
@@ -9328,7 +9328,7 @@
     {
         "building_id": "M02",
         "level": 2,
-        "cost_type": "L1→L2升级",
+        "cost_type": "upgrade_l1_l2",
         "cost": {
             "steel": 42,
             "glass": 30,
@@ -9369,7 +9369,7 @@
     {
         "building_id": "M02",
         "level": 3,
-        "cost_type": "L2→L3升级",
+        "cost_type": "upgrade_l2_l3",
         "cost": {
             "steel": 70,
             "glass": 50,

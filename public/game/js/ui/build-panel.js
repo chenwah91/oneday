@@ -3,6 +3,7 @@ import { api } from '../core/api.js';
 import { state, setState } from '../core/state.js';
 import { selectBuilding, cancelPlacement, onPlacementChange, getPlacement } from '../modules/build.js';
 import { loadResourceNames, resourceName } from '../modules/resources.js';
+import { categoryName } from '../core/enum-names.js';
 
 // 成本紧凑展示,如 "木材20 石料5"(cost 的键是资源 code,显示时翻成中文名)
 function formatCost(cost) {
@@ -51,7 +52,9 @@ export async function mountBuildPanel(el) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'build-item';
-        btn.title = def.era ? (def.era + ' · ' + def.category) : def.category;
+        // category 是英文 code,展示时翻成中文
+        const cat = categoryName(def.category);
+        btn.title = def.era ? (def.era + ' · ' + cat) : cat;
 
         const name = document.createElement('span');
         name.className = 'build-item-name';

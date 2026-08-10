@@ -28,5 +28,15 @@ class GameDataVersionSeeder extends Seeder
                 'notes'       => '资源ID英文化(中文名保留为显示名)+ 人均粮耗 0.1→0.03(v3.1 §10.1)',
             ]
         );
+
+        // 已有数据的库由 2026_08_10_400001 迁移递增到同一版本
+        DB::table('game_data_versions')->updateOrInsert(
+            ['version' => 'V3.1.3'],
+            [
+                'deployed_at' => now(),
+                'deployed_by' => 'seed',
+                'notes'       => '枚举值英文化:building category/series/cost_type/resource category/tech branch → 英文 code(v3.2 §0.2 第二批)',
+            ]
+        );
     }
 }

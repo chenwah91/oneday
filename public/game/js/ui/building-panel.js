@@ -10,6 +10,7 @@ import { render as renderBuildings } from '../renderer/buildings.js';
 import { updateHud } from './hud.js';
 import { fmt } from '../utils/format.js';
 import { resourceName, isCapacity } from '../modules/resources.js';
+import { categoryName } from '../core/enum-names.js';
 
 const MAX_LEVEL = 3; // 与后端 UpgradeService 一致:L1→L2→L3
 
@@ -138,7 +139,8 @@ function render() {
     body.className = 'bldg-body';
     body.appendChild(makeRow('等级', 'Lv' + level + ' / ' + MAX_LEVEL));
     body.appendChild(makeRow('位置', '(' + b.x + ', ' + b.y + ')'));
-    if (def && def.category) body.appendChild(makeRow('分类', def.category));
+    // def.category 是英文 code(v3.2 §0.2),显示时翻成中文
+    if (def && def.category) body.appendChild(makeRow('分类', categoryName(def.category)));
     if (def && def.footprint) body.appendChild(makeRow('占地', def.footprint.w + ' × ' + def.footprint.h));
     if (b.status && b.status !== 'active') body.appendChild(makeRow('状态', b.status));
 

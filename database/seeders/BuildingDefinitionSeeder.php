@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class BuildingDefinitionSeeder extends Seeder
 {
@@ -11,16 +12,26 @@ class BuildingDefinitionSeeder extends Seeder
     {
         $rows = json_decode(file_get_contents(database_path('data/buildings.json')), true);
 
-        // 名称→ID 映射,用于把"升级去向"(名称)解析为 building_id
-        $nameToId = [];
-        foreach ($rows as $r) {
-            $nameToId[$r['name']] = $r['building_id'];
-        }
+        DB::table('building_definition')->insert(self::toRows($rows));
+    }
 
-        $insert = array_map(function ($r) use ($nameToId) {
-            $upgradeName = $r['upgrade_to'] ?? '';
-            $upgradeId = ($upgradeName !== '' && $upgradeName !== '终局' && isset($nameToId[$upgradeName]))
-                ? $nameToId[$upgradeName] : null;
+    // buildings.json 的行 → building_definition 的插入行
+    // 独立成静态方法便于测试断链守门(见 tests/Feature/Definition/EnumCodeTest.php)
+    public static function toRows(array $rows): array
+    {
+        // upgrade_to 现在直接存 building_id 或 null(v3.2 §0.2 英文化第二批),
+        // 不再按中文名反查 —— 旧写法解析不到就静默变 NULL,36 条断链因此一直没被发现。
+        $ids = array_flip(array_column($rows, 'building_id'));
+
+        return array_map(function ($r) use ($ids) {
+            $upgradeTo = $r['upgrade_to'] ?? null;
+
+            // 断链守门:非 null 的升级去向必须是 building_id 之一,否则直接失败,不再静默丢链
+            if ($upgradeTo !== null && ! isset($ids[$upgradeTo])) {
+                throw new RuntimeException(
+                    "buildings.json:{$r['building_id']} 的 upgrade_to「{$upgradeTo}」不是合法 building_id"
+                );
+            }
 
             return [
                 'building_id'          => $r['building_id'],
@@ -37,10 +48,8 @@ class BuildingDefinitionSeeder extends Seeder
                 'population_min'       => 0,
                 'governance_ratio_min' => 0,
                 'happiness_min'        => 0,
-                'upgrade_to_building_id' => $upgradeId,
+                'upgrade_to_building_id' => $upgradeTo,
             ];
         }, $rows);
-
-        DB::table('building_definition')->insert($insert);
     }
 }
