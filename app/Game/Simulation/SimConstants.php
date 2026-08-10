@@ -164,6 +164,34 @@ class SimConstants
     // 若时代 I 照样计需求,全部时代 I 城市会被判定重度拥堵且无法自救,与 §13「物流是可经营的瓶颈」相悖
     public const LOGISTICS_MIN_ERA_ORDER = 2;
 
+    // ---- 科技加成(v3.2 §5 科技树的 effect_code 列,M2-B3)----
+
+    // v3.2 §5 的 50 条科技,effect_code 清一色是 `<branch>_base_efficiency_2pct`
+    // (sustainability / industry / civilization / logistics / defense 五条分支各 10 条),
+    // 即「每解锁一条科技 → 该科技所属分支的建筑基础效率 +2%」。
+    // 全表同构,所以不需要逐科技的效果表:一个常量 + 分支归属就够了。
+    //
+    // 建筑属于哪条分支不另立映射表,而是走既有定义数据:
+    //   building_definition.tech_id(94 栋全部非空)→ technology_definition.branch
+    // 也就是「解锁这栋楼的那条科技在哪条分支,这栋楼就在哪条分支」(CLAUDE §13 数据驱动)。
+    //
+    // 满解锁一条分支 = 10 × 2% → 该分支建筑 1.20×,远在 §13 的 2.75× 硬帽之下;
+    // 帽仍由 multiplierProduct 统一夹,这里不自己夹第二次
+    public const TECH_BRANCH_EFFICIENCY_BONUS = 0.02;
+
+    // ---- 建筑升级期间(v3.2 §3.2)----
+
+    // 「Level 2/3 升级时建筑进入 upgrading 状态:生产建筑默认暂停生产;
+    //   住宅只保留 50% 人口容量,避免升级期间无风险」(§3.2 原文)。
+    // 折算基数是**旧等级**的容量:level 列要到升级完工才 +1(见 ConstructionService::settleFinished)。
+    //
+    // 产 population_capacity 的建筑恰好就是 H01~H10 住宅(全 94 栋里只有 H 系产这项,且只产这一项),
+    // 所以「按产出类型判定」与「按住宅判定」在 v3.2 数据下完全等价,不必再引入 category 判断。
+    //
+    // **本次补充假设**:§3.2 只点名住宅,其余容量类(仓储 / 治理 / 运输 / 医疗 / 国防)升级期间
+    // 保留 100% —— 没有明文就不施加惩罚(保守方向:不凭空发明数值,也不让玩家被没写过的规则罚)
+    public const UPGRADING_HOUSING_CAPACITY_RATE = 0.50;
+
     // ---- §13 生产倍率硬上限(防爆)----
 
     // 「NPC + 工具 + 科技 + 事件总生产倍率建议硬封顶在 2.75×;终局特殊建筑最多 3.25×」(§13 原文)。

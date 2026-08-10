@@ -4,6 +4,7 @@ namespace App\Game\Simulation;
 
 use App\Game\Building\ConstructionService;
 use App\Game\Resource\ResourceCode;
+use App\Game\Technology\TechService;
 use App\Models\City;
 use App\Support\GameSetting;
 use Carbon\CarbonInterface;
@@ -19,12 +20,13 @@ class SimulationService
     // 逐建筑实例的乘区初始值(全部 1.0 = 无影响)。
     // M2 各生产系统(科技/NPC/工具/电力/物流/事件)各占一个乘区,只写自己那一格,互不覆盖。
     // C1 起 worker 一格由「已分配工人 / 该级需求工人」填充;
-    // C4 起 logistics 一格由 §10.7 的运输负载填充。其余五项(power/tech/npc/tool/event)仍恒为 1.0。
+    // C4 起 logistics 一格由 §10.7 的运输负载填充;
+    // B3 起 tech 一格由 §5 的「同分支每解锁一条科技 +2%」填充。其余四项(power/npc/tool/event)仍恒为 1.0。
     private const BASE_MULTIPLIERS = [
         'worker'    => 1.0, // 用工满足率(人力不足打折)
         'power'     => 1.0, // 电力满足率(按建筑)
         'logistics' => 1.0, // 物流满足率(C4 起由 transportLoad → logisticsFactor 填充)
-        'tech'      => 1.0, // 科技加成(按建筑分支)
+        'tech'      => 1.0, // 科技加成(B3 起按建筑所属科技分支的已解锁条数)
         'npc'       => 1.0, // NPC 加成(按实例)
         'tool'      => 1.0, // 工具加成(按实例)
         'event'     => 1.0, // 事件加成
@@ -166,20 +168,32 @@ class SimulationService
         $settlementStart = $now->copy()->subSeconds($elapsed);
         ConstructionService::settleFinished((int) $lockedCity->id, $now, $settlementStart);
 
-        // 锁后再读 active 建筑实例的每级定义,消除"锁前读实例"的竞态
+        // 锁后再读建筑实例的每级定义,消除"锁前读实例"的竞态
         // ci.id / ci.building_id / ci.level 一并取出:M2 的乘数按实例/按建筑生效,聚合前必须能区分是哪一栋
         // ci.assigned_workers 与 bl.worker_required:workerFactor 的分子分母(§10.4)
+        //
+        // 取两类实例(ci.status 一并取出,下面的循环按它分流):
+        //   ① active 且完工戳已清 → 完整的生产集合(产出 / 吃料 / 占运力 / 交维护 / 提供容量)
+        //   ② upgrading           → **只提供容量**,生产恒为零(v3.2 §3.2,详见循环里的注释)
+        // constructing 仍然完全排除:那是一栋还没建成的楼,既不生产也不该提供任何容量
         $levels = DB::table('city_building_instances as ci')
             ->join('building_level_definition as bl', function ($j) {
                 $j->on('ci.building_id', '=', 'bl.building_id')->on('ci.level', '=', 'bl.level');
             })
             ->where('ci.city_id', $lockedCity->id)
-            ->where('ci.status', ConstructionService::STATUS_ACTIVE)
-            // M2-C5:完工点必须已在本次窗口起点之前(戳已被 settleFinished 清成 NULL),
-            // 窗口中途才完工的实例本次不产出、下次结算才算 —— 见 ConstructionService::settleFinished
-            ->whereNull('ci.construction_finished_at')
+            ->where(function ($q) {
+                $q->where(function ($active) {
+                    // M2-C5:完工点必须已在本次窗口起点之前(戳已被 settleFinished 清成 NULL),
+                    // 窗口中途才完工的实例本次不产出、下次结算才算 —— 见 ConstructionService::settleFinished
+                    $active->where('ci.status', ConstructionService::STATUS_ACTIVE)
+                        ->whereNull('ci.construction_finished_at');
+                })
+                    // upgrading 实例的完工戳恒在未来(到点就被 settleFinished 翻成 active 了),
+                    // 所以这里不必再按戳过滤
+                    ->orWhere('ci.status', ConstructionService::STATUS_UPGRADING);
+            })
             ->select(
-                'ci.id as instance_id', 'ci.building_id', 'ci.level', 'ci.assigned_workers',
+                'ci.id as instance_id', 'ci.building_id', 'ci.level', 'ci.assigned_workers', 'ci.status',
                 'bl.output_json', 'bl.input_json', 'bl.worker_required',
                 'bl.maintenance_money_per_min', 'bl.maintenance_food_per_min'
             )
@@ -215,6 +229,13 @@ class SimulationService
         // (GameSetting 本身也带请求级缓存,这里再提出循环是第二道保险)
         $workerGateEnabled = (bool) GameSetting::get(GameSetting::WORKER_GATE_ENABLED, true);
 
+        // 科技乘区(§5,M2-B3):building_id => 乘数。同样必须在建筑循环之外查一次,
+        // 循环内(以及分段循环内)零查库。城里一条科技都没解锁时返回空数组,乘区保持占位 1.0
+        $techMultipliers = self::techMultipliers(
+            (int) $lockedCity->id,
+            $levels->pluck('building_id')->unique()->all()
+        );
+
         // 逐建筑实例中间结构:M2 没有一个乘数是全局的(科技按分支、NPC/工具按实例、电力按建筑),
         // 所以产出/投入必须先落到"每栋一行",算完各自的乘区与满足率,最后才聚合成全城速率。
         // 建筑集合在整段结算内不变(建造/拆除都会先跑结算),所以这层只在循环外构建一次。
@@ -225,10 +246,19 @@ class SimulationService
         $units = [];
 
         foreach ($levels as $lv) {
+            // 升级中的实例(v3.2 §3.2「Level 2/3 升级时建筑进入 upgrading 状态:生产建筑默认暂停生产;
+            // 住宅只保留 50% 人口容量」)。落地成两条:
+            //   ① 只走下面 output_json 里的容量提取,住宅那一项乘 50%(基数是**旧等级**,level 未 +1);
+            //   ② 不进 $units → 不产出、不吃料、不占运输需求、也不计维护(升级期间不产不耗,一并不收维护费)。
+            // constructing 在上面的查询里已被整体排除,连容量都不给。
+            $upgrading = $lv->status === ConstructionService::STATUS_UPGRADING;
+
             $grossIn = [];
-            foreach (json_decode($lv->input_json ?: '[]', true) as $i) {
-                $res = $i['resource'];
-                $grossIn[$res] = ($grossIn[$res] ?? 0) + (float) $i['rate_per_min'];
+            if (! $upgrading) {
+                foreach (json_decode($lv->input_json ?: '[]', true) as $i) {
+                    $res = $i['resource'];
+                    $grossIn[$res] = ($grossIn[$res] ?? 0) + (float) $i['rate_per_min'];
+                }
             }
 
             $grossOut = [];
@@ -236,16 +266,29 @@ class SimulationService
                 $res = $o['resource']; $r = (float) $o['rate_per_min'];
                 // 容量类产出不进 grossOut:它不是"每分钟入库的资源",在这里就提取成全城容量累计
                 if ($res === ResourceCode::STORAGE_CAPACITY) { $storageCap += $r; continue; }
-                if ($res === ResourceCode::POPULATION_CAPACITY) { $populationCap += $r; continue; }
+                if ($res === ResourceCode::POPULATION_CAPACITY) {
+                    // §3.2 明文的唯一打折项:升级中的住宅只保留旧等级容量的 50%
+                    $populationCap += $upgrading ? $r * SimConstants::UPGRADING_HOUSING_CAPACITY_RATE : $r;
+                    continue;
+                }
                 if ($res === ResourceCode::MEDICAL_CAPACITY) { $medicalCapacity += $r; continue; }
                 if ($res === ResourceCode::DEFENSE_SCORE) { $defenseScore += $r; continue; }
                 if ($res === ResourceCode::GOVERNANCE_CAPACITY) { $governanceCapacity += $r; continue; }
                 if ($res === ResourceCode::TRANSPORT_CAPACITY) { $transportCapacity += $r; continue; }
                 if (ResourceCode::isCapacity($res)) { continue; } // 其他容量(贸易/金融):M2-C4 阶段仍不结算
+                // 非容量类产出:升级中一律不产(§3.2「生产建筑默认暂停生产」)
+                if ($upgrading) { continue; }
                 $grossOut[$res] = ($grossOut[$res] ?? 0) + $r;
             }
 
+            // 升级中的实例到此为止:容量已按上面的规则计入全城,但绝不进生产集合
+            if ($upgrading) { continue; }
+
             $multipliers = self::BASE_MULTIPLIERS;
+            // 科技乘区(§5):= 1 + 0.02 × 该建筑所属分支的已解锁科技条数;
+            // 没解锁(或该分支一条都没解锁)时 $techMultipliers 里没有这个键 → 保持 1.0。
+            // 研究中(researching)的科技不算数,与建造科技闸门同一口径
+            $multipliers['tech'] = (float) ($techMultipliers[$lv->building_id] ?? 1.0);
             // workerFactor = min(1, assignedWorkers / max(1, workerRequired))(§10.4);
             // worker_required = 0 的建筑(住宅/仓库等)不需要人,恒为 1.0;
             // 闸门关闭($workerGateEnabled = false)时同样恒为 1.0
@@ -517,6 +560,57 @@ class SimulationService
             'logisticsFactor'         => $logisticsFactor,
             'transportCongestion'     => $transportCongestion,
         ];
+    }
+
+    // 科技乘区(v3.2 §5,M2-B3):返回 building_id => 乘数,只含真正拿到加成的建筑。
+    //
+    // 效果口径完全照 §5 科技表的 effect_code 列:50 条科技一律 `<branch>_base_efficiency_2pct`,
+    // 即「解锁一条科技 → 该分支建筑基础效率 +2%」,同分支多条线性累加:
+    //   multiplier = 1 + 0.02 × 该分支已解锁条数
+    //
+    // 建筑 → 分支不另立映射表,直接用定义数据推:
+    //   building_definition.tech_id(§3.4 的 tech_id 列,94 栋全部非空)→ technology_definition.branch。
+    // 即「解锁这栋楼的那条科技属于哪条分支,这栋楼就吃哪条分支的加成」——
+    // 这样新增建筑只要填 tech_id 就自动归位,不必回来改代码(CLAUDE §13 数据驱动)。
+    //
+    // 两次查询都在 applyLocked 的准备段(分段循环之外)完成;
+    // 一条科技都没解锁的城(绝大多数新城)在第一次查询之后就直接返回,不发第二条 SQL。
+    private static function techMultipliers(int $cityId, array $buildingIds): array
+    {
+        if (! $buildingIds) {
+            return [];
+        }
+
+        // 已解锁科技按分支计数(researching 不算解锁,与 BuildService 的科技闸门同一口径)
+        $counts = [];
+        $rows = DB::table('city_technologies as ct')
+            ->join('technology_definition as td', 'ct.tech_id', '=', 'td.tech_id')
+            ->where('ct.city_id', $cityId)
+            ->where('ct.status', TechService::STATUS_UNLOCKED)
+            ->groupBy('td.branch')
+            ->selectRaw('td.branch as branch, count(*) as unlocked_count')
+            ->get();
+        foreach ($rows as $row) {
+            $counts[$row->branch] = (int) $row->unlocked_count;
+        }
+        if (! $counts) {
+            return [];
+        }
+
+        $branchOf = DB::table('building_definition as bd')
+            ->join('technology_definition as td', 'bd.tech_id', '=', 'td.tech_id')
+            ->whereIn('bd.building_id', $buildingIds)
+            ->pluck('td.branch', 'bd.building_id')->all();
+
+        $out = [];
+        foreach ($branchOf as $buildingId => $branch) {
+            $unlocked = $counts[$branch] ?? 0;
+            if ($unlocked > 0) {
+                $out[$buildingId] = 1.0 + $unlocked * SimConstants::TECH_BRANCH_EFFICIENCY_BONUS;
+            }
+        }
+
+        return $out;
     }
 
     // 单段速率:给定段起库存与段起人口,算出本段的资源净速率与 gross 产出/消耗。

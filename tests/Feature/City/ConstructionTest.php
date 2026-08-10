@@ -54,6 +54,47 @@ class ConstructionTest extends TestCase
         return $id;
     }
 
+    // 往城里放一栋 H01 住宅(worker_required = 0,不受用工乘区影响)
+    private function putHousing(City $city, string $status, ?Carbon $finishedAt, int $level = 1): int
+    {
+        $id = CityBuildingInstance::create([
+            'city_id' => $city->id, 'building_id' => 'H01', 'level' => $level,
+            'x' => 8, 'y' => 8, 'status' => $status, 'assigned_workers' => 0,
+        ])->id;
+
+        DB::table('city_building_instances')->where('id', $id)
+            ->update(['construction_finished_at' => $finishedAt]);
+
+        return $id;
+    }
+
+    // H01 该级的人口容量(数值以定义表为准,不在测试里写死)
+    private function housingCapacity(int $level): float
+    {
+        $out = json_decode((string) DB::table('building_level_definition')
+            ->where('building_id', 'H01')->where('level', $level)->value('output_json'), true);
+
+        return (float) $out[0]['rate_per_min'];
+    }
+
+    // 人口增长对照用的城:10 座 H01(状态由参数决定)+ 1 座满员 F02,人口 100、粮食 500、资金充足
+    private function cityWithHousingAndFarm(string $un, string $housingStatus, ?Carbon $finishedAt): City
+    {
+        $city = $this->bareCity($un);
+        for ($i = 0; $i < 10; $i++) {
+            $id = $this->putHousing($city, $housingStatus, $finishedAt);
+            // putHousing 固定摆在 (8,8);这里只是让 10 座实例互不重叠(结算不校验占地,但别留下误导性数据)
+            DB::table('city_building_instances')->where('id', $id)->update(['x' => 1 + $i * 2, 'y' => 8]);
+        }
+        $this->putFarm($city, 'active', null);
+        DB::table('cities')->where('id', $city->id)->update(['population' => 100]);
+        DB::table('city_resources')->updateOrInsert(
+            ['city_id' => $city->id, 'resource_id' => 'food'], ['amount' => 500]
+        );
+
+        return $city->fresh();
+    }
+
     private function food(City $city): float
     {
         return (float) (DB::table('city_resources')
@@ -251,6 +292,114 @@ class ConstructionTest extends TestCase
 
         $this->assertEqualsWithDelta($this->farmRate(2) * 10, $this->food($city), 0.01);
         $this->assertGreaterThan($this->farmRate(1), $this->farmRate(2), 'L2 速率应高于 L1(否则本用例区分不出等级)');
+    }
+
+    // ---- 升级期间的人口容量(v3.2 §3.2「住宅只保留 50% 人口容量,避免升级期间无风险」) ----
+
+    // 对照组:active 的住宅提供全额容量
+    public function test_active_housing_gives_full_population_capacity(): void
+    {
+        $base = Carbon::parse('2026-01-01 00:00:00');
+        Carbon::setTestNow($base);
+        $city = $this->bareCity('ctHouseFull');
+        $this->putHousing($city, 'active', null);
+
+        $sim = $this->simulateAt($city, $base->copy()->addMinutes(10));
+
+        $this->assertEqualsWithDelta($this->housingCapacity(1), $sim['populationCapacity'], 0.0001);
+    }
+
+    // 升级中的住宅:按**旧等级**容量的 50% 计入(level 列要到完工才 +1)
+    public function test_upgrading_housing_keeps_half_population_capacity(): void
+    {
+        $base = Carbon::parse('2026-01-01 00:00:00');
+        Carbon::setTestNow($base);
+        $city = $this->bareCity('ctHouseHalf');
+        $this->putHousing($city, 'upgrading', $base->copy()->addHours(2));
+
+        $sim = $this->simulateAt($city, $base->copy()->addMinutes(10));
+
+        // H01 L1 人口容量 18 → 升级期间 9
+        $this->assertEqualsWithDelta($this->housingCapacity(1) * 0.5, $sim['populationCapacity'], 0.0001);
+    }
+
+    // 打折基数是旧等级:L2 的住宅在升往 L3 的途中,按 L2 容量的一半而不是 L1 或 L3
+    public function test_upgrading_housing_halves_the_old_level_capacity(): void
+    {
+        $base = Carbon::parse('2026-01-01 00:00:00');
+        Carbon::setTestNow($base);
+        $city = $this->bareCity('ctHouseOldLevel');
+        $this->putHousing($city, 'upgrading', $base->copy()->addHours(2), 2);
+
+        $sim = $this->simulateAt($city, $base->copy()->addMinutes(10));
+
+        $this->assertEqualsWithDelta($this->housingCapacity(2) * 0.5, $sim['populationCapacity'], 0.0001);
+        $this->assertGreaterThan($this->housingCapacity(1), $this->housingCapacity(2), 'L2 容量应高于 L1(否则本用例区分不出基数)');
+    }
+
+    // 施工中的住宅一分容量都不给:那是一栋还没建成的楼(与「施工中不生产」同一条纪律)
+    public function test_constructing_housing_gives_no_population_capacity(): void
+    {
+        $base = Carbon::parse('2026-01-01 00:00:00');
+        Carbon::setTestNow($base);
+        $city = $this->bareCity('ctHouseBuilding');
+        $this->putHousing($city, 'constructing', $base->copy()->addHours(2));
+
+        $sim = $this->simulateAt($city, $base->copy()->addMinutes(10));
+
+        $this->assertSame(0.0, (float) $sim['populationCapacity']);
+    }
+
+    // 升级完工后容量按新等级恢复全额。
+    //
+    // 注意中间那一次结算:完工点落在窗口中途 → 实例已翻成 active 但完工戳还没清,
+    // 于是这一窗既不在生产集合、也不在容量集合里,人口容量短暂归零(波次 7 定下的窗口起点口径,
+    // 对容量类是否也该照此办理已记入待裁决事项)。这里把两步都断言死,口径一改就立刻变红。
+    public function test_population_capacity_returns_after_upgrade_completes(): void
+    {
+        $base = Carbon::parse('2026-01-01 00:00:00');
+        Carbon::setTestNow($base);
+        $city = $this->bareCity('ctHouseDone');
+        $id = $this->putHousing($city, 'upgrading', $base->copy()->addMinutes(1));
+
+        $simMid = $this->simulateAt($city, $base->copy()->addMinutes(2));
+        $this->assertSame('active', DB::table('city_building_instances')->where('id', $id)->value('status'));
+        $this->assertSame(2, (int) DB::table('city_building_instances')->where('id', $id)->value('level'));
+        $this->assertSame(0.0, (float) $simMid['populationCapacity'], '完工窗口:戳未清,本次既不生产也不计容量');
+
+        $simNext = $this->simulateAt($city, $base->copy()->addMinutes(3));
+        $this->assertEqualsWithDelta($this->housingCapacity(2), $simNext['populationCapacity'], 0.0001, '下一次结算按新等级全额');
+    }
+
+    // 容量减半对人口增长的精确影响:同一座城,住宅 active 时能长、住宅 upgrading 时 housingFactor 归零
+    //
+    // 城市配置:人口 100、粮食 500、10 座 H01(全额容量 180)、1 座满员 F02(粮食 14/min)
+    //   foodNetRate = 14 − 100×0.03 = 11 > 0            → foodFactor 1.0
+    //   happiness 段起 60(建城默认)                     → happinessFactor 0.5 + (60−50)/40 = 0.75
+    //   active:    housingUsage = 100/180 = 0.5556 < 0.80 → housingFactor 1.0
+    //              rate = 0.002 × 1.0 × 1.0 × 0.75 = 0.0015 → 100 × 1.0015^10 = 101.5105 → 落库 101
+    //   upgrading: 容量 90,housingUsage = 100/90 = 1.111 >= 1.00 → housingFactor 0 → rate 0 → 人口不动
+    public function test_upgrading_housing_halves_capacity_and_stops_growth(): void
+    {
+        $base = Carbon::parse('2026-01-01 00:00:00');
+
+        Carbon::setTestNow($base);
+        $active = $this->cityWithHousingAndFarm('ctGrowFull', 'active', null);
+        $simActive = $this->simulateAt($active, $base->copy()->addMinutes(10));
+
+        Carbon::setTestNow($base);
+        $upgrading = $this->cityWithHousingAndFarm('ctGrowHalf', 'upgrading', $base->copy()->addHours(2));
+        $simUpgrading = $this->simulateAt($upgrading, $base->copy()->addMinutes(10));
+
+        $full = $this->housingCapacity(1) * 10;
+        $this->assertEqualsWithDelta($full, $simActive['populationCapacity'], 0.0001, '10 座 H01 = 180');
+        $this->assertEqualsWithDelta($full * 0.5, $simUpgrading['populationCapacity'], 0.0001, '全部升级中 = 90');
+
+        $this->assertSame(101, (int) DB::table('cities')->where('id', $active->id)->value('population'));
+        $this->assertEqualsWithDelta(0.15, $simActive['populationGrowthPerMin'], 0.0001, '100 × 0.0015');
+
+        $this->assertSame(100, (int) DB::table('cities')->where('id', $upgrading->id)->value('population'), '容量减半后超容 → 停止增长');
+        $this->assertSame(0.0, (float) $simUpgrading['populationGrowthPerMin']);
     }
 
     // ---- 快照契约 ----

@@ -21,8 +21,12 @@ class DemolishTest extends TestCase
     protected function tearDown(): void { Carbon::setTestNow(); parent::tearDown(); }
 
     // 一座城 + 一栋 active 的 F02;资源压到 100(仓储上限默认 1000,留足返还余量)
+    // 时间统一冻结:不冻结时墙钟跨秒会多结算 1 秒(维护/税收 ±0.06 资金),既有 flaky 根因
     private function makeCityWithFarm(string $un): array
     {
+        if (Carbon::getTestNow() === null) {
+            Carbon::setTestNow(Carbon::parse('2026-01-01 00:00:00'));
+        }
         $u = User::create(['username' => $un, 'name' => $un, 'email' => "$un@x.com", 'password' => 'password123']);
         $city = CityFactory::createForUser($u);
         DB::table('city_resources')->where('city_id', $city->id)->update(['amount' => 100]);
