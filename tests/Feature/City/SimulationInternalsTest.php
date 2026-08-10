@@ -65,8 +65,10 @@ class SimulationInternalsTest extends TestCase
         $this->assertSame(18.0, (float) $sim['populationCapacity'], '人口容量同样是全局累计,不进 grossOut');
         // 粮食速率 = +14(F02) − 1(D01 维护粮食) − 10×0.03(人口)=0.3 → 12.7/min → 200 + 127 = 327
         $this->assertEqualsWithDelta(327.0, $this->amountOf($city, 'food'), 0.0001);
-        // 维护资金 (4 + 5 + 0 + 2)/min × 10min = 110
-        $this->assertEqualsWithDelta(9890.0, $this->moneyOf($city), 0.0001);
+        // 维护资金 (4 + 5 + 0 + 2)/min × 10min = 110;
+        // 税收(§10.5)= 人口 10 × 0.02 × 治理效率 0.5(无 A01 → 治理容量 0 → 负载 10 > 1.25)= 0.1/min × 10 = 1
+        // 10000 + 1 − 110 = 9891
+        $this->assertEqualsWithDelta(9891.0, $this->moneyOf($city), 0.0001);
         // gross 只统计配方侧:国防值/人口容量/仓储容量不算产出,维护粮食与人口吃粮不算消耗
         $this->assertEqualsWithDelta(14.0, $sim['grossProductionPerMin']['food'], 0.0001);
         $this->assertSame(['food'], array_keys($sim['grossProductionPerMin']), '容量类产出不得混进 grossProductionPerMin');

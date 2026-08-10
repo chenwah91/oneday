@@ -126,7 +126,8 @@ class EconomyRegressionTest extends TestCase
         CityBuildingInstance::create(['city_id' => $city->id, 'building_id' => 'E02', 'level' => 1, 'x' => 1, 'y' => 1, 'status' => 'active', 'assigned_workers' => 4]);
         DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->update(['amount' => 30]);
         DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'stone')->update(['amount' => 1000]);
-        DB::table('cities')->where('id', $city->id)->update(['money' => 1000]);
+        // era_order:F02 是时代 II 建筑,时代闸门(M2-B6)排在材料校验之前,不垫时代就验不到 INSUFFICIENT_RESOURCE
+        DB::table('cities')->where('id', $city->id)->update(['money' => 1000, 'era_key' => 'II', 'era_order' => 2]);
 
         // 10 分钟吃掉 60 木材,只有 30 → 结算后木材必然为 0
         Carbon::setTestNow($base->copy()->addMinutes(10));
@@ -151,7 +152,8 @@ class EconomyRegressionTest extends TestCase
 
         $city = $this->cityWithFarm('stalemoney'); // 已有一座 F02(维护 资金 4/min)
         DB::table('city_resources')->where('city_id', $city->id)->update(['amount' => 1000]);
-        DB::table('cities')->where('id', $city->id)->update(['money' => 30]);
+        // era_order:F02 是时代 II 建筑,时代闸门(M2-B6)排在材料校验之前,不垫时代就验不到 INSUFFICIENT_RESOURCE
+        DB::table('cities')->where('id', $city->id)->update(['money' => 30, 'era_key' => 'II', 'era_order' => 2]);
 
         // 10 分钟维护费 40,只有 30 → 结算后资金必然为 0
         Carbon::setTestNow($base->copy()->addMinutes(10));
@@ -177,7 +179,8 @@ class EconomyRegressionTest extends TestCase
         DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->update(['amount' => 1000]);
         DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'stone')->update(['amount' => 1000]);
         DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'food')->update(['amount' => 400]);
-        DB::table('cities')->where('id', $city->id)->update(['money' => 1000]);
+        // era_order:F02 是时代 II 建筑,时代闸门(M2-B6)会挡下时代 I 的城,这里要的是建造成功
+        DB::table('cities')->where('id', $city->id)->update(['money' => 1000, 'era_key' => 'II', 'era_order' => 2]);
 
         // 前 10 分钟城里没有农田:只有人口吃粮 30×0.03×10 = 9,粮食 400 → 391
         Carbon::setTestNow($base->copy()->addMinutes(10));
@@ -228,8 +231,11 @@ class EconomyRegressionTest extends TestCase
         $moneyA = (float) DB::table('cities')->where('id', $cA->id)->value('money');
         $moneyB = (float) DB::table('cities')->where('id', $cB->id)->value('money');
         $this->assertEqualsWithDelta($moneyB, $moneyA, 0.01, '48h 的维护扣款应与 12h 相同');
-        // 维护 资金 4/min × 720min = 2880:100000 → 97120
-        $this->assertEqualsWithDelta(97120, $moneyA, 0.01);
+        // 维护 资金 4/min × 720min = 2880;
+        // 税收(§10.5)= 人口 450 × 0.02 × 治理效率 0.5(无治理建筑 → 容量 0 → 负载 450 > 1.25)= 4.5/min × 720 = 3240
+        // (人口容量 0 → housingFactor 0 → 24 段人口恒为 450,税收速率整段不变)
+        // 100000 − 2880 + 3240 = 100360
+        $this->assertEqualsWithDelta(100360, $moneyA, 0.01);
 
         // last_simulated_at 仍推进到 now(不是只推进封顶那 12h),否则未结算的时间会积压后被反复重算
         $lastA = Carbon::parse(DB::table('cities')->where('id', $cA->id)->value('last_simulated_at'));

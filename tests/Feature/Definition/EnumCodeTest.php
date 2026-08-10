@@ -213,8 +213,9 @@ class EnumCodeTest extends TestCase
     public function test_service_worker_precaches_enum_names(): void
     {
         $sw = file_get_contents(public_path('game/service-worker.js'));
-        // v6:HUD 增加民生三值(幸福/健康/治安)+ 幸福警示色,hud.js / hud.css 有实质变更(M2-C2)
-        $this->assertStringContainsString("const CACHE = 'apg-v6'", $sw);
+        // v7:时代升级(M2-B6)—— 科技面板加时代区块、HUD 加时代、建造面板加时代闸门置灰,
+        //     technology-panel.js / hud.js / build-panel.js / error-messages.js / panels.css 均有实质变更
+        $this->assertStringContainsString("const CACHE = 'apg-v7'", $sw);
         $this->assertStringContainsString("'/game/js/core/enum-names.js'", $sw);
     }
 

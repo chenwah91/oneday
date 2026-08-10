@@ -21,6 +21,26 @@ import { fmt } from '../utils/format.js';
 // 泛化文案("输入有误")说不清原因,这里译成"状态已变化"引导玩家刷新
 const RESEARCH_ERRORS = {
     VALIDATION_ERROR: '该科技状态已变化,请刷新后重试',
+    ERA_REQUIRED: '当前时代还研究不了这项科技,先升级时代',
+};
+
+// 时代升级语境下的错误码文案覆盖
+const ERA_ERRORS = {
+    ERA_REQUIRED: '升级条件还没全部满足',
+    VALIDATION_ERROR: '已经是最高时代了',
+};
+
+// 升级条件维度 → 中文标签(M2-B6,与 EraService 的 dimension 取值一一对应)。
+// building 维度另带 building_id,标签由建筑定义里的中文名拼出
+const DIMENSION_LABELS = {
+    population: '人口',
+    knowledge: '知识',
+    food: '粮食储备',
+    money: '资金储备',
+    building: '建筑',
+    governance: '治理容量',
+    happiness: '幸福度',
+    defense: '国防值',
 };
 
 const FILTERS = [
@@ -157,13 +177,26 @@ export class TechnologyPanel {
         return Number(res.knowledge) || 0;
     }
 
+    // 时代区块(M2-B6):快照的 city.era = { era_key, era_order, era_name, next|null }
+    eraState() {
+        const city = this.state.city || {};
+        return city.era || null;
+    }
+
     // 面板显示用到的数据指纹:只有这些值变了才需要重建 DOM
     signature() {
         const t = this.techState();
+        const era = this.eraState();
+        // 时代条件的达标情况也进指纹:人口/粮食涨到达标时,升级按钮要跟着亮起来
+        const eraMet = era && era.next
+            ? era.next.requirements.map((r) => (r.met ? 1 : 0)).join('')
+            : '';
         return [
             t.unlocked.length,
             t.researching ? t.researching.tech_id + '@' + t.researching.finished_at : 'none',
             t.maxEraOrder,
+            era ? era.era_order : 0,
+            eraMet,
             Math.floor(this.knowledgeBalance()),
             this.state.technologyDefs ? this.state.technologyDefs.length : 0,
             this.filter,
@@ -258,6 +291,9 @@ export class TechnologyPanel {
 
         this.rootEl.appendChild(header);
 
+        // 时代区块排在科技列表之前:时代决定能研究哪些科技,玩家先看到"我在哪个时代"才好理解置灰原因
+        this.rootEl.appendChild(this.makeEraSection());
+
         const filters = document.createElement('div');
         filters.className = 'tech-filters';
         FILTERS.forEach((f) => {
@@ -326,6 +362,83 @@ export class TechnologyPanel {
             groups[branch].forEach((entry) => section.appendChild(this.makeItem(entry.def, entry.evaluated)));
             this.listEl.appendChild(section);
         });
+    }
+
+    // ---- 时代区块(M2-B6) ----
+
+    // 顶部:当前时代 + 「升级到 X 时代」按钮 + 逐维条件清单(满足绿 / 未满足橙)。
+    // 能不能升同样由服务器判定,这里的置灰只是显示层提示(与科技节点同一纪律,CLAUDE §66)
+    makeEraSection() {
+        const box = document.createElement('div');
+        box.className = 'era-box';
+        const era = this.eraState();
+
+        const head = document.createElement('div');
+        head.className = 'era-head';
+
+        const cur = document.createElement('span');
+        cur.className = 'era-current';
+        cur.textContent = era
+            ? '时代 ' + era.era_key + (era.era_name ? ' · ' + era.era_name : '')
+            : '时代加载中...';
+        head.appendChild(cur);
+        box.appendChild(head);
+
+        if (!era) return box;
+
+        if (!era.next) {
+            const done = document.createElement('div');
+            done.className = 'era-note';
+            done.textContent = '已达最高时代';
+            box.appendChild(done);
+            return box;
+        }
+
+        const reqs = era.next.requirements || [];
+        const allMet = reqs.every((r) => r.met);
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'era-btn';
+        btn.textContent = '升级到 ' + era.next.era_key + (era.next.era_name ? ' ' + era.next.era_name : '') + ' 时代';
+        btn.disabled = this.busy || !allMet;
+        btn.addEventListener('click', () => this.doEraUpgrade());
+        head.appendChild(btn);
+
+        const list = document.createElement('div');
+        list.className = 'era-reqs';
+        reqs.forEach((r) => list.appendChild(this.makeRequirement(r)));
+        box.appendChild(list);
+
+        return box;
+    }
+
+    // 单条条件:标签 + 当前值/需求值,met 绿、未满足橙
+    makeRequirement(req) {
+        const row = document.createElement('div');
+        row.className = 'era-req' + (req.met ? ' is-met' : ' is-missing');
+
+        const label = document.createElement('span');
+        label.className = 'era-req-label';
+        label.textContent = this.requirementLabel(req);
+        row.appendChild(label);
+
+        const value = document.createElement('span');
+        value.className = 'era-req-value';
+        value.textContent = fmt(req.current) + ' / ' + fmt(req.required);
+        row.appendChild(value);
+
+        return row;
+    }
+
+    // 维度标签:building 维度用建筑定义里的中文名(建造面板启动时已把定义缓存进 state.definitions)
+    requirementLabel(req) {
+        if (req.dimension === 'building' && req.building_id) {
+            const defs = this.state.definitions || [];
+            const found = defs.filter((d) => d.building_id === req.building_id)[0];
+            return found ? found.name : req.building_id;
+        }
+        return DIMENSION_LABELS[req.dimension] || req.dimension;
     }
 
     makeItem(def, evaluated) {
@@ -496,6 +609,53 @@ export class TechnologyPanel {
             this.busy = false;
             this.render();
         }
+    }
+
+    // 时代升级(M2-B6):无业务参数,只带幂等键与 expected_revision。
+    // 409(revision 冲突)走与研究/建筑面板完全一致的恢复流程:拉一次权威快照,玩家看到新状态后可重试
+    async doEraUpgrade() {
+        if (this.busy) return;
+        this.busy = true;
+        this.render();
+
+        try {
+            const diff = await this.api.post('/api/city/era/upgrade', {
+                idempotency_key: newIdempotencyKey(),
+                expected_revision: this.state.city ? this.state.city.revision : undefined,
+            });
+            this.applyEraDiff(diff);
+            notifySuccess('进入新时代:' + (diff.era ? diff.era.era_key : ''));
+            // 升级会同时放开科技树与建造清单(两者都按时代闸门置灰),
+            // 升级响应里只有时代与资源,所以再拉一次权威快照把科技区块也刷新掉
+            await this.refreshCity();
+        } catch (err) {
+            notifyError(errorText(err, '时代升级失败,请重试', ERA_ERRORS));
+            const code = err && err.error;
+            if (code === 'REVISION_CONFLICT' || code === 'ERA_REQUIRED') {
+                // ERA_REQUIRED 也刷新:本地条件清单已经过期(别的操作花掉了资源),拉一次拿到最新缺口
+                await this.refreshCity();
+            }
+        } finally {
+            this.busy = false;
+            this.render();
+        }
+    }
+
+    // 时代升级响应:{ revision, resources, money, delta, era }
+    applyEraDiff(diff) {
+        const city = this.state.city;
+        if (!city || !diff) return;
+
+        setState({
+            city: Object.assign({}, city, {
+                revision: diff.revision,
+                resources: Object.assign({}, city.resources, diff.resources),
+                money: diff.money,
+                era: diff.era,
+            }),
+        });
+
+        updateHud(this.state.city);
     }
 
     // 研究响应:{ revision, resources, money, delta, technologies }

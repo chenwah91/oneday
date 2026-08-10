@@ -22,7 +22,17 @@ class BuildTest extends TestCase
         // 给足资源以便建造 F02(木材20/石料5/资金12)
         DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => 'wood'], ['amount' => 1000]);
         DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => 'stone'], ['amount' => 1000]);
+        // 本组用例的主力建筑 F02 属于时代 II,而新城默认时代 I(M2-B6 加的闸门)。
+        // 这些用例验的是资源/占地/上限/幂等/Revision,不该被时代闸门顺带挡住 → 直接把城市置于时代 II。
+        // 时代闸门本身的正反用例单独写在下方
+        $this->setEra($city->id, 'II', 2);
         return $u;
+    }
+
+    // 直接设置城市时代(测试夹具:正常路径只能走 POST /api/city/era/upgrade)
+    private function setEra(int $cityId, string $eraKey, int $eraOrder): void
+    {
+        DB::table('cities')->where('id', $cityId)->update(['era_key' => $eraKey, 'era_order' => $eraOrder]);
     }
 
     public function test_build_succeeds_and_deducts_and_increments_revision(): void
@@ -45,10 +55,53 @@ class BuildTest extends TestCase
         $u = User::create(['username' => 'poor', 'name' => 'poor', 'email' => 'p@p.com', 'password' => 'password123']);
         $city = CityFactory::createForUser($u);
         DB::table('city_resources')->where('city_id', $city->id)->update(['amount' => 0]);
+        $this->setEra($city->id, 'II', 2); // 时代闸门排在材料校验之前,先把时代垫够才验得到 INSUFFICIENT_RESOURCE
 
         $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 1, 'y' => 1])
             ->assertStatus(422)->assertJson(['error' => 'INSUFFICIENT_RESOURCE']);
         $this->assertDatabaseMissing('city_building_instances', ['city_id' => $city->id]);
+    }
+
+    // ---- 时代闸门(M2-B6,v3.2 §4「时代 → 科技 → …→ 土地 → 材料」) ----
+
+    // 新城默认时代 I:时代 II 的 F02 一律拒绝,且不扣资源、不涨 revision
+    public function test_build_rejects_building_above_city_era(): void
+    {
+        $u = User::create(['username' => 'eralow', 'name' => 'eralow', 'email' => 'eralow@x.com', 'password' => 'password123']);
+        $city = CityFactory::createForUser($u);
+        DB::table('city_resources')->where('city_id', $city->id)->update(['amount' => 1000]);
+        $woodBefore = (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->value('amount');
+
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 2, 'y' => 2])
+            ->assertStatus(422)->assertJson(['error' => 'ERA_REQUIRED']);
+
+        $this->assertDatabaseMissing('city_building_instances', ['city_id' => $city->id, 'building_id' => 'F02']);
+        $this->assertSame($woodBefore, (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->value('amount'));
+        $this->assertSame(0, (int) DB::table('cities')->where('id', $city->id)->value('revision'));
+    }
+
+    // 同一座时代 I 的城:时代 I 的 F01 采集营地照常放行(闸门只挡"超时代",不影响当代建筑)
+    public function test_build_allows_building_of_current_era(): void
+    {
+        $u = User::create(['username' => 'eraok', 'name' => 'eraok', 'email' => 'eraok@x.com', 'password' => 'password123']);
+        $city = CityFactory::createForUser($u);
+
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F01', 'x' => 2, 'y' => 2])->assertOk();
+
+        $this->assertDatabaseHas('city_building_instances', ['city_id' => $city->id, 'building_id' => 'F01']);
+    }
+
+    // 检查顺序:时代闸门必须排在占地之前 —— 时代不够时报的是 ERA_REQUIRED,而不是 LAND_OCCUPIED
+    public function test_era_gate_is_checked_before_land(): void
+    {
+        $u = $this->actingUser();                  // 时代 II
+        $city = City::where('user_id', $u->id)->first();
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 2, 'y' => 2])->assertOk();
+
+        // 退回时代 I 后,往已被占用的同一块地建 F02:先撞时代闸门
+        $this->setEra($city->id, 'I', 1);
+        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 3, 'y' => 3])
+            ->assertStatus(422)->assertJson(['error' => 'ERA_REQUIRED']);
     }
 
     public function test_build_rejects_occupied_land(): void

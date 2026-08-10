@@ -57,6 +57,9 @@ export function mountHud(el) {
     const healthVal = makeItem(bar, 'hud-health', '健康度 0-100(医疗容量覆盖率)', '❤️');
     const securityVal = makeItem(bar, 'hud-security', '治安度 0-100(国防值覆盖率)', '🛡️');
 
+    // 时代(M2-B6):独立小元素,显示当前时代 key(详细条件在科技面板的时代区块里看)
+    const eraVal = makeItem(bar, 'hud-era', '当前文明时代', '🏛️');
+
     const revItem = document.createElement('div');
     revItem.className = 'hud-item hud-revision';
     revItem.title = '数据版本号';
@@ -65,7 +68,7 @@ export function mountHud(el) {
 
     el.appendChild(bar);
 
-    refs = { resourceEls, moneyVal, popVal, laborVal, rateVal, happinessVal, healthVal, securityVal, revItem };
+    refs = { resourceEls, moneyVal, popVal, laborVal, rateVal, happinessVal, healthVal, securityVal, eraVal, revItem };
 }
 
 // city:GET /api/city 返回的 city 对象
@@ -92,6 +95,9 @@ export function updateHud(city) {
     refs.happinessVal.classList.toggle('hud-alert', happiness < HAPPINESS_ALERT);
     refs.healthVal.textContent = Math.round(Number(city.health) || 0);
     refs.securityVal.textContent = Math.round(Number(city.security) || 0);
+
+    // 时代:快照的 city.era(M2-B6);老响应里没有这块时留空,不显示 undefined
+    refs.eraVal.textContent = city.era ? city.era.era_key : '-';
 
     refs.revItem.textContent = 'rev ' + fmt(city.revision);
 }

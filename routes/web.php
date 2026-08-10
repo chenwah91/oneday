@@ -67,6 +67,9 @@ Route::prefix('api')->group(function () {
 
         // 科技研究:一次性扣知识 + 按 research_minutes 计时,到点由懒结算翻成已解锁(CLAUDE §48 Research 必须限流)
         Route::post('/city/research', \App\Http\Controllers\City\ResearchController::class)->middleware('throttle:api');
+
+        // 时代升级:升到下一时代,按 v3.2 §5.1 八维条件逐项校验(不达标 422 ERA_REQUIRED + 逐维清单)
+        Route::post('/city/era/upgrade', \App\Http\Controllers\City\EraUpgradeController::class)->middleware('throttle:api');
     });
 });
 

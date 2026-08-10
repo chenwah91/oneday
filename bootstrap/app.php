@@ -70,7 +70,12 @@ return Application::configure(basePath: dirname(__DIR__))
                     ]);
                 }
 
-                return \App\Support\ApiResponse::fail($e->errorCode, $e->status);
+                // details 非空时并进响应(如 ERA_REQUIRED 的逐维条件清单);为空则响应结构保持原样
+                return \App\Support\ApiResponse::fail(
+                    $e->errorCode,
+                    $e->status,
+                    $e->details ? ['details' => $e->details] : []
+                );
             }
 
             if ($e instanceof \Illuminate\Validation\ValidationException) {

@@ -36,8 +36,12 @@ final class ErrorCode
 
     // 科技研究(M2-B1,CLAUDE §32 预留码)
     // TECH_NOT_UNLOCKED:前置科技尚未解锁(在研不算解锁)
-    // ERA_REQUIRED:该科技所属时代还没到(过渡期按「已解锁科技的最高时代 + 1」判定,见 TechService)
     public const TECH_NOT_UNLOCKED = 'TECH_NOT_UNLOCKED';
+
+    // 时代不满足(M2-B6 起共三个落点,一律按 cities.era_order 判定):
+    //   研究:该科技所属时代高于城市当前时代
+    //   建造:该建筑所属时代高于城市当前时代
+    //   时代升级:下一时代的条件没有全部达标(此时响应带 details.requirements 逐维清单)
     public const ERA_REQUIRED = 'ERA_REQUIRED';
 
     // 已有项目在研:同时只允许 1 项(重复提交同一项、或第二项并行下单,都是这个码)

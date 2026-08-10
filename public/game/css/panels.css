@@ -80,6 +80,13 @@
     background: rgba(91, 141, 239, 0.18);
 }
 
+/* 时代未解锁(M2-B6):置灰不可点,title 里说明需要的时代 */
+.build-item.era-locked {
+    opacity: 0.45;
+    color: #6b7484;
+    cursor: default;
+}
+
 .build-item-name {
     font-size: 13px;
     font-weight: 600;
@@ -402,6 +409,82 @@
     line-height: 1;
 }
 
+/* 时代区块(M2-B6):当前时代 + 升级按钮 + 逐维条件清单 */
+.era-box {
+    padding: 10px 12px;
+    border-bottom: 1px solid #2a3140;
+    background: #1e2530;
+}
+
+.era-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.era-current {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.era-note {
+    margin-top: 6px;
+    color: #9aa4b2;
+    font-size: 12px;
+}
+
+.era-btn {
+    margin-left: auto;
+    min-height: 32px;
+    padding: 0 12px;
+    border: 1px solid #d99a3c;
+    border-radius: 8px;
+    background: #d99a3c;
+    color: #1b212b;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.era-btn:disabled {
+    border-color: #2a3140;
+    background: #232a36;
+    color: #6b7484;
+    opacity: 0.6;
+    cursor: default;
+}
+
+.era-reqs {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.era-req {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.era-req-label {
+    color: #9aa4b2;
+}
+
+.era-req-value {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 满足 = 绿;未满足 = 橙(与 HUD 的告警色系一致) */
+.era-req.is-met .era-req-value {
+    color: #57c46b;
+}
+
+.era-req.is-missing .era-req-value {
+    color: #d99a3c;
+}
+
 .tech-filters {
     display: flex;
     gap: 6px;
@@ -573,6 +656,12 @@
     }
 
     .tech-chip {
+        min-height: 44px;
+        font-size: 13px;
+    }
+
+    /* 手机:时代升级是重要按钮,触控区域按 CLAUDE §22 的 44px 走 */
+    .era-btn {
         min-height: 44px;
         font-size: 13px;
     }

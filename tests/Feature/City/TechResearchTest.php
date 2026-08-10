@@ -47,6 +47,13 @@ class TechResearchTest extends TestCase
         ]);
     }
 
+    // 直接设置城市时代(M2-B6:时代是 cities 的落库列,不再由已解锁科技派生)。
+    // 正常路径只能走 POST /api/city/era/upgrade,这里是测试夹具
+    private function setEra(City $city, string $eraKey, int $eraOrder): void
+    {
+        DB::table('cities')->where('id', $city->id)->update(['era_key' => $eraKey, 'era_order' => $eraOrder]);
+    }
+
     private function knowledgeOf(City $city): float
     {
         return (float) DB::table('city_resources')
@@ -93,11 +100,12 @@ class TechResearchTest extends TestCase
 
     // ---- 规则闸门 ----
 
-    // 前置科技未解锁:TECH_II_SUST 要求 TECH_I_SUST,这里只解锁了同时代的另一分支
+    // 前置科技未解锁:TECH_II_SUST 要求 TECH_I_SUST,这里时代已到 II 但没有解锁前置
     public function test_missing_prerequisite_is_rejected(): void
     {
         [$u, $city] = $this->makeCity('techB');
-        $this->forceUnlock($city, 'TECH_I_IND'); // 时代 I:把时代闸门抬到可研究时代 II
+        $this->setEra($city, 'II', 2); // 先过时代闸门,才验得到前置闸门
+        $this->forceUnlock($city, 'TECH_I_IND'); // 同时代的另一分支,不是 TECH_II_SUST 的前置
 
         $this->actingAs($u)->postJson('/api/city/research', ['tech_id' => 'TECH_II_SUST'])
             ->assertStatus(422)->assertJson(['error' => 'TECH_NOT_UNLOCKED']);
@@ -106,7 +114,7 @@ class TechResearchTest extends TestCase
         $this->assertEqualsWithDelta(1000.0, $this->knowledgeOf($city), 0.0001, '被拒绝不得扣费');
     }
 
-    // 时代不满足:新城一项科技都没解锁 → 只能研究时代 I,时代 III 一律拒绝
+    // 时代不满足:新城是时代 I,时代 III 一律拒绝
     public function test_era_requirement_is_rejected(): void
     {
         [$u, $city] = $this->makeCity('techC');
@@ -117,11 +125,25 @@ class TechResearchTest extends TestCase
         $this->assertSame(0, DB::table('city_technologies')->count());
     }
 
-    // 时代闸门会随解锁推进:解锁时代 I 之后,时代 II 就能研究了
-    public function test_era_gate_opens_after_unlocking_previous_era(): void
+    // v3.2 §5.1「升级时代只开放该时代科技树」:时代 I 的城连"下一代"科技也研究不了。
+    // (B1 过渡期曾放行 era+1,B6 起收紧为 <= 当前时代)
+    public function test_next_era_tech_is_rejected_before_era_upgrade(): void
+    {
+        [$u, $city] = $this->makeCity('techC2');
+        $this->forceUnlock($city, 'TECH_I_SUST'); // 前置齐了,但时代仍是 I
+
+        $this->actingAs($u)->postJson('/api/city/research', ['tech_id' => 'TECH_II_SUST'])
+            ->assertStatus(422)->assertJson(['error' => 'ERA_REQUIRED']);
+
+        $this->assertEqualsWithDelta(1000.0, $this->knowledgeOf($city), 0.0001, '被拒绝不得扣费');
+    }
+
+    // 时代闸门随 cities.era_order 推进:城市升到时代 II 且前置已解锁后,时代 II 的科技就能研究了
+    public function test_era_gate_opens_after_era_upgrade(): void
     {
         [$u, $city] = $this->makeCity('techD');
         $this->forceUnlock($city, 'TECH_I_SUST');
+        $this->setEra($city, 'II', 2);
 
         $this->actingAs($u)->postJson('/api/city/research', ['tech_id' => 'TECH_II_SUST'])->assertOk();
 
@@ -268,9 +290,10 @@ class TechResearchTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.city.technologies.researching', null)
             ->assertJsonPath('data.city.technologies.unlocked', ['TECH_I_SUST'])
-            // 派生时代:解锁了时代 I 的科技 → 可研究到时代 II
+            // 时代读 cities.era_order(M2-B6):解锁科技不再推进时代,新城恒为 I;
+            // 可研究上限 = 当前时代(§5.1「只开放该时代科技树」)
             ->assertJsonPath('data.city.technologies.current_era_order', 1)
-            ->assertJsonPath('data.city.technologies.max_research_era_order', 2);
+            ->assertJsonPath('data.city.technologies.max_research_era_order', 1);
 
         $this->assertSame('unlocked', DB::table('city_technologies')->where('city_id', $city->id)->value('status'));
         $this->assertSame(1, DB::table('audit_logs')->where('action', 'TECH.UNLOCK')->count());
@@ -285,6 +308,7 @@ class TechResearchTest extends TestCase
     public function test_research_endpoint_settles_finished_research_first(): void
     {
         [$u, $city] = $this->makeCity('techM');
+        $this->setEra($city, 'II', 2); // 第二单是时代 II 的科技,先把城市时代垫到 II
         $this->actingAs($u)->postJson('/api/city/research', ['tech_id' => 'TECH_I_SUST'])->assertOk();
 
         Carbon::setTestNow(Carbon::parse('2026-01-01 00:02:00'));
@@ -343,7 +367,8 @@ class TechResearchTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.city.technologies.unlocked', [])
             ->assertJsonPath('data.city.technologies.researching', null)
-            ->assertJsonPath('data.city.technologies.current_era_order', 0)
+            // 新城开局即时代 I(cities.era_key 默认 'I' / era_order 默认 1)
+            ->assertJsonPath('data.city.technologies.current_era_order', 1)
             ->assertJsonPath('data.city.technologies.max_research_era_order', 1);
     }
 }

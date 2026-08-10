@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\City;
 
 use App\Game\City\CityFactory;
+use App\Game\City\EraService;
 use App\Game\Definition\GameDataVersion;
 use App\Game\Population\WorkerService;
 use App\Game\Simulation\SimulationService;
@@ -72,6 +73,15 @@ class CityController extends Controller
                 'health'              => $sim['health'],
                 'security'            => $sim['security'],
                 'money'               => (float) $city->money,
+                // 财政 / 治理(§10.5 / §10.6):都是派生值,不落库。
+                // tax_income_per_min 与 rates_per_min 同为「最后一段口径」的速率;
+                // governance.load 越界会按四档压低 efficiency,直接打折税收
+                'tax_income_per_min'  => $sim['taxIncomePerMin'],
+                'governance'          => [
+                    'load'       => $sim['governanceLoad'],
+                    'efficiency' => $sim['governanceEfficiency'],
+                    'capacity'   => $sim['governanceCapacity'],
+                ],
                 'map_width'           => $city->map_width,
                 'map_height'          => $city->map_height,
                 'storage_capacity'    => $sim['storageCapacity'],
@@ -79,9 +89,12 @@ class CityController extends Controller
                 'resources'           => $resources,
                 'rates_per_min'       => $sim['ratesPerMin'],
                 'buildings'           => $buildings,
-                // 科技(M2-B1):已解锁 tech_id 列表 + 在研项 + 派生的时代进度。
+                // 时代(M2-B6):当前时代 + 下一时代的逐维升级条件(已是最高时代时 next 为 null)。
+                // 条件里的当前值全部取自本次结算结果 $sim,与升级端点锁内判定的口径完全一致
+                'era'                 => EraService::snapshot($city, $sim),
+                // 科技(M2-B1):已解锁 tech_id 列表 + 在研项 + 时代进度(时代读 cities.era_order)。
                 // 定义(名称/费用/时长/前置)不在快照里,前端从 /api/definitions/technologies 单独取一次
-                'technologies'        => TechService::snapshot((int) $city->id),
+                'technologies'        => TechService::snapshot((int) $city->id, (int) $city->era_order),
             ],
         ]]);
     }

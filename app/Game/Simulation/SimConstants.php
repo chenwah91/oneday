@@ -105,6 +105,32 @@ class SimConstants
     public const HAPPINESS_FACTOR_FULL_AT = 70.0;
     public const HAPPINESS_FACTOR_AT_FLOOR = 0.5;
 
+    // ---- 财政 / 治理(v3.2 §10.5 财政、§10.6 治理,数值同样不得在代码里改)----
+
+    // 时代 I 的人均税额(资金 / 人 / 分钟)(§10.5「时代 I:taxPerCapitaPerMin = 0.02」)
+    public const TAX_PER_CAPITA_ERA_1 = 0.02;
+
+    // 每进入下一个时代人均税额 ×1.5(§10.5「每进入下一个时代:taxPerCapitaPerMin × 1.5」)
+    // 即 taxPerCapitaPerMin = 0.02 × 1.5^(era_order − 1):I=0.02、II=0.03、III=0.045…
+    public const TAX_ERA_MULTIPLIER = 1.5;
+
+    // 治理效率四档(§10.5「治理效率」与 §10.6「治理」是同一张表,不写第二份):
+    //   governanceLoad = population / max(1, governanceCapacity)
+    //   <= 0.80 → 1.00;0.80~1.00 → 0.90;1.00~1.25 → 0.70;> 1.25 → 0.50
+    // 档位边界取「上界闭区间」(load 恰为 0.80 / 1.00 / 1.25 时归入惩罚较轻的那一档),
+    // 与 §10.3 housingFactor 的 `< 0.80` 写法一致:v3.2 只写了第一档的 `<=`,其余靠这条约定补齐
+    public const GOVERNANCE_LOAD_GOOD = 0.80;
+    public const GOVERNANCE_LOAD_TIGHT = 1.00;
+    public const GOVERNANCE_LOAD_OVER = 1.25;
+    public const GOVERNANCE_EFFICIENCY_GOOD = 1.00;
+    public const GOVERNANCE_EFFICIENCY_TIGHT = 0.90;
+    public const GOVERNANCE_EFFICIENCY_OVER = 0.70;
+    public const GOVERNANCE_EFFICIENCY_COLLAPSE = 0.50;
+
+    // 维护欠费半停工(§10.5「对应欠费建筑 productionFactor *= 0.50」):
+    // 取代 M1 的「money = max(0, money) 然后继续满产」白嫖口径
+    public const MAINTENANCE_ARREARS_FACTOR = 0.50;
+
     // 容量类产出(建筑等级定义中的产出类型)
     // 单一来源是 ResourceCode::CAPACITY,这里只做别名,避免调用方两处引用不一致
     public const CAPACITY_OUTPUTS = ResourceCode::CAPACITY;

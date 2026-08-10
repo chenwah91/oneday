@@ -30,6 +30,10 @@ final class AuditAction
     public const TECH_RESEARCH_START = 'TECH.RESEARCH_START';
     public const TECH_UNLOCK = 'TECH.UNLOCK';
 
+    // 时代升级(M2-B6):before/after 记升级前后的 era_key / era_order,
+    // metadata 记达标当时的逐维实测值(事后回查「他当时是靠什么过的线」)
+    public const ERA_UPGRADE = 'ERA.UPGRADE';
+
     // 安全:越权操作被拒
     public const SECURITY_AUTHORIZATION_FAILED = 'SECURITY.AUTHORIZATION_FAILED';
 

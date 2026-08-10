@@ -2,6 +2,7 @@
 
 namespace App\Game\Technology;
 
+use App\Game\City\EraService;
 use App\Game\Resource\ResourceCode;
 use App\Game\Simulation\SimulationService;
 use App\Models\City;
@@ -15,6 +16,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 // 科技研究(M2-B1):开始研究 → 计时 → 到点解锁。
+//
+// 时代口径(M2-B6 起):城市时代读 cities.era_order,B1 的「由已解锁科技派生时代」过渡逻辑已删除。
 //
 // 完整安全链照 BuildService 的顺序走:
 //   幂等预检 → 事务 → cities 行锁 → 幂等复检 → Revision 校验 → 锁内先结算
@@ -94,16 +97,15 @@ class TechService
                 throw new GameRuleException(ErrorCode::RESEARCH_IN_PROGRESS, 422);
             }
 
-            $eraOrders = self::eraOrders();
+            $eraOrders = EraService::orders();
             $unlocked = self::unlockedIds((int) $city->id);
 
-            // 规则 3:时代要求。
-            // ⚠️ 过渡实现:cities 目前没有 era_key 列(B6 才加),这里从「已解锁科技的最高时代」派生,
-            // 允许研究「当前时代 + 1」以内的科技 —— 新城(无任何解锁)只能研究时代 I。
-            // B6 落地 cities.era_key 后,这条规则要换成直接读城市时代,不要在别处再抄一份派生逻辑。
-            $currentEra = self::currentEraOrder($unlocked, $eraOrders);
+            // 规则 3:时代要求(M2-B6 起直接读 cities.era_order,B1 的「已解锁科技最高时代」派生逻辑已作废)。
+            // 口径按 v3.2 §5.1:「升级时代只开放该时代科技树」—— 只能研究**不高于当前时代**的科技,
+            // 不再放行「当前时代 + 1」。想研究下一代科技必须先走 POST /api/city/era/upgrade。
+            $currentEra = (int) $locked->era_order;
             $needEra = (int) ($eraOrders[$def->era_key] ?? PHP_INT_MAX);
-            if ($needEra > $currentEra + 1) {
+            if ($needEra > $currentEra) {
                 throw new GameRuleException(ErrorCode::ERA_REQUIRED, 422);
             }
 
@@ -239,8 +241,9 @@ class TechService
 
     // ---- 只读查询 ----
 
-    // 快照区块:已解锁 tech_id 列表 + 在研项 + 派生的时代进度
-    public static function snapshot(int $cityId): array
+    // 快照区块:已解锁 tech_id 列表 + 在研项 + 时代进度
+    // $eraOrder 由调用方从 cities.era_order 传入(B6 起城市时代是落库列,不再由科技派生)
+    public static function snapshot(int $cityId, int $eraOrder): array
     {
         $rows = DB::table('city_technologies')
             ->where('city_id', $cityId)->orderBy('tech_id')
@@ -262,14 +265,14 @@ class TechService
             }
         }
 
-        // 时代进度:前端据此把「超时代」的节点置灰并说明原因,不必自己再算一遍派生规则
-        $currentEra = self::currentEraOrder($unlocked, self::eraOrders());
-
+        // 时代进度:前端据此把「超时代」的节点置灰并说明原因。
+        // max_research_era_order 保留(前端契约不变),但按 v3.2 §5.1「只开放该时代科技树」,
+        // 它现在恒等于当前时代,而不是 B1 时期的当前时代 + 1
         return [
             'unlocked'               => $unlocked,
             'researching'            => $researching,
-            'current_era_order'      => $currentEra,
-            'max_research_era_order' => $currentEra + 1,
+            'current_era_order'      => $eraOrder,
+            'max_research_era_order' => $eraOrder,
         ];
     }
 
@@ -279,32 +282,6 @@ class TechService
         return DB::table('city_technologies')
             ->where('city_id', $cityId)->where('status', self::STATUS_UNLOCKED)
             ->orderBy('tech_id')->pluck('tech_id')->all();
-    }
-
-    // era_key => era_order
-    private static function eraOrders(): array
-    {
-        return DB::table('era')->pluck('era_order', 'era_key')
-            ->map(fn ($o) => (int) $o)->all();
-    }
-
-    // 派生的城市时代序号:已解锁科技里的最高时代;一项都没有时为 0(= 只能研究时代 I)。
-    // 见 research() 规则 3 的过渡说明,B6 落地 cities.era_key 后此法作废。
-    private static function currentEraOrder(array $unlockedIds, array $eraOrders): int
-    {
-        if (! $unlockedIds) {
-            return 0;
-        }
-
-        $eraKeys = DB::table('technology_definition')
-            ->whereIn('tech_id', $unlockedIds)->pluck('era_key')->all();
-
-        $max = 0;
-        foreach ($eraKeys as $key) {
-            $max = max($max, (int) ($eraOrders[$key] ?? 0));
-        }
-
-        return $max;
     }
 
     // 定义里的前置科技列表
@@ -328,7 +305,7 @@ class TechService
                 ->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all(),
             'money'        => (float) $city->money,
             'delta'        => $delta,
-            'technologies' => self::snapshot((int) $city->id),
+            'technologies' => self::snapshot((int) $city->id, (int) $city->era_order),
         ];
     }
 }

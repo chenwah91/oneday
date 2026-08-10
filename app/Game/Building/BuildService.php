@@ -2,6 +2,7 @@
 
 namespace App\Game\Building;
 
+use App\Game\City\EraService;
 use App\Game\Resource\ResourceCode;
 use App\Game\Simulation\SimulationService;
 use App\Models\City;
@@ -57,6 +58,17 @@ class BuildService
             // 1) 不结算就扣款,玩家可用"离线期间已被吃掉的旧快照资源"建造;
             // 2) 不结算就建造,新建筑会追溯生产建成之前的时段。
             $sim = SimulationService::applyLocked($locked, now());
+
+            // 时代闸门(v3.2 §4「建造检查顺序:时代 → 科技 → 人口 → 治理 → 幸福 → 特殊前置 → 数量上限 → 土地 → 材料」):
+            // 必须排在占地/上限/材料之前 —— 时代不到根本谈不上"这块地能不能放",
+            // 先报 LAND_OCCUPIED 会让玩家换个地方反复试。
+            // 判定一律读 cities.era_order(B6 起唯一口径),不再从已解锁科技派生。
+            // 科技闸门(building_definition.tech_id)是 B4 的活,本段不接。
+            $eraOrders = EraService::orders();
+            $needEraOrder = (int) ($eraOrders[$def->era_key] ?? PHP_INT_MAX);
+            if ($needEraOrder > (int) $locked->era_order) {
+                throw new GameRuleException(ErrorCode::ERA_REQUIRED, 422);
+            }
 
             // 占地:落在地图内
             $w = (int) $def->footprint_w; $h = (int) $def->footprint_h;

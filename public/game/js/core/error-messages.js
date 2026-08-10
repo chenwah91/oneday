@@ -17,8 +17,11 @@ export const ERROR_MESSAGES = {
 
     // 科技研究(M2-B1)
     TECH_NOT_UNLOCKED: '前置科技尚未解锁',
-    ERA_REQUIRED: '当前时代还研究不了这项科技',
     RESEARCH_IN_PROGRESS: '已有科技在研究中,完成后才能开始下一项',
+
+    // 时代(M2-B6):同一个码有三个落点(研究 / 建造 / 时代升级),
+    // 这里给通用文案,各面板用 overrides 换成本场景的说法
+    ERA_REQUIRED: '当前时代还不能进行该操作',
 
     // 通用 / 基础设施
     VALIDATION_ERROR: '输入有误,请检查后重试',

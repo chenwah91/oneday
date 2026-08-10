@@ -51,10 +51,45 @@ class SimulationService
         return $product;
     }
 
+    // 单栋建筑的产出/投入总系数 = 七乘区的乘数积 × 维护欠费率。
+    //
+    // 维护欠费率(§10.5 半停工)刻意不占七乘区里的名额:§10.11 的生产总公式只认那七项,
+    // 多塞一格会让「乘区」这个概念变质。它与乘数积同级(都在 recipeRate 之前折算原料需求),
+    // 所以半停工的建筑吃料也同比例减半,不会出现「按满产吃料、按半产出货」的凭空损耗
+    private static function unitFactor(array $u): float
+    {
+        return self::multiplierProduct($u['multipliers']) * (float) ($u['maintRate'] ?? 1.0);
+    }
+
     // 可分配劳动力:availableWorkers = floor(population × 0.60)(v3.2 §10.4)
     public static function availableWorkers(int|float $population): int
     {
         return (int) floor(max(0, $population) * SimConstants::WORKER_RATIO);
+    }
+
+    // 人均税额(v3.2 §10.5):时代 I = 0.02,每进入下一个时代 ×1.5。
+    // 即 taxPerCapitaPerMin = 0.02 × 1.5^(era_order − 1);era_order 小于 1(含列缺失兜底)一律按时代 I
+    public static function taxPerCapitaPerMin(int $eraOrder): float
+    {
+        return SimConstants::TAX_PER_CAPITA_ERA_1
+            * pow(SimConstants::TAX_ERA_MULTIPLIER, max(1, $eraOrder) - 1);
+    }
+
+    // 治理负载(v3.2 §10.5 / §10.6):governanceLoad = population / max(1, governanceCapacity)
+    public static function governanceLoad(float $population, float $governanceCapacity): float
+    {
+        return max(0.0, $population) / max(1.0, $governanceCapacity);
+    }
+
+    // 治理效率四档(v3.2 §10.5 / §10.6):<= 0.80 → 1.00;0.80~1.00 → 0.90;1.00~1.25 → 0.70;> 1.25 → 0.50。
+    // M2 它只作用于 taxIncome(§10.5 的税收公式);§10.6 里「腐败 / 治安 / 抗议事件权重」明确留 M3
+    public static function governanceEfficiency(float $load): float
+    {
+        if ($load <= SimConstants::GOVERNANCE_LOAD_GOOD) { return SimConstants::GOVERNANCE_EFFICIENCY_GOOD; }
+        if ($load <= SimConstants::GOVERNANCE_LOAD_TIGHT) { return SimConstants::GOVERNANCE_EFFICIENCY_TIGHT; }
+        if ($load <= SimConstants::GOVERNANCE_LOAD_OVER) { return SimConstants::GOVERNANCE_EFFICIENCY_OVER; }
+
+        return SimConstants::GOVERNANCE_EFFICIENCY_COLLAPSE;
     }
 
     // 锁内结算:把 [last_simulated_at, $now] 这段时间的产出/消耗/维护/人口结清并落库
@@ -99,6 +134,13 @@ class SimulationService
         // 与仓储/人口容量一样在构建中间结构时提取到全局,不进 grossOut、不受乘区与满足率影响
         $medicalCapacity = 0.0;
         $defenseScore = 0.0;
+        // 治理容量(§10.5 / §10.6):同样是容量类产出,用来算 governanceLoad → governanceEfficiency → taxIncome。
+        //
+        // 唯一来源 = 建筑 output_json 里的 governance_capacity 一条(内核 CAPACITY 机制已把它聚合成全城值)。
+        // building_level_definition 另有一列 governance_bonus,与 output_json 是两套口径且数值并不相等
+        // (A01 L2:output 108 / bonus 104;K01~K05 只有 bonus 没有 output),两边都读会双计。
+        // 该口径分歧已进 backlog 待用户裁决,在裁决前这里坚持单一来源,绝不叠加 governance_bonus 列
+        $governanceCapacity = 0.0;
         $maintenanceMoneyPerMin = 0.0;
 
         // 用工闸门总开关(game_settings.worker_gate_enabled,默认 true = 维持「没派工人就不生产」)。
@@ -113,7 +155,7 @@ class SimulationService
         // 每行结构:
         //   ['instanceId','buildingId','level',
         //    'grossOut' => [资源=>速率], 'grossIn' => [资源=>速率],
-        //    'maintMoney', 'maintFood', 'multipliers' => [七个乘区]]
+        //    'maintMoney', 'maintFood', 'multipliers' => [七个乘区], 'maintRate' => 维护欠费率]
         $units = [];
 
         foreach ($levels as $lv) {
@@ -131,6 +173,7 @@ class SimulationService
                 if ($res === ResourceCode::POPULATION_CAPACITY) { $populationCap += $r; continue; }
                 if ($res === ResourceCode::MEDICAL_CAPACITY) { $medicalCapacity += $r; continue; }
                 if ($res === ResourceCode::DEFENSE_SCORE) { $defenseScore += $r; continue; }
+                if ($res === ResourceCode::GOVERNANCE_CAPACITY) { $governanceCapacity += $r; continue; }
                 if (ResourceCode::isCapacity($res)) { continue; } // 其他容量:M2-C2 阶段仍不结算
                 $grossOut[$res] = ($grossOut[$res] ?? 0) + $r;
             }
@@ -153,6 +196,10 @@ class SimulationService
                 'maintMoney'  => (float) $lv->maintenance_money_per_min,
                 'maintFood'   => (float) $lv->maintenance_food_per_min,
                 'multipliers' => $multipliers,
+                // 维护欠费率(§10.5):1.0 = 维护付得起;0.5 = 本段欠费半停工。
+                // 它不占七乘区里的任何一格(七乘区是 §10.11 生产总公式的固定名单,不许扩名),
+                // 而是逐段由 applyLocked 改写、在 unitFactor 里单独乘在乘数积之后
+                'maintRate'   => 1.0,
             ];
         }
 
@@ -185,17 +232,51 @@ class SimulationService
         // 幸福度(§10.2):持久状态,与人口一样在内存里逐段滚动,全部段算完后一次写库
         $happiness = (float) $lockedCity->happiness;
 
+        // 人均税额(§10.5):时代 I = 0.02,每进一个时代 ×1.5 → 0.02 × 1.5^(era_order − 1)。
+        // era_order 由时代升级(M2-B6)维护;列尚未上线 / 值为空的城市按时代 I 兜底。
+        // 整段结算内时代不变,所以在循环外算一次(分段循环内零查库、零幂运算)
+        $taxPerCapita = self::taxPerCapitaPerMin((int) ($lockedCity->era_order ?? 1));
+
         $ratePerMin = [];        // 资源 => 每分钟净速率(最后一段口径,返回给前端显示)
         $grossProduction = [];   // 资源 => 每分钟 gross 产出(已含乘数与满足率)
         $grossConsumption = [];  // 资源 => 每分钟 gross 配方消耗(不含维护与人口吃粮)
         $growthPerMin = 0.0;     // 人口名义增长(人/分钟,最后一段口径)
         $touched = [];           // 本次结算动过的资源键:落库时按它取值
+        // 财政 / 治理的「最后一段口径」返回值(与 ratePerMin / growthPerMin 同一约定:
+        // 它们描述的是最后一段实际生效的速率与状态,而不是结算后人口的重新推算)
+        $governanceLoad = 0.0;
+        $governanceEfficiency = SimConstants::GOVERNANCE_EFFICIENCY_GOOD;
+        $taxIncomePerMin = 0.0;
+        $maintenanceRate = 1.0;
+        $maintenanceArrears = false;
 
         for ($s = 0; $s < $segments; $s++) {
             $segStartOffset = $s * $segMinutes;
             // 末段直接取总时长兜住浮点累加误差,保证 Σ段长 === 总时长(守恒的前提)
             $segEndOffset = $s === $segments - 1 ? $totalMinutes : ($s + 1) * $segMinutes;
             $span = $segEndOffset - $segStartOffset;
+
+            // ---- 本段财政(§10.5 / §10.6):必须先于 segmentRates,因为欠费会打折本段产出 ----
+            //
+            // 治理效率与税收都按「段起人口」算 —— 与粮耗、幸福目标同一条「段内人口恒定」纪律
+            $governanceLoad = self::governanceLoad($population, $governanceCapacity);
+            $governanceEfficiency = self::governanceEfficiency($governanceLoad);
+            // taxIncome = population × taxPerCapitaPerMin × governanceEfficiency(§10.5)。
+            // M2 税率固定、玩家不可调(§10.5「M2:税率固定 / 玩家不可调」),M3 才开放税率政策
+            $taxIncomePerMin = $population * $taxPerCapita * $governanceEfficiency;
+
+            // 维护欠费判定(§10.5):段起资金 + 本段税收 若付不起本段全额维护 → 本段判定为欠费。
+            // 等价于 §10.5 的「money <= 0 且存在无法支付的建筑维护」:付不起时资金必然被夹到 0
+            $maintenanceDue = $maintenanceMoneyPerMin * $span;
+            $fundsAvailable = $money + $taxIncomePerMin * $span;
+            $maintenanceArrears = $maintenanceDue > 0 && $fundsAvailable + 1e-9 < $maintenanceDue;
+            $maintenanceRate = $maintenanceArrears ? SimConstants::MAINTENANCE_ARREARS_FACTOR : 1.0;
+            // 半停工只落在「有维护资金的建筑」上(住宅/仓库这类零维护建筑不可能欠费,恒 1.0)。
+            // v3.2 只写了「对应欠费建筑 productionFactor *= 0.50」,没给「缺口如何分摊到具体哪几栋」的规则,
+            // 这里按最简单也最保守的口径:本段一旦欠费,所有要交维护费的建筑一起半停工(见汇报的假设清单)
+            foreach ($units as $i => $u) {
+                $units[$i]['maintRate'] = $u['maintMoney'] > 0 ? $maintenanceRate : 1.0;
+            }
 
             // 本段速率:满足率用段起库存、人口吃粮用段起人口(段内人口视为恒定)
             [$ratePerMin, $grossProduction, $grossConsumption] = self::segmentRates($units, $resources, $population, $span);
@@ -209,8 +290,9 @@ class SimulationService
                 $touched[$res] = true;
             }
 
-            // 维护资金:逐段扣,夹在 0(单调递减,分段夹 0 与整段夹 0 结果一致)
-            $money = max(0, $money - $maintenanceMoneyPerMin * $span);
+            // 资金结算:先收税再扣维护,夹在 0。
+            // 付不起的那部分不记成负债,而是已经在上面转成了本段的半停工惩罚(§10.5 取代白嫖口径)
+            $money = max(0, $fundsAvailable - $maintenanceDue);
 
             $foodNetRate = (float) ($ratePerMin[ResourceCode::FOOD] ?? 0);
             // 段起人口:幸福目标里的住房/覆盖/食物品质都按它算(与「段内人口恒定」同一纪律)
@@ -301,6 +383,19 @@ class SimulationService
             // 医疗容量 / 国防值:综合面板与 M3 疾病/犯罪联动的数据基础
             'medicalCapacity'         => $medicalCapacity,
             'defenseScore'            => $defenseScore,
+            // 财政 / 治理(§10.5 / §10.6),全部是「最后一段口径」的派生值,一个都不落库:
+            //   governanceCapacity 全城治理容量(唯一来源 = output_json 的 governance_capacity)
+            //   governanceLoad / governanceEfficiency 治理负载与四档效率
+            //   taxIncomePerMin 本段税收速率(资金/分钟)
+            //   maintenanceMoneyPerMin 全城维护资金速率(财政预警的分母,也是欠费判定的依据)
+            //   maintenanceRate / maintenanceArrears 欠费半停工状态(§10.5 要求的 maintenanceArrears 等价状态)
+            'governanceCapacity'      => $governanceCapacity,
+            'governanceLoad'          => $governanceLoad,
+            'governanceEfficiency'    => $governanceEfficiency,
+            'taxIncomePerMin'         => $taxIncomePerMin,
+            'maintenanceMoneyPerMin'  => $maintenanceMoneyPerMin,
+            'maintenanceRate'         => $maintenanceRate,
+            'maintenanceArrears'      => $maintenanceArrears,
         ];
     }
 
@@ -328,7 +423,7 @@ class SimulationService
         $demand = [];
         foreach ($units as $u) {
             if (! $u['grossIn']) { continue; }
-            $mult = self::multiplierProduct($u['multipliers']);
+            $mult = self::unitFactor($u);
             foreach ($u['grossIn'] as $res => $r) { $demand[$res] = ($demand[$res] ?? 0) + $r * $mult * $minutes; }
         }
         // 每种原料的全局满足率 = 库存 / 总需求,夹在 [0,1];
@@ -340,13 +435,13 @@ class SimulationService
                 : 1.0;
         }
 
-        // 第二遍聚合:每栋有效速率 = (grossOut − grossIn) × 乘数积 × 满足率(取配方中最小的那个)
+        // 第二遍聚合:每栋有效速率 = (grossOut − grossIn) × 乘数积 × 维护欠费率 × 满足率(取配方中最小的那个)
         $grossProduction = [];
         $grossConsumption = [];
         foreach ($units as $u) {
             $recipeRate = 1.0;
             foreach (array_keys($u['grossIn']) as $res) { $recipeRate = min($recipeRate, $globalRate[$res] ?? 1.0); }
-            $factor = self::multiplierProduct($u['multipliers']) * $recipeRate;
+            $factor = self::unitFactor($u) * $recipeRate;
 
             foreach ($u['grossOut'] as $res => $r) {
                 $eff = $r * $factor;

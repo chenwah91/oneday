@@ -37,7 +37,10 @@ class DefinitionController extends Controller
             ->join('building_level_definition as bl', function ($j) {
                 $j->on('bd.building_id', '=', 'bl.building_id')->where('bl.level', '=', 1);
             })
-            ->select('bd.building_id', 'bd.name', 'bd.category', 'bd.era_key', 'bd.max_count',
+            // era_order 一并返回(M2-B6):前端建造面板要拿它与快照的 city.era.era_order 比较,
+            // 把超时代的建筑提前置灰。否则前端得自己维护一张「时代 → 序号」表(§13:序号只在 era 表里有一份)
+            ->join('era as e', 'bd.era_key', '=', 'e.era_key')
+            ->select('bd.building_id', 'bd.name', 'bd.category', 'bd.era_key', 'e.era_order', 'bd.max_count',
                 'bd.footprint_w', 'bd.footprint_h', 'bl.cost_json', 'bl.output_json')
             ->orderBy('bd.building_id')
             ->get()
@@ -46,6 +49,7 @@ class DefinitionController extends Controller
                 'name'        => $r->name,
                 'category'    => $r->category,
                 'era'         => $r->era_key,
+                'era_order'   => (int) $r->era_order,
                 'max_count'   => (int) $r->max_count,
                 'footprint'   => ['w' => (int) $r->footprint_w, 'h' => (int) $r->footprint_h],
                 'level1'      => [
