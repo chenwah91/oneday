@@ -1,6 +1,6 @@
 // PWA Service Worker:缓存 /game/ 静态资源,永不缓存 /api/*(玩家数据以服务器为准)
 // 版本号:每次静态资源有实质变更时递增,触发旧缓存清理
-const CACHE = 'apg-v5';
+const CACHE = 'apg-v6';
 
 // 预缓存的静态资源清单(HTML/CSS/JS/vendor/manifest/图标)
 const PRECACHE_URLS = [
@@ -25,6 +25,7 @@ const PRECACHE_URLS = [
   '/game/js/ui/hud.js',
   '/game/js/ui/build-panel.js',
   '/game/js/ui/building-panel.js',
+  '/game/js/ui/technology-panel.js',
   '/game/js/ui/notification.js',
   '/game/js/renderer/iso.js',
   '/game/js/renderer/pixi-app.js',

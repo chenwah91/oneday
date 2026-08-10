@@ -24,6 +24,12 @@ final class AuditAction
     // 工人分配(绝对值设置:before/after 记该实例分配前后的工人数)
     public const WORKER_ASSIGN = 'WORKER.ASSIGN';
 
+    // 科技研究(M2-B1)
+    // RESEARCH_START:下单时写,delta 记扣掉的知识
+    // UNLOCK:懒结算到点翻牌时写(每项科技恰好一条,由条件更新的受影响行数保证)
+    public const TECH_RESEARCH_START = 'TECH.RESEARCH_START';
+    public const TECH_UNLOCK = 'TECH.UNLOCK';
+
     // 安全:越权操作被拒
     public const SECURITY_AUTHORIZATION_FAILED = 'SECURITY.AUTHORIZATION_FAILED';
 

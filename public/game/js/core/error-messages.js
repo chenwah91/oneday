@@ -15,6 +15,11 @@ export const ERROR_MESSAGES = {
     // 人口 / 劳动力(v3.2 §10.4)
     WORKER_NOT_AVAILABLE: '可用工人不足,先从别的建筑撤回工人或增加人口',
 
+    // 科技研究(M2-B1)
+    TECH_NOT_UNLOCKED: '前置科技尚未解锁',
+    ERA_REQUIRED: '当前时代还研究不了这项科技',
+    RESEARCH_IN_PROGRESS: '已有科技在研究中,完成后才能开始下一项',
+
     // 通用 / 基础设施
     VALIDATION_ERROR: '输入有误,请检查后重试',
     AUTH_REQUIRED: '登录已过期,请刷新页面重新登录',

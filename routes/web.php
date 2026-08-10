@@ -50,6 +50,9 @@ Route::prefix('api')->group(function () {
         // 资源定义:code → 中文显示名(资源主键已英文化,前端显示名一律从这里取)
         Route::get('/definitions/resources', [\App\Http\Controllers\City\DefinitionController::class, 'resources'])->middleware('throttle:api');
 
+        // 科技定义:50 个节点的时代/分支/费用/时长/前置,供前端科技面板显示
+        Route::get('/definitions/technologies', [\App\Http\Controllers\City\DefinitionController::class, 'technologies'])->middleware('throttle:api');
+
         // 建造:完整安全链(幂等/Revision/占地/上限/资源/审计)
         Route::post('/city/build', \App\Http\Controllers\City\BuildController::class)->middleware('throttle:api');
 
@@ -61,6 +64,9 @@ Route::prefix('api')->group(function () {
 
         // 工人分配:绝对值设置,受实例 worker_required 与全城 available_workers 双重约束(v3.2 §10.4)
         Route::post('/city/workers/assign', \App\Http\Controllers\City\WorkerAssignController::class)->middleware('throttle:api');
+
+        // 科技研究:一次性扣知识 + 按 research_minutes 计时,到点由懒结算翻成已解锁(CLAUDE §48 Research 必须限流)
+        Route::post('/city/research', \App\Http\Controllers\City\ResearchController::class)->middleware('throttle:api');
     });
 });
 

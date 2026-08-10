@@ -95,6 +95,10 @@ class SimulationService
 
         $storageCap = SimConstants::BASE_STORAGE;
         $populationCap = 0.0;
+        // 医疗容量 / 国防值:同样是容量类产出,M2-C2 起要用来算 health / security 与两项幸福覆盖加成(§10.2 / §10.8)。
+        // 与仓储/人口容量一样在构建中间结构时提取到全局,不进 grossOut、不受乘区与满足率影响
+        $medicalCapacity = 0.0;
+        $defenseScore = 0.0;
         $maintenanceMoneyPerMin = 0.0;
 
         // 用工闸门总开关(game_settings.worker_gate_enabled,默认 true = 维持「没派工人就不生产」)。
@@ -125,7 +129,9 @@ class SimulationService
                 // 容量类产出不进 grossOut:它不是"每分钟入库的资源",在这里就提取成全城容量累计
                 if ($res === ResourceCode::STORAGE_CAPACITY) { $storageCap += $r; continue; }
                 if ($res === ResourceCode::POPULATION_CAPACITY) { $populationCap += $r; continue; }
-                if (ResourceCode::isCapacity($res)) { continue; } // 其他容量:M1 不结算
+                if ($res === ResourceCode::MEDICAL_CAPACITY) { $medicalCapacity += $r; continue; }
+                if ($res === ResourceCode::DEFENSE_SCORE) { $defenseScore += $r; continue; }
+                if (ResourceCode::isCapacity($res)) { continue; } // 其他容量:M2-C2 阶段仍不结算
                 $grossOut[$res] = ($grossOut[$res] ?? 0) + $r;
             }
 
@@ -171,6 +177,13 @@ class SimulationService
         $foodZeroOffset = $lockedCity->food_zero_since !== null
             ? (Carbon::parse($lockedCity->food_zero_since)->getTimestamp() - $windowStart->getTimestamp()) / 60.0
             : null;
+        // 粮食赤字起点(§10.1「连续赤字 >= 5 分钟 → happiness -1/分钟」):与归零起点同一套偏移量做法,
+        // 跨段跨结算续算;赤字解除时清 null
+        $foodDeficitOffset = $lockedCity->food_deficit_since !== null
+            ? (Carbon::parse($lockedCity->food_deficit_since)->getTimestamp() - $windowStart->getTimestamp()) / 60.0
+            : null;
+        // 幸福度(§10.2):持久状态,与人口一样在内存里逐段滚动,全部段算完后一次写库
+        $happiness = (float) $lockedCity->happiness;
 
         $ratePerMin = [];        // 资源 => 每分钟净速率(最后一段口径,返回给前端显示)
         $grossProduction = [];   // 资源 => 每分钟 gross 产出(已含乘数与满足率)
@@ -199,13 +212,19 @@ class SimulationService
             // 维护资金:逐段扣,夹在 0(单调递减,分段夹 0 与整段夹 0 结果一致)
             $money = max(0, $money - $maintenanceMoneyPerMin * $span);
 
-            // 段末人口更新(§10.1 / §10.3,顺序固定:归零饥荒 → 严重短缺迁出 → 正常增长)
+            $foodNetRate = (float) ($ratePerMin[ResourceCode::FOOD] ?? 0);
+            // 段起人口:幸福目标里的住房/覆盖/食物品质都按它算(与「段内人口恒定」同一纪律)
+            $popAtSegmentStart = $population;
+
+            // 段末人口更新(§10.1 / §10.3,顺序固定:归零饥荒 → 严重短缺迁出 → 正常增长)。
+            // happinessFactor 用「段起幸福」:段内幸福同样视为恒定,段末才收敛到新值
             $step = self::stepPopulation(
                 $population,
                 $foodBefore,
                 (float) ($resources[ResourceCode::FOOD] ?? 0),
-                (float) ($ratePerMin[ResourceCode::FOOD] ?? 0),
+                $foodNetRate,
                 $populationCap,
+                $happiness,
                 $segStartOffset,
                 $segEndOffset,
                 $foodZeroOffset
@@ -213,7 +232,24 @@ class SimulationService
             $population = $step['population'];
             $growthPerMin = $step['growthPerMin'];
             $foodZeroOffset = $step['foodZeroOffset'];
+
+            // 段末幸福更新(§10.2):先维护赤字计时,再合成目标幸福,最后按快落慢升收敛
+            $foodDeficitOffset = self::stepFoodDeficit($foodDeficitOffset, $foodNetRate, $segStartOffset);
+            $deficitMinutes = $foodDeficitOffset === null ? 0.0 : max(0.0, $segEndOffset - $foodDeficitOffset);
+            $happinessTarget = self::happinessTarget(
+                $popAtSegmentStart,
+                $populationCap,
+                $medicalCapacity,
+                $defenseScore,
+                $grossProduction,
+                $deficitMinutes
+            );
+            $happiness = self::stepHappiness($happiness, $happinessTarget, $span);
         }
+
+        // health / security(§10.8):派生值,不落库,按结算后的人口与全城容量现算
+        $health = (int) round(self::coverage($medicalCapacity, $population) * 100);
+        $security = (int) round(self::coverage($defenseScore, $population) * 100);
 
         // elapsed == 0:跳过写库,但速率/容量仍照常算出返回
         if ($elapsed > 0) {
@@ -233,9 +269,14 @@ class SimulationService
             DB::table('cities')->where('id', $lockedCity->id)->update([
                 'money'             => $money,
                 'population'        => (int) floor(max(0, $population)),
+                // 幸福度按 float 落库(与人口不同:它本身就是 0~100 的连续量,取整会让快落慢升丢失斜率)
+                'happiness'         => $happiness,
                 'food_zero_since'   => $foodZeroOffset === null
                     ? null
                     : $windowStart->copy()->addSeconds((int) round($foodZeroOffset * 60))->format('Y-m-d H:i:s'),
+                'food_deficit_since' => $foodDeficitOffset === null
+                    ? null
+                    : $windowStart->copy()->addSeconds((int) round($foodDeficitOffset * 60))->format('Y-m-d H:i:s'),
                 'last_simulated_at' => $now,
             ]);
         }
@@ -253,6 +294,13 @@ class SimulationService
             // 人口:与落库值一致(floor);populationGrowthPerMin 为 §10.3 口径的名义增减(人/分钟,未夹容量)
             'population'              => (int) floor(max(0, $population)),
             'populationGrowthPerMin'  => $growthPerMin,
+            // 民生三值(§10.2 / §10.8):happiness 是持久状态(已落库),health / security 是派生值(不落库)
+            'happiness'               => $happiness,
+            'health'                  => $health,
+            'security'                => $security,
+            // 医疗容量 / 国防值:综合面板与 M3 疾病/犯罪联动的数据基础
+            'medicalCapacity'         => $medicalCapacity,
+            'defenseScore'            => $defenseScore,
         ];
     }
 
@@ -331,6 +379,7 @@ class SimulationService
         float $foodAtSegmentEnd,
         float $foodNetRate,
         float $populationCap,
+        float $happiness,
         float $segStartOffset,
         float $segEndOffset,
         ?float $foodZeroOffset
@@ -377,8 +426,9 @@ class SimulationService
         $housingFactor = self::housingFactor($population, $populationCap);
         // foodFactor:本段粮食净速率 >= 0 → 1.0,< 0 → 0(粮食净变化为负立即停止人口增长,§10.1)
         $foodFactor = $foodNetRate >= 0 ? 1.0 : 0.0;
-        // happinessFactor:M2-C2 幸福系统接入前恒为 1.0(占位,接入后改这里)
-        $happinessFactor = 1.0;
+        // happinessFactor(§10.3 三段位):M2-C2 起由真实幸福度驱动。
+        // 注意只作用于「正常增长」分支:迁出/饥荒两个分支按 §10.1 与幸福无关(上面已 return)
+        $happinessFactor = self::happinessFactor($happiness);
         // healthFactor:§10.3 明确 M2 阶段恒为 1.0,M3 再接疾病/医疗
         $healthFactor = 1.0;
 
@@ -420,5 +470,127 @@ class SimulationService
         $drop = (1.0 - SimConstants::HOUSING_FACTOR_AT_CAP) * ($usage - SimConstants::HOUSING_USAGE_FULL) / $span;
 
         return 1.0 - $drop;
+    }
+
+    // happinessFactor(§10.3 分段函数):
+    //   >= 70 → 1.0;50 ~ 70 → clamp(0.5 + (happiness − 50) / 40, 0.5, 1.0);< 50 → 0
+    public static function happinessFactor(float $happiness): float
+    {
+        if ($happiness >= SimConstants::HAPPINESS_FACTOR_FULL_AT) { return 1.0; }
+        if ($happiness < SimConstants::HAPPINESS_FACTOR_ZERO_BELOW) { return 0.0; }
+
+        $f = SimConstants::HAPPINESS_FACTOR_AT_FLOOR + ($happiness - SimConstants::HAPPINESS_FACTOR_ZERO_BELOW) / 40.0;
+
+        return max(SimConstants::HAPPINESS_FACTOR_AT_FLOOR, min(1.0, $f));
+    }
+
+    // 容量覆盖率(0~1):容量 / 人口,夹在 [0,1]。
+    // §10.2 的医疗加成、治安加成与 §10.8 的 health / security 全部走这一个口径,不写第二份。
+    // 人口取 max(1, population):空城不该因为除数为 0 而炸,也不该被判成「无限覆盖」以外的怪值
+    public static function coverage(float $capacity, float $population): float
+    {
+        return max(0.0, min(1.0, $capacity / max(1.0, $population)));
+    }
+
+    // 目标幸福(§10.2 合成式):
+    //   60 + housingBonus + foodQualityBonus + medicalBonus + securityBonus + taxPenalty + shortagePenalty
+    // 各分项都是「本段起始状态」的函数,段内恒定。最终夹在 [0,100]
+    private static function happinessTarget(
+        float $population,
+        float $populationCap,
+        float $medicalCapacity,
+        float $defenseScore,
+        array $grossProduction,
+        float $deficitMinutes
+    ): float {
+        // 税率惩罚:M2 税率固定、玩家不可调,§10.2 明确 taxPenalty = 0。
+        // M3 开放可调税率后在这里接「每 5% 税率 → -2 happiness」,占位保留以免将来漏项
+        $taxPenalty = 0.0;
+
+        // 粮食赤字惩罚(§10.1):连续赤字满 5 分钟起,每多 1 分钟目标 -1
+        $shortagePenalty = -SimConstants::HAPPINESS_DEFICIT_PENALTY_PER_MIN
+            * max(0.0, $deficitMinutes - SimConstants::FOOD_DEFICIT_GRACE_MINUTES);
+
+        $target = SimConstants::HAPPINESS_BASE
+            + self::housingHappinessBonus($population, $populationCap)
+            + self::foodQualityHappinessBonus($population, $grossProduction)
+            + SimConstants::HAPPINESS_COVERAGE_BONUS * self::coverage($medicalCapacity, $population)
+            + SimConstants::HAPPINESS_COVERAGE_BONUS * self::coverage($defenseScore, $population)
+            + $taxPenalty
+            + $shortagePenalty;
+
+        return max(SimConstants::HAPPINESS_MIN, min(SimConstants::HAPPINESS_MAX, $target));
+    }
+
+    // 住房幸福加成(§10.2):
+    //   使用率 <= 0.90            → +10
+    //   0.90 ~ 1.00              → 从 +10 线性降到 0
+    //   > 1.00                   → 从 0 向 -15 收敛(超容 20% 触底,见 SimConstants 注释的补充假设)
+    private static function housingHappinessBonus(float $population, float $populationCap): float
+    {
+        $usage = $population / max(1.0, $populationCap);
+        $good = SimConstants::HAPPINESS_HOUSING_GOOD_USAGE;
+
+        if ($usage <= $good) { return SimConstants::HAPPINESS_HOUSING_BONUS; }
+
+        if ($usage <= 1.0) {
+            // 0.90 → +10,1.00 → 0
+            return SimConstants::HAPPINESS_HOUSING_BONUS * (1.0 - ($usage - $good) / (1.0 - $good));
+        }
+
+        $over = min(1.0, ($usage - 1.0) / SimConstants::HAPPINESS_HOUSING_OVER_SPAN);
+
+        return SimConstants::HAPPINESS_HOUSING_OVER_PENALTY * $over;
+    }
+
+    // 食物品质幸福加成(§10.1 四档 → §10.2 加成),取满足条件的最高档:
+    //   高品质粮食覆盖 > 50% → +15;加工食品覆盖 > 50% → +10;面粉/面包覆盖 > 30% → +5;否则 +0
+    //
+    // 覆盖率口径(本次补充假设):v3.2 只给了「加工食品可供给人口 / population」,没定义「可供给人口」,
+    // 这里按人均粮耗折算 —— 可供给人口 = 该类食物 gross 产出速率 / 0.03(人均每分钟粮耗)。
+    // 用 gross 产出而非库存:库存是一次性的,产能才代表「城市长期吃得好不好」
+    private static function foodQualityHappinessBonus(float $population, array $grossProduction): float
+    {
+        $pop = max(1.0, $population);
+        $rate = fn (string $res) => (float) ($grossProduction[$res] ?? 0);
+        // 覆盖率 = 该类食物养得起的人数 / 当前人口,夹在 [0,1]
+        $coverage = fn (float $r) => min(1.0, max(0.0, $r) / SimConstants::FOOD_PER_CAPITA_PER_MIN / $pop);
+
+        if ($coverage($rate(ResourceCode::HIGH_QUALITY_FOOD)) > SimConstants::FOOD_QUALITY_HIGH_COVERAGE) {
+            return SimConstants::FOOD_QUALITY_HIGH_BONUS;
+        }
+        if ($coverage($rate(ResourceCode::PROCESSED_FOOD)) > SimConstants::FOOD_QUALITY_PROCESSED_COVERAGE) {
+            return SimConstants::FOOD_QUALITY_PROCESSED_BONUS;
+        }
+        $flourBread = $rate(ResourceCode::FLOUR) + $rate(ResourceCode::BREAD);
+        if ($coverage($flourBread) > SimConstants::FOOD_QUALITY_FLOUR_BREAD_COVERAGE) {
+            return SimConstants::FOOD_QUALITY_FLOUR_BREAD_BONUS;
+        }
+
+        return 0.0;
+    }
+
+    // 粮食赤字计时(§10.1「连续赤字 >= 5 分钟」):
+    // 赤字 = 粮食净速率 < 0。段内速率恒定,所以整段要么全赤字要么全不赤字;
+    // 净速率转正即视为赤字解除,计时清空(与 food_zero_since 同样的「持续」语义)
+    private static function stepFoodDeficit(?float $deficitOffset, float $foodNetRate, float $segStartOffset): ?float
+    {
+        if ($foodNetRate >= 0) { return null; }
+
+        return $deficitOffset ?? $segStartOffset;
+    }
+
+    // 幸福向目标收敛(§10.2 快落慢升):升 +0.5/分钟、降 -1.0/分钟,不越过目标,最后夹在 [0,100]
+    private static function stepHappiness(float $happiness, float $target, float $minutes): float
+    {
+        if ($minutes > 0) {
+            if ($target > $happiness) {
+                $happiness = min($target, $happiness + SimConstants::HAPPINESS_RISE_PER_MIN * $minutes);
+            } elseif ($target < $happiness) {
+                $happiness = max($target, $happiness - SimConstants::HAPPINESS_FALL_PER_MIN * $minutes);
+            }
+        }
+
+        return max(SimConstants::HAPPINESS_MIN, min(SimConstants::HAPPINESS_MAX, $happiness));
     }
 }

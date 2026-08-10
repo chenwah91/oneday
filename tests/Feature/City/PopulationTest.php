@@ -39,11 +39,12 @@ class PopulationTest extends TestCase
         $sim = SimulationService::simulate($city->fresh());
 
         // housingUsage = 500/630 = 0.7937 < 0.80 → housingFactor = 1.0
-        // foodNetRate = 28 − 500×0.03 = 13/min > 0 → foodFactor = 1.0;happiness/health 占位 1.0
-        // rate = 0.002 → 500 × 1.002^10 = 510.0905 → 落库 floor = 510
-        $this->assertSame(510, (int) DB::table('cities')->where('id', $city->id)->value('population'));
-        // 名义增长(§10.3 口径,人/分钟)= 段起人口 500 × 0.002 = 1.0
-        $this->assertEqualsWithDelta(1.0, $sim['populationGrowthPerMin'], 0.0001);
+        // foodNetRate = 28 − 500×0.03 = 13/min > 0 → foodFactor = 1.0;healthFactor 占位 1.0
+        // happiness 段起 = 60(建城默认)→ happinessFactor = 0.5 + (60−50)/40 = 0.75(§10.3)
+        // rate = 0.002 × 0.75 = 0.0015 → 500 × 1.0015^10 = 507.5508 → 落库 floor = 507
+        $this->assertSame(507, (int) DB::table('cities')->where('id', $city->id)->value('population'));
+        // 名义增长(§10.3 口径,人/分钟)= 段起人口 500 × 0.0015 = 0.75
+        $this->assertEqualsWithDelta(0.75, $sim['populationGrowthPerMin'], 0.0001);
         // 粮食 500 + 13×10 = 630(段内人口恒定,粮耗按段起人口 500 计)
         $this->assertEqualsWithDelta(630.0, $this->foodOf($city), 0.0001);
     }
@@ -59,7 +60,8 @@ class PopulationTest extends TestCase
         SimulationService::simulate($city->fresh());
 
         // housingUsage = 625/630 = 0.99206 → housingFactor = 1 − (0.99206−0.80)/0.20 × 0.8 = 0.23175
-        // rate = 0.002 × 0.23175 = 0.00046349 → 625 × 1.00046349^30 = 633.75 → 夹到容量 630
+        // happiness 段起 60 → happinessFactor 0.75
+        // rate = 0.002 × 0.23175 × 0.75 = 0.00034762 → 625 × 1.00034762^30 = 631.55 → 夹到容量 630
         $this->assertSame(630, (int) DB::table('cities')->where('id', $city->id)->value('population'));
     }
 
@@ -214,7 +216,10 @@ class PopulationTest extends TestCase
 
         $popA = (int) DB::table('cities')->where('id', $cA->id)->value('population');
         $popB = (int) DB::table('cities')->where('id', $cB->id)->value('population');
-        $this->assertSame($popB, $popA, '一次 60 分钟 === 两次 30 分钟(段长一致 → 结果一致)');
+        // 允许 1 人误差:cities.population 是 INT,分两次结算时中间那次会把不足 1 人的零头 floor 掉,
+        // 第二段就从一个略小的人口起算(A 段起 522.99 / B 段起 522)。段长一致 → 复利式一致,
+        // 差的只有这一次取整。M2-C2 幸福接入后增长率被压低,两边的 floor 才开始分到相邻整数上
+        $this->assertEqualsWithDelta($popB, $popA, 1.0, '一次 60 分钟 === 两次 30 分钟(段长一致 → 结果一致,容 1 人取整差)');
         // 粮食允许 1 点误差:cities.population 是 INT,分两次结算时中间那次会把人口 floor 掉不足 1 人的零头,
         // 第二段的粮耗因此少算 <= 1 人 × 0.03/min × 30min ≈ 0.9。人口结果不受影响(照样 floor 到同一个整数)。
         $this->assertEqualsWithDelta($this->foodOf($cB), $this->foodOf($cA), 1.0);

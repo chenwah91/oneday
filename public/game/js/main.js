@@ -8,6 +8,7 @@ import { renderMap } from './renderer/map.js';
 import { render as renderBuildings, setBuildingClickHandler, setBuildingsInteractive } from './renderer/buildings.js';
 import { mountBuildPanel } from './ui/build-panel.js';
 import { mountBuildingPanel, openBuildingPanel, closeBuildingPanel } from './ui/building-panel.js';
+import { TechnologyPanel } from './ui/technology-panel.js';
 import { initBuildModule, handleTileClick, onPlacementChange, getPlacement } from './modules/build.js';
 import { loadResourceNames } from './modules/resources.js';
 
@@ -37,6 +38,10 @@ async function bootApp() {
 
     // 建筑详情面板:挂在 #stage 内绝对定位,升级/拆除后自行重绘建筑层与 HUD
     mountBuildingPanel(stageEl, pixiApp.world);
+
+    // 科技面板(M2-B1):入口按钮 + 面板同样挂在 #stage 内绝对定位(左下角,与建筑详情面板错开)
+    const technologyPanel = new TechnologyPanel({ api, state });
+    technologyPanel.mount(stageEl);
 
     // 点击已有建筑 → 打开详情。两道闸门:
     // 1) 放置模式优先(此时建筑层已被关掉命中,这里再判一次兜底,避免边缘时序问题)

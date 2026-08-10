@@ -326,3 +326,254 @@
         height: 36px;
     }
 }
+
+/* ---- 科技面板(M2-B1)---- */
+
+/* 入口按钮:停在舞台左下角(建筑详情面板在右上,互不遮挡);触控区 >= 44px(CLAUDE §22) */
+.tech-fab {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    z-index: 18;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px solid #2a3140;
+    border-radius: 22px;
+    background: #232a36;
+    color: #e8eaed;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.tech-fab.active {
+    border-color: #5b8def;
+    background: rgba(91, 141, 239, 0.22);
+}
+
+/* 面板:从左下角向上展开,绝对定位在地图舞台内,不占用底部建造面板的空间 */
+.tech-panel {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    width: 340px;
+    max-width: calc(100% - 24px);
+    max-height: calc(100% - 24px);
+    background: #1b212b;
+    border: 1px solid #2a3140;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.tech-panel[hidden] {
+    display: none;
+}
+
+.tech-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #2a3140;
+}
+
+.tech-title {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.tech-balance {
+    margin-left: auto;
+    color: #9aa4b2;
+    font-size: 12px;
+}
+
+.tech-close {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #9aa4b2;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.tech-filters {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px 0;
+}
+
+.tech-chip {
+    flex: 1 1 0;
+    min-height: 36px;
+    border: 1px solid #2a3140;
+    border-radius: 8px;
+    background: #232a36;
+    color: #9aa4b2;
+    font-size: 12px;
+}
+
+.tech-chip.active {
+    border-color: #5b8def;
+    background: rgba(91, 141, 239, 0.18);
+    color: #e8eaed;
+}
+
+.tech-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 12px 12px;
+}
+
+.tech-empty {
+    padding: 16px 0;
+    color: #6b7484;
+    font-size: 12px;
+    text-align: center;
+}
+
+.tech-branch-title {
+    margin: 12px 0 2px;
+    color: #6b7484;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.tech-item {
+    margin-top: 6px;
+    padding: 8px 10px;
+    border: 1px solid #2a3140;
+    border-radius: 10px;
+    background: #232a36;
+}
+
+/* 三态:可研究(正常)/ 条件未满足(置灰)/ 已解锁(绿边淡出);在研用蓝边强调 */
+.tech-item.is-locked {
+    opacity: 0.55;
+}
+
+.tech-item.is-unlocked {
+    border-color: #3a7d5c;
+    opacity: 0.75;
+}
+
+.tech-item.is-researching {
+    border-color: #5b8def;
+}
+
+.tech-item-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.tech-item-name {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.tech-item-era {
+    margin-left: auto;
+    color: #6b7484;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.tech-item-meta {
+    margin-top: 4px;
+    color: #9aa4b2;
+    font-size: 11px;
+    line-height: 1.5;
+    /* 前置科技名可能很长,窄屏必须换行,不能把面板撑出横向滚动 */
+    word-break: break-word;
+}
+
+.tech-item-reason {
+    margin-top: 4px;
+    color: #ffa94d;
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.tech-item-state {
+    margin-top: 4px;
+    color: #3a7d5c;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.tech-item-actions {
+    display: flex;
+    margin-top: 8px;
+}
+
+.tech-btn {
+    flex: 1 1 0;
+    min-height: 44px;
+    border: 1px solid #5b8def;
+    border-radius: 8px;
+    background: #5b8def;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.tech-btn:disabled {
+    border-color: #2a3140;
+    background: #232a36;
+    color: #6b7484;
+    opacity: 0.6;
+    cursor: default;
+}
+
+.tech-progress {
+    margin-top: 8px;
+}
+
+.tech-progress-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: #12161c;
+    overflow: hidden;
+}
+
+.tech-progress-fill {
+    width: 0;
+    height: 100%;
+    background: #5b8def;
+}
+
+.tech-progress-text {
+    margin-top: 4px;
+    color: #5b8def;
+    font-size: 12px;
+}
+
+@media (max-width: 480px) {
+    /* 手机:面板铺满宽度、限高 70%,上半屏地图仍可见;入口按钮贴左下 */
+    .tech-panel {
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        width: auto;
+        max-width: none;
+        max-height: 70%;
+    }
+
+    .tech-fab {
+        left: 8px;
+        bottom: 8px;
+    }
+
+    .tech-chip {
+        min-height: 44px;
+        font-size: 13px;
+    }
+}

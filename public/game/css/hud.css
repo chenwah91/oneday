@@ -46,6 +46,25 @@
     color: #7fc7ff;
 }
 
+/* 民生三值(§10.2 / §10.8):幸福 / 健康 / 治安,各给一个可分辨的色相 */
+.hud-happiness .hud-value {
+    color: #ffca7a;
+}
+
+.hud-health .hud-value {
+    color: #ff8fa3;
+}
+
+.hud-security .hud-value {
+    color: #9db4ff;
+}
+
+/* 警示态:幸福跌破阈值(人口已经停止增长)时压过上面的常态色 */
+.hud-value.hud-alert {
+    color: #ff5f56;
+    font-weight: 700;
+}
+
 .hud-revision {
     margin-left: auto;
     color: #6b7484;

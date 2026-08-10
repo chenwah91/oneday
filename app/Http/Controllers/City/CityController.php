@@ -6,6 +6,7 @@ use App\Game\City\CityFactory;
 use App\Game\Definition\GameDataVersion;
 use App\Game\Population\WorkerService;
 use App\Game\Simulation\SimulationService;
+use App\Game\Technology\TechService;
 use App\Http\Controllers\Controller;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -21,6 +22,12 @@ class CityController extends Controller
         $city = CityFactory::createForUser($user); // 幂等:兜底老账号
 
         $sim = SimulationService::simulate($city);
+
+        // 科技懒结算(M2-B1):把 finished_at 已到点的在研项翻成 unlocked。
+        // 刻意不放进 SimulationService —— 解锁不产生资源变化,不该占结算内核的一段;
+        // 放在结算之后是为了让「知识刚够、这一秒才产出」的场景也能按最新库存判断(研究端点锁内另有一次)
+        TechService::settleFinished((int) $city->id);
+
         $city = $city->fresh();
 
         $resources = $city->resources()->pluck('amount', 'resource_id')
@@ -60,6 +67,10 @@ class CityController extends Controller
                 // 劳动力(§10.4):可用 = floor(人口 × 0.60);已分配 = 全城各建筑 assigned_workers 之和
                 'available_workers'   => SimulationService::availableWorkers((int) $city->population),
                 'assigned_workers'    => WorkerService::totalAssigned((int) $city->id),
+                // 民生三值(§10.2 / §10.8):happiness 是落库的持久状态,health / security 是当场派生的覆盖率映射
+                'happiness'           => $sim['happiness'],
+                'health'              => $sim['health'],
+                'security'            => $sim['security'],
                 'money'               => (float) $city->money,
                 'map_width'           => $city->map_width,
                 'map_height'          => $city->map_height,
@@ -68,6 +79,9 @@ class CityController extends Controller
                 'resources'           => $resources,
                 'rates_per_min'       => $sim['ratesPerMin'],
                 'buildings'           => $buildings,
+                // 科技(M2-B1):已解锁 tech_id 列表 + 在研项 + 派生的时代进度。
+                // 定义(名称/费用/时长/前置)不在快照里,前端从 /api/definitions/technologies 单独取一次
+                'technologies'        => TechService::snapshot((int) $city->id),
             ],
         ]]);
     }

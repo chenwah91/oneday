@@ -64,6 +64,47 @@ class SimConstants
     public const HOUSING_USAGE_FULL = 0.80;
     public const HOUSING_FACTOR_AT_CAP = 0.2;
 
+    // ---- 幸福度 Happiness(v3.2 §10.2,数值同样不得在代码里改,要调先提 game_data_version)----
+
+    // 基线幸福 / 新城初始幸福(§10.2「baseHappiness = 60」)
+    public const HAPPINESS_BASE = 60.0;
+
+    // 夹取区间(§10.2「happiness = clamp(happiness, 0, 100)」)
+    public const HAPPINESS_MIN = 0.0;
+    public const HAPPINESS_MAX = 100.0;
+
+    // 快落慢升(§10.2「下降最大速度 = -1.0 / 分钟;恢复最大速度 = +0.5 / 分钟」)
+    public const HAPPINESS_RISE_PER_MIN = 0.5;
+    public const HAPPINESS_FALL_PER_MIN = 1.0;
+
+    // 住房加成(§10.2):使用率 <= 0.90 → +10;0.90~1.00 线性降到 0;超容后向 -15 收敛
+    public const HAPPINESS_HOUSING_BONUS = 10.0;
+    public const HAPPINESS_HOUSING_GOOD_USAGE = 0.90;
+    public const HAPPINESS_HOUSING_OVER_PENALTY = -15.0;
+    // 超容多少比例时惩罚吃满 -15。v3.2 只写「向 -15 收敛」没给斜率,
+    // 这里沿用 housingFactor 同款 0.20 跨度(超容 20% 触底),属于本次补充假设
+    public const HAPPINESS_HOUSING_OVER_SPAN = 0.20;
+
+    // 覆盖类加成(§10.2 医疗 / 治安同一映射:满覆盖 +5,不足按比例)
+    public const HAPPINESS_COVERAGE_BONUS = 5.0;
+
+    // 食物品质四档(§10.1 覆盖率阈值 → §10.2 幸福加成)
+    public const FOOD_QUALITY_FLOUR_BREAD_COVERAGE = 0.30;  // 面粉/面包覆盖 > 30% → +5
+    public const FOOD_QUALITY_FLOUR_BREAD_BONUS = 5.0;
+    public const FOOD_QUALITY_PROCESSED_COVERAGE = 0.50;    // 加工食品覆盖 > 50% → +10
+    public const FOOD_QUALITY_PROCESSED_BONUS = 10.0;
+    public const FOOD_QUALITY_HIGH_COVERAGE = 0.50;         // 高品质粮食覆盖 > 50% → +15
+    public const FOOD_QUALITY_HIGH_BONUS = 15.0;
+
+    // 粮食赤字惩罚(§10.1「连续赤字 >= 5 分钟 → happiness -1/分钟,直到赤字解除」)
+    public const FOOD_DEFICIT_GRACE_MINUTES = 5;
+    public const HAPPINESS_DEFICIT_PENALTY_PER_MIN = 1.0;
+
+    // happinessFactor 分段(§10.3):>= 70 → 1.0;50~70 → 0.5 线性升到 1.0;< 50 → 0
+    public const HAPPINESS_FACTOR_ZERO_BELOW = 50.0;
+    public const HAPPINESS_FACTOR_FULL_AT = 70.0;
+    public const HAPPINESS_FACTOR_AT_FLOOR = 0.5;
+
     // 容量类产出(建筑等级定义中的产出类型)
     // 单一来源是 ResourceCode::CAPACITY,这里只做别名,避免调用方两处引用不一致
     public const CAPACITY_OUTPUTS = ResourceCode::CAPACITY;
