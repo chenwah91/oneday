@@ -78,6 +78,19 @@ final class GameSetting
     // 单笔数量硬上限(§69「防止负数 / NaN / 超大数字」的绝对天花板,与流动性上限是两道独立的闸)
     public const MARKET_MAX_ORDER_QUANTITY = 'market_max_order_quantity';
 
+    // ---- 贸易容量 → 成交量上限的城市侧分母(backlog §5.4,W5 接线)----
+    //
+    // 单城单窗上限 = min(流动性口径, 贸易吞吐口径),其中
+    //   贸易吞吐口径 =(基础额度 + 全城 trade_capacity)× 系数 × 窗口分钟数。
+    // 为什么要乘窗口分钟数:trade_capacity 是**每分钟**的吞吐率(§3.5 的容量类产出都是 /min),
+    // 而额度是「一个窗口内能换手多少」——窗长可调,两者必须按时间对齐。
+    //
+    // 基础额度存在的理由(交付口径,不要随手调成 0):没建市场建筑的城市**不该被禁市** ——
+    // 新号一栋商贸建筑都没有,禁市等于把市场这条路整条堵死;
+    // 但额度必须小到「想做大宗买卖就得建市场」,C 系列六栋建筑才第一次有意义。
+    public const MARKET_TRADE_CAPACITY_BASE_PER_MIN = 'market_trade_capacity_base_per_min';
+    public const MARKET_TRADE_CAPACITY_FACTOR = 'market_trade_capacity_factor';
+
     // ---------- M3-D1 NPC 规则参数(backlog §9 A 区批准的建议默认值)----------
     //
     // 用户 2026-08-11 拍板的「后台强大」原则:NPC 的可调数值一条都不许硬编码死。
@@ -408,6 +421,26 @@ final class GameSetting
             'min'         => 1,
             'max'         => 100000000,
             'description' => '单笔交易数量的绝对上限:与成交量上限是两道独立的闸,专门挡「超大数字」类攻击输入',
+        ],
+        // 贸易容量 → 城市侧成交量上限(backlog §5.4,W5)。
+        // 默认 200/分钟的取法:C01 村落市场 L1 的 trade_capacity 正好是 100/分钟 ——
+        // 基础额度取它的两倍,意味着「一栋市场 = 额度 +50%,四栋 C01 = 翻倍」,建市场立刻看得见;
+        // 同时 200/分钟远高于开局产能(时代 I 的粮食产出个位数/分钟),新号不会被这条卡住。
+        self::MARKET_TRADE_CAPACITY_BASE_PER_MIN => [
+            'default'     => 200,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 1000000,
+            'description' => '没有贸易容量时的基础成交额度(数量/分钟):单城单窗上限 = min(流动性口径,(本值 + 全城贸易容量) × 系数 × 窗口分钟数)。'
+                . '调到 0 = 没建市场建筑的城市**完全不能交易**(慎用:新号会被整条堵死)',
+        ],
+        self::MARKET_TRADE_CAPACITY_FACTOR => [
+            'default'     => 1,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 1000,
+            'description' => '贸易吞吐口径的系数:调大 = 贸易建筑更值钱(城市侧那一层更难成为瓶颈),调小 = 大宗交易更依赖建市场。'
+                . '调到 0 会让全服额度归零(= 全市场停市),要停市请用 market_enabled',
         ],
 
         // ---- M3-D1 NPC 规则参数(默认值 = backlog §9 A 区已批准的建议默认值,逐条对照见交付汇报)----

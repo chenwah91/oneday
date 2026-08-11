@@ -114,16 +114,59 @@ final class MarketDefinition
         return [$low, $high];
     }
 
-    // 单城单窗成交量上限 = 有效流动性 × 比例(§8.1「不超过该资源市场流动性的 10%」)
+    // 单窗成交量上限的**流动性口径** = 有效流动性 × 比例(§8.1「不超过该资源市场流动性的 10%」)。
+    // 它描述的是「这个市场吃得下多少」,与城市自身无关 —— 城市侧的那一层见 cityWindowQuota
     public static function windowQuota(array $def): float
     {
         return self::effectiveLiquidity($def) * (float) GameSetting::get(GameSetting::MARKET_QUOTA_WINDOW_PCT);
     }
 
-    // 单城每小时成交量上限 = 单窗上限 × 倍数(9.C7 批准 20 倍)
+    // 每小时上限的流动性口径 = 单窗上限 × 倍数(9.C7 批准 20 倍)
     public static function hourlyQuota(array $def): float
     {
         return self::windowQuota($def) * (float) GameSetting::get(GameSetting::MARKET_QUOTA_HOURLY_MULTIPLE);
+    }
+
+    // ---------- 贸易容量 → 城市侧成交量上限(backlog §5.4,W5)----------
+    //
+    // ══ 口径(本波次定死)═══════════════════════════════════════════════════════
+    //     单城单窗上限 = min( 流动性口径, 贸易吞吐口径 )
+    //     贸易吞吐口径 = ( 基础额度/分钟 + 全城 trade_capacity ) × 系数 × 窗口分钟数
+    //
+    // 为什么是 min 而不是相加或者相乘:两条上限管的是两件不同的事 ——
+    //   流动性口径答「这个市场一窗吃得下多少」(§8.1,全服共享,防止单人推动价格);
+    //   贸易吞吐口径答「这座城市一窗搬得动多少」(§5.4,城市自有,让 C01~C04 有意义)。
+    // 两条都是天花板,谁低谁生效,这正是 min 的语义。
+    //
+    // 为什么没有市场建筑的城市**不禁市**(交付口径,用户 §5.4 明确要求):
+    // trade_capacity = 0 的城市仍拿到「基础额度」(后台可调,默认 200/分钟)——
+    // 相当于自家门口的小额易货。禁市会让新号连一袋粮食都卖不掉,而市场恰恰是
+    // §16.1「5 种无源资源只能买」的唯一入口(电子元件不上市 = 时代 X 整代锁死)。
+    // 想收紧的运营把 market_trade_capacity_base_per_min 调低即可,不必改代码。
+    //
+    // $tradeCapacity 来自结算内核($sim['tradeCapacity'],已乘过 trade_capacity_pct),
+    // **不在这里另查一次建筑表** —— 那会立刻变成第二份口径(M2 的 governance_bonus 就是这么裂开的)
+    public static function tradeThroughputQuota(float $tradeCapacity): float
+    {
+        $basePerMin = (float) GameSetting::get(GameSetting::MARKET_TRADE_CAPACITY_BASE_PER_MIN);
+        $factor = (float) GameSetting::get(GameSetting::MARKET_TRADE_CAPACITY_FACTOR);
+        // 窗长可调(默认 60 秒),额度必须跟着窗长走,否则把窗口改成 10 秒等于把额度放大 6 倍
+        $windowMinutes = PriceEngine::windowSeconds() / 60.0;
+
+        return max(0.0, ($basePerMin + max(0.0, $tradeCapacity)) * $factor * $windowMinutes);
+    }
+
+    // 该城本窗的成交量上限(两条口径取小)
+    public static function cityWindowQuota(array $def, float $tradeCapacity): float
+    {
+        return min(self::windowQuota($def), self::tradeThroughputQuota($tradeCapacity));
+    }
+
+    // 该城每小时的成交量上限 = 城市侧单窗上限 × 倍数(与流动性口径同一个倍数,不另立参数)
+    public static function cityHourlyQuota(array $def, float $tradeCapacity): float
+    {
+        return self::cityWindowQuota($def, $tradeCapacity)
+            * (float) GameSetting::get(GameSetting::MARKET_QUOTA_HOURLY_MULTIPLE);
     }
 
     // 清空请求级缓存(测试里改库后调用)

@@ -39,6 +39,21 @@ class MarketAntiAbuseTest extends TestCase
         // 否则测的就不是「同窗往返」而是「跨窗投机」了
         Carbon::setTestNow(Carbon::createFromTimestamp(self::FROZEN_TS));
         $this->seed();
+
+        // 本文件验的是**四机制的数学**(手续费 / 滑点 / 移动平均 / 流动性口径的成交量上限),
+        // 不是城市侧的贸易额度。W5 起单窗上限还要再 min 一层「贸易吞吐口径」(backlog §5.4),
+        // 而这些用例的城市一栋市场建筑都没有 → 基础额度 200 会先把大额往返挡下,
+        // 测的就不再是原本那件事了。把基础额度调到远高于流动性口径,城市侧那一层恒不生效,
+        // 用例继续验流动性口径的额度。城市侧额度本身另有专门用例(MarketTradeCapacityTest)
+        DB::table('game_settings')->updateOrInsert(
+            ['setting_key' => GameSetting::MARKET_TRADE_CAPACITY_BASE_PER_MIN],
+            [
+                'value_json'  => json_encode(1000000),
+                'description' => GameSetting::DEFINITIONS[GameSetting::MARKET_TRADE_CAPACITY_BASE_PER_MIN]['description'],
+                'updated_at'  => now(),
+            ]
+        );
+        GameSetting::flush();
     }
 
     protected function tearDown(): void { Carbon::setTestNow(); parent::tearDown(); }

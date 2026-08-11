@@ -45,6 +45,10 @@ final class EventCode
     public const METRIC_SECURITY = 'security';                    // §10.8 派生治安
     public const METRIC_GOVERNANCE_LOAD = 'governance_load';      // §10.6 治理负载
     public const METRIC_TRANSPORT_CAPACITY = 'transport_capacity';// 全城运输容量
+    // 全城贸易容量(W5):§9.2 EVT_PORT_CONGESTION 的条件原文「贸易容量>800」。
+    // M2~W4 内核把 trade_capacity 整条丢弃,没有全城聚合值可读,所以这条一直挂在 unmapped 里 +
+    // 整条事件停用;W5 起内核提取它(并乘 trade_capacity_pct),条件才有口径
+    public const METRIC_TRADE_CAPACITY = 'trade_capacity';
     public const METRIC_HOUSING_FREE = 'housing_free';            // 住房空余人数 = 人口容量 − 人口
     public const METRIC_HOUSING_FREE_RATE = 'housing_free_rate';  // 住房空余率 = 1 − 人口 / 人口容量
     public const METRIC_CONSTRUCTING_COUNT = 'constructing_count';// 在建 / 升级中的实例数
@@ -68,6 +72,7 @@ final class EventCode
         self::METRIC_SECURITY,
         self::METRIC_GOVERNANCE_LOAD,
         self::METRIC_TRANSPORT_CAPACITY,
+        self::METRIC_TRADE_CAPACITY,
         self::METRIC_HOUSING_FREE,
         self::METRIC_HOUSING_FREE_RATE,
         self::METRIC_CONSTRUCTING_COUNT,
@@ -119,11 +124,34 @@ final class EventCode
     // 掷点纪律同 §11.3:比例在**触发时**算一次并落 rolled.threat.loss_pct,选项路径只读不重算
     public const EFFECT_THREAT_LOSS_PCT = 'threat_loss_pct';
 
+    // 随机流失一名在编 NPC(§9.2 EVT_BRAIN_DRAIN「随机高级NPC提出离职」)。
+    //
+    // 写入点在 NPC 模块:执行路径是 NpcRuntimeService::leaveRandom(),事件系统只提供
+    // 「什么时候流失」与一个可重算的掷点闭包,不越界自己去改 city_npcs 的状态位 ——
+    // 这正是这条事件在 M3-D4 交付时 Fail Closed 停用的原因,现在入口开了,边界没破。
+    //
+    // 口径:候选池 = 全部**在编**(idle + assigned)NPC,均匀掷点挑一名。
+    // §9.2 原文的「高级」由**触发条件**保证(npc_skill_count ≥ 3,门槛走 event_npc_high_skill_level),
+    // 不在效果侧再筛一次 —— 两处都筛会让「城里明明有人却什么都没发生」变成常态。
+    // 没有在编 NPC 时空转(记 note,不抛):新城也可能抽中这条事件。
+    // 不接受任何参数(恒 1 名):§9.2 原文只说「随机高级NPC提出离职」,数量不是可配置项。
+    public const EFFECT_NPC_LEAVE = 'npc_leave';
+
     // ---- 以下只允许出现在**选项**里:它们改的是「本实例已经发生的效果」----
 
     public const EFFECT_LOSS_SCALE = 'loss_scale';                        // 损失 ×系数,差额退还
     public const EFFECT_LOSS_SET_PCT = 'loss_set_pct';                    // 损失改成固定比例,差额退还
     public const EFFECT_MODIFIER_SET_VALUE = 'modifier_set_value';        // 把本实例的 event 乘区值改成给定值
+    // 把本实例写下的**某一条 target** 的 modifier 值整体 ×系数(W5 新增)。
+    //
+    // 与 modifier_set_value 的分工:后者写死一个绝对值,只适用于「减益降为 -10%」这种原文给了新数值的选项;
+    // 而 §9.2 里更常见的是「立即恢复一半」「价格冲击减半」「减益取消」—— 原文给的是**比例**,
+    // 而且被改的那条 modifier 本身可能是掷点掷出来的(EVT_SPECULATION 的 +25%~50%),
+    // 根本没有一个可以写死的绝对值。
+    //
+    // 系数夹在 [0, 1]:选项只允许把减益**变小**(0 = 取消)。这与 adjustLoss「只允许把损失变小」
+    // 是同一条纪律 —— 一个「补救选项」不该反过来加重惩罚,后台把系数填成 2 也不行。
+    public const EFFECT_MODIFIER_SCALE = 'modifier_scale';
     public const EFFECT_FLAT_SET = 'flat_set';                            // 把本实例的幸福 / 治安 flat 改成给定值
     public const EFFECT_DURATION_SCALE = 'duration_scale';                // 剩余持续时间 ×系数
     public const EFFECT_DURATION_SET_MINUTES = 'duration_set_minutes';    // 剩余持续时间设为 N 分钟
@@ -141,9 +169,11 @@ final class EventCode
         self::EFFECT_POPULATION_PCT,
         self::EFFECT_CONSTRUCTION_DELAY_PCT,
         self::EFFECT_THREAT_LOSS_PCT,
+        self::EFFECT_NPC_LEAVE,
         self::EFFECT_LOSS_SCALE,
         self::EFFECT_LOSS_SET_PCT,
         self::EFFECT_MODIFIER_SET_VALUE,
+        self::EFFECT_MODIFIER_SCALE,
         self::EFFECT_FLAT_SET,
         self::EFFECT_DURATION_SCALE,
         self::EFFECT_DURATION_SET_MINUTES,
@@ -157,6 +187,7 @@ final class EventCode
         self::EFFECT_LOSS_SCALE,
         self::EFFECT_LOSS_SET_PCT,
         self::EFFECT_MODIFIER_SET_VALUE,
+        self::EFFECT_MODIFIER_SCALE,
         self::EFFECT_FLAT_SET,
         self::EFFECT_DURATION_SCALE,
         self::EFFECT_DURATION_SET_MINUTES,

@@ -42,6 +42,114 @@ final class ConsumptionPoint
             + self::fromEquippedItems($target, $cityId);
     }
 
+    // 一次取回**多条** target 的合计比例:返回 [target => 比例],入参里的 target 一个都不会缺(没投稿就是 0.0)。
+    //
+    // 与逐条调 pct() 的差别只在查询次数:pct() 是「每条 target 各查三张表」,
+    // 本方法是「三张表各查一次、按 target 分桶」。同一个消费点要读四五条 target 时(结算内核就是),
+    // 前者会在每次快照上多打十几条查询 —— 口径完全一致,省的纯粹是往返。
+    //
+    // 纪律不变:仍然只认 op=pct + scope=city,仍然必须在**分段循环之外**调用。
+    public static function pctMany(array $targets, int $cityId, ?Carbon $now = null): array
+    {
+        $now ??= now();
+
+        $totals = array_fill_keys($targets, 0.0);
+        if ($targets === []) {
+            return $totals;
+        }
+
+        // ① 事件写下的持续型 modifier
+        if (DB::getSchemaBuilder()->hasTable('city_active_modifiers')) {
+            $rows = DB::table('city_active_modifiers')
+                ->where('city_id', $cityId)
+                ->whereIn('target', $targets)
+                ->where('op', ModifierSpec::OP_PCT)
+                ->where('scope', ModifierSpec::SCOPE_CITY)
+                ->where('starts_at', '<=', $now)
+                ->where('ends_at', '>', $now)
+                ->get(['target', 'value']);
+
+            foreach ($rows as $row) {
+                $totals[(string) $row->target] += (float) $row->value;
+            }
+        }
+
+        // ② 在编 NPC 的特性 / ③ 已装备且耐久 > 0 的工具:两处的 specs 走同一条累加
+        foreach (self::citySpecs($cityId) as $spec) {
+            if (array_key_exists($spec->target, $totals)
+                && $spec->op === ModifierSpec::OP_PCT
+                && $spec->scope === ModifierSpec::SCOPE_CITY) {
+                $totals[$spec->target] += $spec->value;
+            }
+        }
+
+        return $totals;
+    }
+
+    // 某条 target 对**某一种资源**的合计比例 = 全城作用域(scope=city)+ 该资源作用域(scope=resource)。
+    //
+    // 两者相加而不是二选一:「全市场价格 +10%」与「石油价格 +40%」是可以同时存在的两件事
+    // (§9.2 的 EVT_GLOBAL_CRISIS 与 EVT_OIL_SHOCK 就是这种关系)。
+    // 目前唯一的调用方是 TradeService 的 market_price_pct 消费点
+    public static function pctForResource(string $target, int $cityId, string $resourceId, ?Carbon $now = null): float
+    {
+        $now ??= now();
+
+        $total = self::pct($target, $cityId, $now);
+
+        if (! DB::getSchemaBuilder()->hasTable('city_active_modifiers')) {
+            return $total;
+        }
+
+        return $total + (float) DB::table('city_active_modifiers')
+            ->where('city_id', $cityId)
+            ->where('target', $target)
+            ->where('op', ModifierSpec::OP_PCT)
+            ->where('scope', ModifierSpec::SCOPE_RESOURCE)
+            ->where('scope_key', $resourceId)
+            ->where('starts_at', '<=', $now)
+            ->where('ends_at', '>', $now)
+            ->sum('value');
+    }
+
+    // 在编 NPC 特性 + 已装备工具的全部 specs(pctMany 用;逐条口径与 fromNpcTraits / fromEquippedItems 一致)
+    private static function citySpecs(int $cityId): array
+    {
+        $specs = [];
+
+        if (DB::getSchemaBuilder()->hasTable('city_npcs')) {
+            $traits = DB::table('city_npcs as cn')
+                ->join('npc_definition as nd', 'cn.npc_id', '=', 'nd.npc_id')
+                ->where('cn.city_id', $cityId)
+                ->whereIn('cn.status', NpcCode::ACTIVE_STATUSES)
+                ->pluck('nd.trait_json');
+
+            foreach ($traits as $json) {
+                foreach (NpcBonus::specsFromJson($json) as $spec) {
+                    $specs[] = $spec;
+                }
+            }
+        }
+
+        if (DB::getSchemaBuilder()->hasTable('city_items')) {
+            $effects = DB::table('city_items as ci')
+                ->join('item_definition as it', 'ci.item_id', '=', 'it.item_id')
+                ->where('ci.city_id', $cityId)
+                ->where('ci.status', ItemCode::STATUS_EQUIPPED)
+                ->whereNotNull('ci.equipped_instance_id')
+                ->where('ci.durability_left', '>', 0)
+                ->pluck('it.effect_json');
+
+            foreach ($effects as $json) {
+                foreach (ItemBonus::specsFromJson($json) as $spec) {
+                    $specs[] = $spec;
+                }
+            }
+        }
+
+        return array_values(array_filter($specs, fn ($s) => $s instanceof ModifierSpec));
+    }
+
     // ① 事件等写下的持续型 modifier
     private static function fromModifiers(string $target, int $cityId, Carbon $now): float
     {

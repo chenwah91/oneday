@@ -38,10 +38,14 @@ class NpcAdminTest extends TestCase
         $res = $this->actingAs($this->admin())->getJson('/api/admin/definitions/npcs');
 
         $res->assertOk();
-        $this->assertCount(30, $res->json('data.npcs'));
+        $this->assertCount(150, $res->json('data.npcs'));
         $this->assertContains('wage_per_min', $res->json('data.editable'));
         // 结构列只读下发,供后台显示,不出现在 editable 里
         $this->assertNotContains('rarity', $res->json('data.editable'));
+        // 中文名只读下发(150 行里靠 code 认不出人);N001~N030 尚未拟名 → null
+        $this->assertSame('武岚', collect($res->json('data.npcs'))->firstWhere('npc_id', 'N036')['name_zh']);
+        $this->assertNull(collect($res->json('data.npcs'))->firstWhere('npc_id', 'N001')['name_zh']);
+        $this->assertNotContains('name_zh', $res->json('data.editable'));
     }
 
     public function test_edit_npc_field_audits_and_bumps_version(): void

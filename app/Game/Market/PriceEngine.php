@@ -46,8 +46,18 @@ use Illuminate\Support\Facades\Log;
 // 也给了「先小单探价、再大单套利」的口子。取闭区间到 E−1 之后,epoch E 一开始价格就已经定死。
 final class PriceEngine
 {
-    // 事件乘数(§8.1 的 eventMultiplier):EVT_OIL_SHOCK / EVT_SPECULATION 的接线点(D4)。
-    // M3-D3 阶段恒为 1.0 —— 留成常量而不是直接写 1,是为了 D4 接进来时只改这一处
+    // 事件乘数(§8.1 的 eventMultiplier)。
+    //
+    // ══ W5 裁决:这一位**恒为 1.0,不接城市事件**(结论写死在这里,别再"接一次")══════
+    // §9.2 的两条价格事件(EVT_OIL_SHOCK「石油和燃料价格+40%」、EVT_SPECULATION「随机战略资源
+    // 价格+25%~50%」)在本项目里是 **city_events 的城市级实例**,而本类算的价格是**全服共享**的:
+    //   ① 让一座城市的事件去改 targetPrice,等于让这名玩家的随机事件改**所有人**的行情;
+    //   ② 价格是 f(资源, epoch) 的纯函数、无共享状态,这正是「同一 epoch 内价格恒定」
+    //      与「任何进程重算都得到同一个数」两条反刷前提的来源。塞一个按城市变化的乘数进来,
+    //      这两条当场失效(同一 epoch 里 A 城看到的价与 B 城不同,且价格开始依赖数据库状态)。
+    // 所以价格冲击落在**城市侧的成交价**上,消费点是 TradeService(ModifierTarget::MARKET_PRICE_PCT),
+    // 且只作用于买入侧 —— 完整理由见那里的注释。本常量保留为 1.0 的显式占位:
+    // 将来若真出现**全服级**事件(所有城市共享的世界事件),它才是正确的接入点。
     public const EVENT_MULTIPLIER_DEFAULT = 1.0;
 
     // 派生确定性伪随机时取的十六进制位数(13 位 = 52 bit,恰好在 float 能精确表示的整数范围内,

@@ -171,14 +171,40 @@ class EventDefinitionSeeder extends Seeder
             }
 
             match ($kind) {
-                EventCode::EFFECT_RESOURCE_DELTA,
-                EventCode::EFFECT_RESOURCE_PCT_OF_STOCK => self::assertResource($id, $effect['resource'] ?? null),
+                EventCode::EFFECT_RESOURCE_DELTA        => self::assertResource($id, $effect['resource'] ?? null),
+                EventCode::EFFECT_RESOURCE_PCT_OF_STOCK => self::assertStockLoss($id, $where, $type, $effect),
                 EventCode::EFFECT_GRANT_PRODUCTION_PCT  => self::assertGrant($id, $where, $type, $effect),
                 EventCode::EFFECT_MODIFIER              => self::assertModifier($id, $where, $type, $effect),
                 EventCode::EFFECT_MODIFIER_SET_VALUE    => self::assertModifierSetValue($id, $where, $effect),
+                EventCode::EFFECT_MODIFIER_SCALE        => self::assertModifierScale($id, $where, $effect),
                 EventCode::EFFECT_THREAT_LOSS_PCT       => self::assertThreatLoss($id, $where, $type, $effect),
+                EventCode::EFFECT_NPC_LEAVE             => self::assertNpcLeave($id, $where, $type, $effect),
                 default                                 => null,
             };
+        }
+    }
+
+    // resource_pct_of_stock = 按库存百分比增减。两种写法:
+    //   ① 点名资源(§9.2 EVT_GRANARY_PEST 的粮食、EVT_OIL_SHOCK 选项 A 的石油);
+    //   ② **不点名**(W5:§9.2 EVT_CRIME 的「随机库存损失」)—— 触发时从「当前有库存的非资金资源」里随机挑一种。
+    // 不点名时必须给 min/max 区间:一条既不点名资源、又不给区间的效果,只会静默扣一个说不清的数。
+    // 随机挑选**只允许负向**(损失):「随机送你一种资源」不在 §9.2 的任何一条里,别让它从这个口子溜进来
+    private static function assertStockLoss(string $id, string $where, string $type, array $effect): void
+    {
+        if (isset($effect['resource'])) {
+            self::assertResource($id, $effect['resource']);
+
+            return;
+        }
+
+        if (! isset($effect['min'], $effect['max'])) {
+            throw new RuntimeException("events.json:{$id} 的 {$where} resource_pct_of_stock 没点名资源时必须给 min/max 区间");
+        }
+        if ((float) $effect['min'] > (float) $effect['max']) {
+            throw new RuntimeException("events.json:{$id} 的 {$where} resource_pct_of_stock 区间 min > max");
+        }
+        if ((float) $effect['max'] >= 0 || $type !== EventCode::TYPE_NEGATIVE) {
+            throw new RuntimeException("events.json:{$id} 的 {$where} 随机库存变化只允许负向事件的**损失**(区间必须整体为负)");
         }
     }
 
@@ -199,6 +225,24 @@ class EventDefinitionSeeder extends Seeder
         }
         if (isset($effect['resource'])) {
             self::assertResource($id, $effect['resource']);
+        }
+    }
+
+    // npc_leave = 随机流失一名在编 NPC(§9.2 EVT_BRAIN_DRAIN)。守两条:
+    //   ① 只属于负向事件 —— 「随机走掉一个人」在正向事件里没有任何语义;
+    //   ② 不接受任何参数 —— 恒 1 名(§9.2 原文没给数量);写了 value / count 说明作者以为它可配置,
+    //      而运行时会**静默忽略**那个数,那正是本 Seeder 存在的意义:宁可 seed 失败也不静默不生效。
+    private static function assertNpcLeave(string $id, string $where, string $type, array $effect): void
+    {
+        if ($type !== EventCode::TYPE_NEGATIVE) {
+            throw new RuntimeException("events.json:{$id} 的 {$where} 在正向事件里用了 npc_leave(随机流失 NPC 只属于负向事件)");
+        }
+        foreach (['value', 'count'] as $key) {
+            if (isset($effect[$key])) {
+                throw new RuntimeException(
+                    "events.json:{$id} 的 {$where} npc_leave 不接受 {$key} —— 恒流失 1 名(§9.2 原文没给数量),写了也不会生效"
+                );
+            }
         }
     }
 
@@ -234,6 +278,27 @@ class EventDefinitionSeeder extends Seeder
         }
     }
 
+    // 选项里的「减益减半 / 取消」(W5):系数必须落在 [0, 1],target 必须已登记且不是 flat 通道。
+    //
+    // 为什么系数不许 > 1:这条 kind 只出现在**补救类选项**里(紧急维护 / 释放储备 / 市场干预),
+    // 系数 > 1 会让「补救」反而加重惩罚 —— 那不是数值调优,那是选项文案对不上效果。
+    // 为什么排除 flat 通道:幸福 / 治安有自己的 flat_set,两条路都能改同一行就会有人改两次。
+    private static function assertModifierScale(string $id, string $where, array $effect): void
+    {
+        $target = (string) ($effect['target'] ?? ModifierTarget::SLOT_EVENT);
+        $value = (float) ($effect['value'] ?? -1);
+
+        if (! in_array($target, ModifierTarget::all(), true)) {
+            throw new RuntimeException("events.json:{$id} 的 {$where} modifier_scale 的 target「{$target}」未在 ModifierTarget 登记");
+        }
+        if (in_array($target, ModifierTarget::FLAT_TARGETS, true)) {
+            throw new RuntimeException("events.json:{$id} 的 {$where} modifier_scale 不接受 flat 通道 target「{$target}」(请用 flat_set)");
+        }
+        if ($value < 0 || $value > 1) {
+            throw new RuntimeException("events.json:{$id} 的 {$where} modifier_scale 的系数必须落在 [0, 1](选项只能把减益变小)");
+        }
+    }
+
     // modifier = 持续型效果。三重 allowlist 由 ModifierSpec 的构造函数完成(target / scope / op),
     // 这里另加一条本系统自己的规矩:**任何七乘区**里都只放惩罚。
     //
@@ -243,9 +308,17 @@ class EventDefinitionSeeder extends Seeder
     // 规矩本身没变、还更严了一点:将来谁想往 npc / tool / tech 任何一格塞加成都会当场 seed 失败
     private static function assertModifier(string $id, string $where, string $type, array $effect): void
     {
-        $value = (float) ($effect['value'] ?? 0);
+        // 值可以是定值,也可以是 min/max 区间(W5:EVT_SPECULATION 的「价格+25%~50%」)。
+        // 校验时取「幅度最大的那一端」—— 区间掷点掷不出比它更极端的数,验它就等于验了整个区间
+        $value = isset($effect['min'], $effect['max'])
+            ? (abs((float) $effect['max']) >= abs((float) $effect['min']) ? (float) $effect['max'] : (float) $effect['min'])
+            : (float) ($effect['value'] ?? 0);
         $scope = (string) ($effect['scope'] ?? '');
         $target = (string) ($effect['target'] ?? '');
+
+        if (isset($effect['min'], $effect['max']) && (float) $effect['min'] > (float) $effect['max']) {
+            throw new RuntimeException("events.json:{$id} 的 {$where} modifier 区间 min > max");
+        }
 
         if (ModifierTarget::isSlot($target) && $value > 0) {
             throw new RuntimeException(
@@ -275,7 +348,12 @@ class EventDefinitionSeeder extends Seeder
             }
         }
         if ($scope === ModifierSpec::SCOPE_RESOURCE) {
-            self::assertResource($id, $effect['scope_key'] ?? null);
+            // 与 building_category 同一写法:scope_keys(触发时随机挑一个)时逐个验,
+            // 否则验单个 scope_key。少了这一支,EVT_SPECULATION 的「随机战略资源」会带着
+            // 一个没验过的资源清单进库(写错的 code 只会表现成事件静默不生效)
+            foreach ($effect['scope_keys'] ?? [$effect['scope_key'] ?? null] as $key) {
+                self::assertResource($id, $key);
+            }
         }
         if ($scope === ModifierSpec::SCOPE_BUILDING_INSTANCE) {
             // 具体实例在触发时随机挑,这里只验挑选规则本身合法

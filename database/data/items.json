@@ -202,7 +202,9 @@
       "item_id": "IT018", "name_key": "item.IT018.name", "category": "logistics_tool", "min_era": "VIII",
       "equip_target_desc_zh": "铁路调度员", "durability": 220, "durability_tier": "industrial", "durability_mode": "work_minutes",
       "effect_code": "transport_capacity_pct", "effect_value": 15, "unit": "percent",
-      "effect_json": { "specs": [], "unmapped_zh": ["运输容量(+15%):ModifierTarget 尚无运输容量消费点(§6.1 的 SKILL_LOGISTICS 同样留空),等物流波次登记"] },
+      "effect_json": { "specs": [
+        { "target": "transport_capacity_pct", "scope": "city", "op": "pct", "value": 0.15 }
+      ], "unmapped_zh": [] },
       "craft_cost": { "wood": 2, "steel": 15, "money": 160 },
       "crafting_source_desc_zh": "机械厂", "crafting_building_id": "P08", "crafting_unmapped_zh": null,
       "trade_value": 240, "note": "铁路效率"

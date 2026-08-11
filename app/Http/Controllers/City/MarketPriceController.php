@@ -51,7 +51,13 @@ class MarketPriceController extends Controller
                 'volatility'      => round($def['volatility'], 4),
                 'min_price'       => round($def['min_price'], 4),
                 'max_price'       => round($def['max_price'], 4),
-                // 额度提示:单城单窗 / 单城每小时的成交量上限(前端下单前提示玩家)
+                // 额度提示:**流动性口径**的单窗 / 每小时上限(§8.1「不超过流动性的 10%」)。
+                // W5 起玩家的实际额度还要再取一层 min:城市侧的贸易吞吐口径
+                //(= (基础额度 + 全城 trade_capacity) × 系数 × 窗口分钟数,backlog §5.4)。
+                // 那一层**不在本端点算**:它依赖城市的结算结果(trade_capacity 要跑一次容量聚合),
+                // 而本端点刻意保持纯 GET、零副作用、全服共享一份结果。
+                // 玩家的真实额度由交易响应回带(window_quota / window_remaining),
+                // 被额度挡下时 MARKET_LIMIT_REACHED 会同时给出两条口径,好判断该等下一窗还是该建市场
                 'window_quota'    => $tradeable ? round(MarketDefinition::windowQuota($def), 4) : 0.0,
                 'hourly_quota'    => $tradeable ? round(MarketDefinition::hourlyQuota($def), 4) : 0.0,
             ];

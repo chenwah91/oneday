@@ -5,6 +5,7 @@ namespace App\Game\Event;
 use App\Game\Defense\DefenseService;
 use App\Game\Modifier\ModifierSpec;
 use App\Game\Modifier\ModifierTarget;
+use App\Game\NPC\NpcRuntimeService;
 use App\Game\Resource\ResourceCode;
 use App\Game\Simulation\SimConstants;
 use App\Support\ErrorCode;
@@ -129,6 +130,7 @@ final class EventEffect
             EventCode::EFFECT_POPULATION_PCT        => $this->populationPct($effect, $label, $rolled, $applied),
             EventCode::EFFECT_CONSTRUCTION_DELAY_PCT => $this->constructionDelay($effect, $label, $rolled),
             EventCode::EFFECT_THREAT_LOSS_PCT       => $this->threatLoss($effect, $rolled),
+            EventCode::EFFECT_NPC_LEAVE             => $this->npcLeave($label, $rolled),
 
             // ---- 选项专用:改「已经发生的效果」----
             EventCode::EFFECT_LOSS_SCALE     => $this->adjustLoss($rolled, $applied, scale: (float) $effect['value']),
@@ -139,6 +141,11 @@ final class EventEffect
                 (float) $effect['value'],
                 // target 省略 → event 乘区(既有行为,30 条里除 EVT_BLACKOUT 外全部走这条)。
                 // M.1 起可以点名别的乘区:EVT_BLACKOUT 的「减益降为-10%」改的是 power 那一行
+                (string) ($effect['target'] ?? ModifierTarget::SLOT_EVENT)
+            ),
+            EventCode::EFFECT_MODIFIER_SCALE => $this->scaleModifier(
+                $instanceId,
+                (float) $effect['value'],
                 (string) ($effect['target'] ?? ModifierTarget::SLOT_EVENT)
             ),
             EventCode::EFFECT_FLAT_SET       => $this->setFlat($effect, $instanceId, $startsAt, $endsAt, $applied),
@@ -162,7 +169,18 @@ final class EventEffect
     // 区间在触发时掷一次并落 rolled,选项要改损失时按 base × pct 反算退还额
     private function resourcePctOfStock(array $effect, string $label, array &$rolled): void
     {
-        $resource = (string) $effect['resource'];
+        // 不指定 resource 时随机挑一种**当前有库存**的非资金资源(§9.2 EVT_CRIME 的「随机库存损失」)。
+        // 候选按 code 排序后再掷点 —— 顺序固定,掷点才可重算(与 pickInstance / producedInGroup 同一条纪律)
+        $resource = isset($effect['resource'])
+            ? (string) $effect['resource']
+            : $this->pickStockResource($label);
+        if ($resource === null) {
+            $this->notes[] = 'resource_pct_of_stock:本城没有可损失的库存,本次不生效';
+
+            return;
+        }
+        $rolled['loss_resource'] ??= $effect['resource'] ?? $resource;
+
         $pct = $this->rollValue($effect, $label) * $this->strength();
 
         // 事件损失减免(D0.3 的 event_loss_reduction_pct):只作用在**损失**方向,
@@ -275,16 +293,40 @@ final class EventEffect
             ? $startsAt->copy()->addMinutes((int) $effect['minutes'])
             : $endsAt;
 
+        // 值也可以是区间(W5:§9.2 EVT_SPECULATION 的「价格+25%~50%」)。
+        // rollValue 给了 min/max 就掷点、否则取定值 —— 掷出来的数**写进 modifier 行本身**,
+        // 落库即定死(§11.3 掷点纪律:选项路径只读不重掷)
         $this->insertModifier(
             $instanceId,
             (string) $effect['target'],
             $scope,
             $scopeKey,
             ModifierSpec::OP_PCT,
-            (float) $effect['value'] * $this->strength(),
+            $this->rollValue($effect, $label) * $this->strength(),
             $startsAt,
             $ends
         );
+    }
+
+    // 随机挑一种**当前有库存**的非资金资源(§9.2 EVT_CRIME「随机库存损失」)。
+    // 顺序按 code 排序固定,掷点才可重算;一件库存都没有时返回 null(调用方记 note 后空转)
+    private function pickStockResource(string $label): ?string
+    {
+        $stocks = $this->sim['resources'] ?? [];
+        ksort($stocks);
+
+        $candidates = [];
+        foreach ($stocks as $code => $amount) {
+            if ((string) $code !== ResourceCode::MONEY && (float) $amount > 0) {
+                $candidates[] = (string) $code;
+            }
+        }
+
+        if ($candidates === []) {
+            return null;
+        }
+
+        return $candidates[EventRandom::index(count($candidates), ...[...$this->seed, $label, 'stock'])];
     }
 
     // 按 category / series 过滤后随机挑一栋 active 实例
@@ -593,6 +635,38 @@ final class EventEffect
         return $pct;
     }
 
+    // ---------- 人才流失(M3-D1 合并波次,§9.2 EVT_BRAIN_DRAIN)----------
+
+    // 「随机流失 1 名在编 NPC」。本类**不写 city_npcs** —— 状态位归 NPC 模块所有,
+    // 这里只调 NpcRuntimeService::leaveRandom(),并把掷点用的确定性随机源注入进去。
+    //
+    // 掷点落库、只读不复掷(§11.3):结果写进 rolled.npc_leave;rolled 里已经有它就直接返回,
+    // 所以「同一实例被重复结算」不会流失第二个人(resolve 路径本身也只跑选项效果,不跑 auto)。
+    private function npcLeave(string $label, array &$rolled): void
+    {
+        if (isset($rolled['npc_leave'])) {
+            return;
+        }
+
+        $left = NpcRuntimeService::leaveRandom(
+            $this->city,
+            'EVENT_BRAIN_DRAIN',
+            // 事件掷点必须可重算:同一 (城市, 窗口, 标签) 永远挑同一个下标
+            fn (int $count) => EventRandom::index($count, ...[...$this->seed, $label, 'npc']),
+            ['event_id' => $this->definition['event_id'] ?? null],
+        );
+
+        if ($left === null) {
+            // 空转不是错误:一座还没招人的城照样可能抽中这条事件。
+            // 但要留痕 —— 玩家收到「人才流失」却一个人都没少时,审计里得答得出为什么
+            $this->notes[] = 'npc_leave:本城当前没有在编 NPC,本次没有人离职';
+
+            return;
+        }
+
+        $rolled['npc_leave'] = $left;
+    }
+
     // ---------- 选项:调整已发生的效果 ----------
 
     // 「损失减半」/「损失降至 3%」:按 rolled.loss 的 base × 新旧比例差退还。
@@ -689,6 +763,49 @@ final class EventEffect
             ->where('source_type', 'event')->where('source_id', $instanceId)
             ->where('target', $target)
             ->update(['value' => round($value * $this->strength(), 4)]);
+    }
+
+    // 「立即恢复一半」/「价格冲击减半」/「港口减益取消」:把本实例写下的某条 target 的 modifier 值 ×系数(W5)。
+    //
+    // 与 setModifierValue 的分工见 EventCode::EFFECT_MODIFIER_SCALE 的说明:
+    // 原文给的是**比例**而不是新数值,且被改的那条可能是掷点掷出来的(EVT_SPECULATION 的 +25%~50%),
+    // 根本没有可写死的绝对值。
+    //
+    // 允许的 target 比 setModifierValue 宽:七乘区 **与** 消费点类 target 都可以 ——
+    // 「恢复一半运输容量」「价格冲击减半」改的正是消费点类的那几行。
+    // 但 flat 通道(幸福 / 治安)仍然排除:它有自己的 setFlat(),两条路都能改同一行 = 双改。
+    //
+    // 系数夹在 [0, 1]:选项只允许把减益变小(0 = 取消),后台把它填成 2 也不会加重惩罚。
+    // 逐行读出再写回(不用 SQL 表达式):行数是个位数,而 `value = value * k` 的 SQL 写法
+    // 在 MySQL / MariaDB 的 DECIMAL 舍入上各有脾气,读回来算干净再写更稳
+    private function scaleModifier(int $instanceId, float $scale, string $target): void
+    {
+        if (in_array($target, ModifierTarget::FLAT_TARGETS, true)) {
+            $this->notes[] = "modifier_scale:target「{$target}」属于 flat 通道,应走 flat_set,本条跳过";
+
+            return;
+        }
+        if (! in_array($target, ModifierTarget::all(), true)) {
+            $this->notes[] = "modifier_scale:target「{$target}」未登记,本条跳过";
+
+            return;
+        }
+
+        $factor = max(0.0, min(1.0, $scale));
+
+        $rows = DB::table('city_active_modifiers')
+            ->where('source_type', 'event')->where('source_id', $instanceId)
+            ->where('target', $target)
+            ->get(['id', 'value']);
+
+        foreach ($rows as $row) {
+            DB::table('city_active_modifiers')->where('id', $row->id)
+                ->update(['value' => round((float) $row->value * $factor, 4)]);
+        }
+
+        if ($rows->isEmpty()) {
+            $this->notes[] = "modifier_scale:本实例没有 target={$target} 的减益可调整";
+        }
     }
 
     // 「大型庆典:幸福+8」这类「把 auto 的效果换成另一个数」。

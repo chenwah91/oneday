@@ -197,14 +197,14 @@ class NpcRuntimeTest extends TestCase
     {
         [$city] = $this->makeCity('growth');
 
-        // 掷点命中 + 抽第 0 个候选;时代 I 的 natural_growth 池 = N002 / N003 / N004
+        // 掷点命中 + 抽第 0 个候选;150 池下时代 I 的 natural_growth 池是这 9 个
         $this->scriptRandom([1, 0]);
         $this->settleAfterMinutes($city, 60, ['happiness' => 80, 'population' => 30, 'populationCapacity' => 100]);
 
         $npc = DB::table('city_npcs')->where('city_id', $city->id)->first();
         $this->assertNotNull($npc);
         $this->assertSame(NpcCode::SOURCE_NATURAL_GROWTH, $npc->acquired_source);
-        $this->assertContains($npc->npc_id, ['N002', 'N003', 'N004']);
+        $this->assertContains($npc->npc_id, ['N002', 'N003', 'N004', 'N031', 'N032', 'N033', 'N091', 'N092', 'N093']);
         $this->assertSame('NPC.NATURAL_GROWTH', DB::table('audit_logs')->latest('id')->first()->action);
     }
 

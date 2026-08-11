@@ -131,11 +131,19 @@ class EventDefinitionTest extends TestCase
                 $this->assertNotContains($effect['kind'], EventCode::OPTION_ONLY_KINDS, "{$eventId} 的自动效果用了选项专用 kind");
 
                 if ($effect['kind'] === EventCode::EFFECT_MODIFIER) {
+                    // 值可以是定值,也可以是 min/max 区间(W5:EVT_SPECULATION 的「价格+25%~50%」,
+                    // 触发时掷点、掷出来的数写进 modifier 行本身)。两种写法都要能构造成合法 spec
+                    $value = (float) ($effect['value'] ?? $effect['max'] ?? null);
+                    $this->assertTrue(
+                        isset($effect['value']) || isset($effect['min'], $effect['max']),
+                        "{$eventId} 的 modifier 既没有 value 也没有 min/max"
+                    );
+
                     $spec = new ModifierSpec(
                         $effect['target'],
                         $effect['scope'],
                         ModifierSpec::OP_PCT,
-                        (float) $effect['value'],
+                        $value,
                         $effect['scope'] === ModifierSpec::SCOPE_CITY ? null : ($effect['scope_key'] ?? 'x')
                     );
                     $this->assertSame($effect['target'], $spec->target);

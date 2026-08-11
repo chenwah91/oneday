@@ -3,6 +3,7 @@
 namespace App\Game\Simulation;
 
 use App\Game\Building\ConstructionService;
+use App\Game\Defense\DefenseService;
 use App\Game\Modifier\ModifierBus;
 use App\Game\Modifier\ModifierContext;
 use App\Game\Modifier\ModifierTarget;
@@ -222,6 +223,15 @@ class SimulationService
         // 电力装机容量(M.1 / §8 RS017 capacity_contract):唯一来源 = 建筑 output_json 的 electricity。
         // 它是 powerFactor 的分子,与 transportCapacity 在物流里的角色一一对应
         $powerCapacityPerMin = 0.0;
+        // 贸易 / 金融容量(§5.4,W5 起):M2~W4 一直被 isCapacity() 整条丢弃 ——
+        // C01~C04 + M01/M02 六栋建筑因此至今是纯负债(交维护费、不产生任何效果)。
+        // 提取成全城值之后:
+        //   trade_capacity   → 市场**单城成交量上限的城市侧分母**(MarketDefinition::cityWindowQuota,backlog §5.4)
+        //                      + EVT_PORT_CONGESTION 的条件 metric;
+        //   finance_capacity → 目前**只作读数回传**(§5.4 的金融玩法未定,不发明语义)。
+        // 与其他容量类一样:不进 grossOut、不入 city_resources、不受乘区与满足率影响
+        $tradeCapacity = 0.0;
+        $financeCapacity = 0.0;
         $maintenanceMoneyPerMin = 0.0;
 
         // ---- M3-D0.1 modifier 总线 ----
@@ -284,7 +294,12 @@ class SimulationService
                 // 是同一条既有口径(见 PowerMultiplierProvider 顶部的说明);升级中的电站同样按
                 // 容量类口径保留 100%(§3.2 只点名住宅 50%,其余容量类不施加没写过的惩罚)
                 if ($res === ResourceCode::ELECTRICITY) { $powerCapacityPerMin += $r; continue; }
-                if (ResourceCode::isCapacity($res)) { continue; } // 其他容量(贸易/金融):M2-C4 阶段仍不结算
+                // 贸易 / 金融容量(W5 起真实提取,见上面两个变量的说明)
+                if ($res === ResourceCode::TRADE_CAPACITY) { $tradeCapacity += $r; continue; }
+                if ($res === ResourceCode::FINANCE_CAPACITY) { $financeCapacity += $r; continue; }
+                // 兜底:将来若再出现新的容量类产出,在**登记 target + 接好消费点之前**一律不结算,
+                // 免得它悄悄变成一种「能入库的资源」(容量是状态量,不是流量)
+                if (ResourceCode::isCapacity($res)) { continue; }
                 // 非容量类产出:升级中一律不产(§3.2「生产建筑默认暂停生产」)
                 if ($upgrading) { continue; }
                 $grossOut[$res] = ($grossOut[$res] ?? 0) + $r;
@@ -324,6 +339,55 @@ class SimulationService
         // 时代序号:era_order 由时代升级(M2-B6)维护;列缺失 / 为空一律按时代 I 兜底
         // (人均税额与物流时代闸门共用这一份兜底,不在两处各写一遍)
         $eraOrder = (int) ($lockedCity->era_order ?? 1);
+
+        // ==== 非产量 target 的取数(D0.3):一趟查完,全部在分段循环之外 ====
+        //
+        // 五条 target 一次捞回(pctMany = 三张表各查一次,不是每条 target 各查三次)。
+        // 三个来源与逐条的 ConsumptionPoint::pct() 完全同口径:事件 modifier / 在编 NPC 特性 / 已装备工具,
+        // 只认 op=pct + scope=city。
+        //
+        // 位置固定在这里的理由与七乘区的准备段一字不差:
+        //   ① 必须在容量提取**之后** —— 要乘的就是刚聚合出来的那三个全城容量;
+        //   ② 必须在 $bus->prepare() **之前** —— 物流 Provider 拿走的运输容量必须是**乘过 pct 之后**的值,
+        //      否则会出现「HUD 显示运输容量 −30%、物流乘区却按原值算」的两套真相;
+        //   ③ 必须在分段循环之外 —— 循环内零查库(与七乘区、维护费减免同一条纪律)。
+        $consumptionPct = ConsumptionPoint::pctMany([
+            ModifierTarget::TRANSPORT_CAPACITY_PCT,
+            ModifierTarget::TRADE_CAPACITY_PCT,
+            ModifierTarget::FINANCE_CAPACITY_PCT,
+            ModifierTarget::TAX_INCOME_PCT,
+            ModifierTarget::MAINTENANCE_COST_PCT,
+        ], (int) $lockedCity->id, $now);
+
+        // ---- 容量类 pct 的**唯一消费点**(W5)----
+        //
+        // 夹取:三条都夹到 ≥ 0(负容量没有意义 —— 后台或事件把减益填成 −200% 也不该出现负数);
+        // 上方向不夹:「运输容量 +30%」涨多少就是多少,§13 的帽只管产量乘区,不管容量。
+        //
+        // 乘完之后,下面这些地方自动同口径,不必各自再乘一次:
+        //   物流负载的分母(transportLoad → logisticsFactor → logistics 乘区)、
+        //   返回给前端的 transportCapacity、事件条件的 transport_capacity / trade_capacity、
+        //   市场额度的城市侧分母(TradeService 读 $sim['tradeCapacity'])。
+        $transportCapacity *= max(0.0, 1.0 + $consumptionPct[ModifierTarget::TRANSPORT_CAPACITY_PCT]);
+        $tradeCapacity *= max(0.0, 1.0 + $consumptionPct[ModifierTarget::TRADE_CAPACITY_PCT]);
+        $financeCapacity *= max(0.0, 1.0 + $consumptionPct[ModifierTarget::FINANCE_CAPACITY_PCT]);
+
+        // ---- 国防读数统一(W4-B 留下的两处口径差,内核合并后在这里收口)----
+        //
+        // W4-B 交付时点名保留的差异:§10.8 的 security 覆盖率与 §10.2 的国防幸福加成读的是**建筑口径**,
+        // 而威胁等级 / EVT_RAID 读的是**有效国防值**(建筑口径 + 工具/NPC flat)×(1 + NPC/事件 pct)。
+        // 内核归本波次所有,所以在这里把那两处改读有效值 —— 玩家装了防御装备、招了军士之后,
+        // 治安与幸福理应跟着动,否则「国防 108」与「治安按 100 算」就是两套真相。
+        //
+        // **时代门槛除外**:EraService 继续读建筑口径(常备国防)。一个 20 分钟的事件 buff
+        // 不该把城市顶过升代门槛(buff 一过就"倒退"),这条由
+        // DefenseThreatTest::test_era_gate_reads_building_score_not_effective_score 钉着 ——
+        // 所以返回值里的 defenseScore 仍然是**建筑口径**(EraService 与 DefenseService 都拿它当基数)。
+        //
+        // 取数同样在分段循环之外一次(DefenseService::bonuses 要查三张表)。
+        $effectiveDefenseScore = DefenseService::effectiveDefenseScore(
+            $lockedCity, ['defenseScore' => $defenseScore], $now instanceof Carbon ? $now : Carbon::parse($now)
+        );
 
         // ---- 准备段:各 Provider 一次性取数,然后逐实例填满七乘区(M3-D0.2 内核接线点)----
         //
@@ -437,10 +501,19 @@ class SimulationService
         //
         // 夹取:factor 夹到 ≥ 0(负维护 = 白送钱,后台把减免填成 −200% 也不该变成收入来源);
         // 上方向不夹 —— 「维护费 +X%」将来若由负面事件投稿,涨多少就是多少
-        $maintenanceCostPct = ConsumptionPoint::pct(
-            ModifierTarget::MAINTENANCE_COST_PCT, (int) $lockedCity->id, $now
-        );
+        // (取值已在上面的 pctMany 里一趟取回,这里只取用 —— 别再单独查一次,那是三条多余的往返)
+        $maintenanceCostPct = $consumptionPct[ModifierTarget::MAINTENANCE_COST_PCT];
         $maintenanceMoneyPerMin *= max(0.0, 1.0 + $maintenanceCostPct);
+
+        // ---- 税收修正(D0.3 的 tax_income_pct,**唯一消费点是下面循环里的税收那一行**)----
+        //
+        // 投稿者:§9.2 的 EVT_CRIME(−10%)/ EVT_CORRUPTION(−15%)与 §6.3 的 N013(税收 +8%)。
+        // 夹到 ≥ 0:后台或事件把减益填成 −200% 也只是「收不上税」,绝不该变成**倒贴给玩家**。
+        // 上方向不夹,与维护费一致。
+        //
+        // ⚠️ 它改的是**税收**不是**税率**:§10.5 明文「M2:税率固定 / 玩家不可调」,M3 也没开税率政策。
+        // 所以 EVT_TAX_PROTEST(条件「税率偏高」)继续停用 —— 条件恒不成立,不靠这条 target 复活。
+        $taxIncomeFactor = max(0.0, 1.0 + $consumptionPct[ModifierTarget::TAX_INCOME_PCT]);
 
         // 支出通道对整段窗口取一次值(NPC 在结算窗口内不增不减:招募/辞退各自的端点会先跑一次结算)。
         $maintenanceMoneyPerMin += $bus->flat(ModifierTarget::EXPENSE_MONEY_PER_MIN, 0.0, $totalMinutes);
@@ -470,9 +543,10 @@ class SimulationService
             // 治理效率与税收都按「段起人口」算 —— 与粮耗、幸福目标同一条「段内人口恒定」纪律
             $governanceLoad = self::governanceLoad($population, $governanceCapacity);
             $governanceEfficiency = self::governanceEfficiency($governanceLoad);
-            // taxIncome = population × taxPerCapitaPerMin × governanceEfficiency(§10.5)。
-            // M2 税率固定、玩家不可调(§10.5「M2:税率固定 / 玩家不可调」),M3 才开放税率政策
-            $taxIncomePerMin = $population * $taxPerCapita * $governanceEfficiency;
+            // taxIncome = population × taxPerCapitaPerMin × governanceEfficiency × (1 + Σtax_income_pct)(§10.5)。
+            // 税率仍然固定、玩家不可调(§10.5「M2:税率固定 / 玩家不可调」);
+            // 最后那一项是**事件与 NPC 对税收本身**的修正(W5 接线,取值在循环外取一次)
+            $taxIncomePerMin = $population * $taxPerCapita * $governanceEfficiency * $taxIncomeFactor;
 
             // 维护欠费判定(§10.5):段起资金 + 本段税收 若付不起本段全额维护 → 本段判定为欠费。
             // 等价于 §10.5 的「money <= 0 且存在无法支付的建筑维护」:付不起时资金必然被夹到 0
@@ -531,7 +605,8 @@ class SimulationService
                 $popAtSegmentStart,
                 $populationCap,
                 $medicalCapacity,
-                $defenseScore,
+                // §10.2 的国防幸福加成同样改读**有效国防值**(与 security 同一处收口,理由见上面的说明)
+                $effectiveDefenseScore,
                 $grossProduction,
                 $deficitMinutes,
                 // flat 通道(M3-D0.2):持续型事件 / NPC 特性对幸福的直接冲击,改的是**目标值**,
@@ -549,8 +624,10 @@ class SimulationService
         // 覆盖率映射出来的 0~100 加上 flat 之后仍夹回 [0, 100]。
         // 取整段窗口([0, totalMinutes])的 flat:security 本身就是「结算后」的派生值,不分段。
         // M3 W1 无投稿者 → flat 恒 0.0,夹取也就恒等于原值
+        // 分子取**有效国防值**(含工具/NPC flat 与 NPC/事件 pct):W4-B 交付时留的口径差在这里收口,
+        // 快照的 defense 区块、事件条件的 threat_level、EVT_RAID 的损失公式与这里读的是同一个数
         $security = (int) round(max(0.0, min(100.0,
-            self::coverage($defenseScore, $population) * 100
+            self::coverage($effectiveDefenseScore, $population) * 100
             + $bus->flat(ModifierTarget::SECURITY_FLAT, 0.0, $totalMinutes)
         )));
 
@@ -605,9 +682,15 @@ class SimulationService
             'happiness'               => $happiness,
             'health'                  => $health,
             'security'                => $security,
-            // 医疗容量 / 国防值:综合面板与 M3 疾病/犯罪联动的数据基础
+            // 医疗容量 / 国防值:综合面板与 M3 疾病/犯罪联动的数据基础。
+            // defenseScore 是**建筑口径**(容量提取的原值),刻意不换成有效值 ——
+            // EraService 的时代门槛与 DefenseService::evaluate 都拿它当基数,
+            // 换成有效值会让「临时 buff 顶过升代门槛」并让国防加成被算两次
             'medicalCapacity'         => $medicalCapacity,
             'defenseScore'            => $defenseScore,
+            // 有效国防值(= DefenseService::effectiveDefenseScore 的结果):
+            // 本次结算里 security 覆盖率与 §10.2 国防幸福加成用的就是它,回传只为让调用方看得见「用的是哪个数」
+            'defenseScoreEffective'   => $effectiveDefenseScore,
             // 财政 / 治理(§10.5 / §10.6),全部是「最后一段口径」的派生值,一个都不落库:
             //   governanceCapacity 全城治理容量(唯一来源 = output_json 的 governance_capacity)
             //   governanceLoad / governanceEfficiency 治理负载与四档效率
@@ -618,6 +701,9 @@ class SimulationService
             'governanceLoad'          => $governanceLoad,
             'governanceEfficiency'    => $governanceEfficiency,
             'taxIncomePerMin'         => $taxIncomePerMin,
+            //   taxIncomePct 税收修正合计(D0.3 的 tax_income_pct,−0.10 = 少收 10%)。
+            //   已经作用在 taxIncomePerMin 上,给前端只为回答「为什么这段税收变少了」
+            'taxIncomePct'            => $consumptionPct[ModifierTarget::TAX_INCOME_PCT],
             'maintenanceMoneyPerMin'  => $maintenanceMoneyPerMin,
             'maintenanceRate'         => $maintenanceRate,
             'maintenanceArrears'      => $maintenanceArrears,
@@ -636,6 +722,15 @@ class SimulationService
             'transportLoad'           => $transportLoad,
             'logisticsFactor'         => $logisticsFactor,
             'transportCongestion'     => $transportCongestion,
+            // 容量类三条 pct(W5):容量值本身已经乘过它们,这里回传只为「为什么容量变了」说得清。
+            //   transportCapacityPct  运输容量修正(事件 / 物流 NPC / IT018,含并入的「铁路容量」)
+            //   tradeCapacity(+Pct)  贸易容量:市场单城成交量上限的城市侧分母(backlog §5.4)
+            //   financeCapacity(+Pct)金融容量:目前只作读数,尚无消费者
+            'transportCapacityPct'    => $consumptionPct[ModifierTarget::TRANSPORT_CAPACITY_PCT],
+            'tradeCapacity'           => $tradeCapacity,
+            'tradeCapacityPct'        => $consumptionPct[ModifierTarget::TRADE_CAPACITY_PCT],
+            'financeCapacity'         => $financeCapacity,
+            'financeCapacityPct'      => $consumptionPct[ModifierTarget::FINANCE_CAPACITY_PCT],
             // 电力(M.1 / §3.3 / §8 RS017),同样全是派生值,一个都不落库
             //(电力不进 city_resources —— 9.F4「流量不做库存」):
             //   powerCapacityPerMin   全城装机容量(唯一来源 = output_json 的 electricity)

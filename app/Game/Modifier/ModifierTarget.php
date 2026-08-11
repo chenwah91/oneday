@@ -70,6 +70,36 @@ final class ModifierTarget
     public const RESEARCH_SPEED_PCT = 'research_speed_pct';
     public const EVENT_LOSS_REDUCTION_PCT = 'event_loss_reduction_pct';
 
+    // ---- 容量类三条 + 税收 + 市场价格(M3-W5 新增)----
+    //
+    // 为什么容量类要单独开 target,而不是复用七乘区:容量(运输 / 贸易 / 金融)是**状态量**,
+    // 内核在填七乘区**之前**就把它从 output_json 提取成全城值 —— 乘区根本够不着它。
+    // 这正是 EVT_ROUTE_BREAK / EVT_PORT_CONGESTION 与 10 个物流 NPC、IT018 一直停用 / 半哑的原因:
+    // 数据早就写好了,缺的只是一条 target 与一个消费点。
+    //
+    // 「铁路容量」按语义并入 transport(§6.3 的 N022 / N074 / N134 写的是「铁路容量+X%」):
+    // 项目里没有独立的铁路容量,§10.7 只有一条 transport_capacity,铁路是运输的一种形态。
+    // 与其发明第二条 target(还得再发明一套「铁路负载」),不如按语义并入 —— 口径只写这一处。
+    public const TRANSPORT_CAPACITY_PCT = 'transport_capacity_pct';
+    public const TRADE_CAPACITY_PCT = 'trade_capacity_pct';
+    public const FINANCE_CAPACITY_PCT = 'finance_capacity_pct';
+
+    // 税收(§10.5 的 taxIncome):§9.2 里 EVT_CRIME「税收-10%」/ EVT_CORRUPTION「税收-15%」
+    // 与 §6.3 N013「税收+8%」都作用于它。**注意它改的是税收本身,不是税率** ——
+    // 税率在 M3 仍然固定不可调(§10.5 明文),EVT_TAX_PROTEST 因此继续停用(条件恒不成立)。
+    public const TAX_INCOME_PCT = 'tax_income_pct';
+
+    // 市场成交价(§8.1 的「事件乘数」位):EVT_OIL_SHOCK / EVT_SPECULATION 的价格冲击。
+    //
+    // ⚠️ 口径裁决(本波次定死,理由见 PriceEngine 顶部与 TradeService 的消费点注释):
+    //   ① **全服定价不动**:PriceEngine 的价格是全服共享的纯函数,而这两条事件是**城市级**实例,
+    //      让一座城市的事件去推全服价格,等于让玩家用自己的事件改别人的行情;
+    //   ② 落地成**该城买入侧**的成交价加成(× (1 + pct)),卖出侧不动 ——
+    //      两侧同步上抬会让「事件期间抛货、事件结束后买回」变成一台印钞机(§11.2 的反刷四件套同理)。
+    //      方向上也自洽:两条都是 negative 事件,惩罚落在「买东西更贵」上。
+    // scope 可以是 city(全市场)或 resource(某一种资源),两者相加。
+    public const MARKET_PRICE_PCT = 'market_price_pct';
+
     // ---- 国防三条(M3-D5 W4-B 新增)----
     //
     // 为什么是三条而不是一条:v3.2 的原文里国防效果有**三种写法**,少一条就得靠发明语义去凑 ——
@@ -128,7 +158,12 @@ final class ModifierTarget
         self::GOVERNANCE_CAPACITY_PCT => [
             'consumer' => 'App\Game\Simulation\SimulationService',
             'wave'     => 'W2-A',
-            'desc'     => '全城治理容量:N001 等行政 NPC 的「治理 +10%」类特性',
+            // ⚠️ wired 仍为 false:登记在册,但内核里**没有任何一处读它**(W5 核对过全仓)。
+            // 也就是说 N001 / N026 / N029 等的「治理+X%」与 IT022 的「治理效率+10%」目前一律不生效。
+            // 本波次刻意不顺手接上,原因有二:①它不在本波次的三组 target 范围内(改内核要有明确授权);
+            // ②N013 / N046 等写的是 op=flat(治理+30),pct 通道读不到,要接就得连 flat 通道一起设计,
+            // 那是一个独立的小波次,不该夹带在容量/税收/价格这一波里。**下一波请先清这一条。**
+            'desc'     => '全城治理容量:N001 等行政 NPC 的「治理 +10%」类特性(⚠️ 尚无消费点,登记未接线)',
         ],
         self::RESEARCH_SPEED_PCT => [
             'consumer' => 'App\Game\Technology\TechService',
@@ -182,6 +217,52 @@ final class ModifierTarget
             'wired'    => true,
             'desc'     => '威胁需求(§5.1「国防最低」)的百分比抬升:EVT_BORDER_TENSION 的「国防需求+30%」。'
                 . '口径 = §5.1 国防最低 × 全局倍率 × (1 + Σpct),抬的是覆盖率的分母',
+        ],
+        // 容量类三条(W5):消费点全部是**结算内核的容量提取之后那一处**,不是读取侧。
+        //
+        // 为什么必须在内核里乘、而不像国防那样在读取侧叠加:运输容量是 §10.7 物流乘区的分母,
+        // 内核**当场就要用它**(transportLoad → logisticsFactor → 七乘区的 logistics 那一格)。
+        // 放到读取侧只能改显示值,乘区仍按原容量算 —— 那就成了「HUD 说降了 30%、产量却没变」的两套真相。
+        // 三条共用同一次 ConsumptionPoint::pctMany(三查一趟,分段循环之外),口径与维护费减免逐字一致。
+        self::TRANSPORT_CAPACITY_PCT => [
+            'consumer' => 'App\Game\Simulation\SimulationService',
+            'wave'     => 'W5',
+            'wired'    => true,
+            'desc'     => '全城运输容量(含「铁路容量」,按语义并入):EVT_ROUTE_BREAK −30% / EVT_PORT_CONGESTION −25%、'
+                . '§6.3 十位物流 NPC(N022/N069/N074/N084/N089/N126/N129/N134/N144/N149)与 §7 IT018。'
+                . '口径 = 全城 transport_capacity × max(0, 1 + Σpct),乘在**物流负载的分母**上',
+        ],
+        self::TRADE_CAPACITY_PCT => [
+            'consumer' => 'App\Game\Simulation\SimulationService',
+            'wave'     => 'W5',
+            'wired'    => true,
+            'desc'     => '全城贸易容量:EVT_PORT_CONGESTION −25%、EVT_TRADE_BOOM 的「成交量 ±X%」。'
+                . '口径 = 全城 trade_capacity × max(0, 1 + Σpct);贸易容量本身是市场单城成交量上限的城市侧分母'
+                . '(backlog §5.4,落点 MarketDefinition::cityWindowQuota)',
+        ],
+        self::FINANCE_CAPACITY_PCT => [
+            'consumer' => 'App\Game\Simulation\SimulationService',
+            'wave'     => 'W5',
+            'wired'    => true,
+            'desc'     => '全城金融容量:与贸易容量同一处提取、同一处相乘。'
+                . '⚠️ 金融容量目前**只作读数回传**(C03 银行是唯一来源且 §5.4 的金融玩法未定),'
+                . '接线在这里是为了「有投稿就一定有人乘」,不是为了发明金融玩法',
+        ],
+        self::TAX_INCOME_PCT => [
+            'consumer' => 'App\Game\Simulation\SimulationService',
+            'wave'     => 'W5',
+            'wired'    => true,
+            'desc'     => '税收(§10.5 taxIncome = 人口 × 人均税额 × 治理效率):EVT_CRIME −10% / EVT_CORRUPTION −15%、'
+                . '§6.3 N013「税收+8%」。口径 = 上式 × max(0, 1 + Σpct),消费点在分段循环内的税收那一行'
+                . '(取值在循环外取一次)。**改的是税收不是税率** —— 税率仍固定不可调(§10.5)',
+        ],
+        self::MARKET_PRICE_PCT => [
+            'consumer' => 'App\Game\Market\TradeService',
+            'wave'     => 'W5',
+            'wired'    => true,
+            'desc'     => '市场成交价的事件冲击(§8.1 的「事件乘数」位):EVT_OIL_SHOCK +40%(石油/燃料)、'
+                . 'EVT_SPECULATION +25%~50%(随机战略资源)。'
+                . '口径 = **该城买入侧**成交价 × max(0, 1 + Σpct),全服定价与卖出价一律不动(理由见常量上方)',
         ],
     ];
 

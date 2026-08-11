@@ -62,13 +62,33 @@ class NpcApiTest extends TestCase
 
         $npcId = DB::table('city_npcs')->latest('id')->value('npc_id');
         $this->assertNotSame('N030', $npcId);
-        // 时代 II 的可招募池只有 N006 / N007 / N008
-        $this->assertContains($npcId, ['N006', 'N007', 'N008']);
+        // 150 池下,时代 II 的可招募池 = 时代 I 的 4 个 + 时代 II 的 10 个(黄金名单,池子漂了要当场发现)
+        $this->assertContains($npcId, [
+            'N034', 'N036', 'N094', 'N096',
+            'N006', 'N007', 'N008', 'N038', 'N039', 'N040', 'N042', 'N098', 'N099', 'N100',
+        ]);
+    }
+
+    // 150 池的行为变化:§6.3 原表最早的可招募原型是时代 II,扩充版补了 4 个时代 I 的原型
+    // (N034 / N036 / N094 / N096)→ 开局城市不再「无人可招」
+    public function test_era_one_city_can_now_recruit_from_the_expanded_pool(): void
+    {
+        $u = $this->makePlayer('eraone', eraOrder: 1, money: 100000);
+
+        $this->actingAs($u)->postJson('/api/city/npc/recruit', [])->assertOk();
+
+        $npcId = DB::table('city_npcs')->latest('id')->value('npc_id');
+        $this->assertContains($npcId, ['N034', 'N036', 'N094', 'N096']);
     }
 
     public function test_recruit_rejects_when_era_too_low(): void
     {
-        // 新城时代 I:可招募池(recruit_source = recruit)最早是时代 II
+        // 150 池下每个时代都有可招募原型,所以「时代不够」这条分支要靠定义数据构造:
+        // 把全部可招募原型的门槛推到时代 II,时代 I 的城市就应当拿到 NPC_ERA_REQUIRED
+        // (池子不空、但一个都没到时代 —— 与「没人可招」是两种不同的错误)
+        DB::table('npc_definition')->where('recruit_source', NpcCode::SOURCE_RECRUIT)
+            ->update(['min_era' => 'II']);
+
         $u = $this->makePlayer('lowera', eraOrder: 1, money: 100000);
 
         $this->actingAs($u)->postJson('/api/city/npc/recruit', [])
@@ -78,8 +98,8 @@ class NpcApiTest extends TestCase
 
     public function test_recruit_rejects_when_money_insufficient(): void
     {
-        // 时代 II 最便宜的 N006 = 2 × 200 × 1.0 = 400
-        $u = $this->makePlayer('poor', eraOrder: 2, money: 399);
+        // 150 池下时代 II 最便宜的是时代 I 的 N034 / N094(wage 1)= 1 × 200 × 1.0 = 200
+        $u = $this->makePlayer('poor', eraOrder: 2, money: 199);
 
         $this->actingAs($u)->postJson('/api/city/npc/recruit', [])
             ->assertStatus(422)->assertJson(['error' => 'INSUFFICIENT_RESOURCE']);
@@ -357,6 +377,24 @@ class NpcApiTest extends TestCase
         $this->assertSame(3, $res->json('data.city.npcs.slots_per_building_l3'));
     }
 
+    // 中文名进快照契约:N031~N150 有名,N001~N030 下发 null(前端回落 name_key,服务端不编占位名)
+    public function test_snapshot_and_recruit_response_carry_name_zh(): void
+    {
+        [$u, $city, $instanceId, $npcId] = $this->makePlayerWithNpcAndFarm('namezh');
+        $expansion = $this->putNpc($city, 'N036');
+
+        $res = $this->actingAs($u)->getJson('/api/city');
+
+        $res->assertOk();
+        $this->assertNull($res->json('data.city.npcs.list.0.name_zh'), 'N005 尚未拟名');
+        $this->assertSame('N005', $res->json('data.city.npcs.list.0.npc_id'));
+        $this->assertSame('武岚', $res->json('data.city.npcs.list.1.name_zh'));
+
+        // 招募的单行返回走同一个契约方法(NpcService::npcRow),同样带 name_zh
+        $recruited = $this->actingAs($u)->postJson('/api/city/npc/recruit', [])->assertOk();
+        $this->assertArrayHasKey('name_zh', $recruited->json('data.npc'));
+    }
+
     // ---- 后台设定改动立刻生效 ----
 
     public function test_slot_setting_change_takes_effect(): void
@@ -377,7 +415,7 @@ class NpcApiTest extends TestCase
         $u = $this->makePlayer('pricesetting', eraOrder: 2, money: 100000);
         $city = City::where('user_id', $u->id)->first();
 
-        // 工资系数 200 → 10:N006 的价格从 400 变成 20
+        // 工资系数 200 → 10:抽到谁都按 wage × 10 收钱(下面按实际抽到的那一行对账)
         GameSetting::set(GameSetting::NPC_RECRUIT_PRICE_WAGE_MULTIPLIER, 10, null, '压低招募价');
         GameSetting::flush();
 

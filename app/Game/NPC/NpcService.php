@@ -84,6 +84,7 @@ final class NpcService
                 // 掷点结果进 metadata:半年后要能回答「这一抽当时抽到的是什么稀有度、按什么价收的钱」
                 'metadata_json' => [
                     'npc_id'       => $def->npc_id,
+                    'name_zh'      => $def->name_zh ?? null,
                     'rarity'       => $def->rarity,
                     'wage_per_min' => (float) $def->wage_per_min,
                     'food_per_min' => (float) $def->food_per_min,
@@ -465,7 +466,7 @@ final class NpcService
             ->first([
                 'cn.id', 'cn.npc_id', 'cn.skill_level', 'cn.xp', 'cn.skill_value', 'cn.morale',
                 'cn.status', 'cn.assigned_instance_id', 'cn.acquired_source',
-                'nd.name_key', 'nd.category', 'nd.rarity', 'nd.primary_skill_id',
+                'nd.name_key', 'nd.name_zh', 'nd.category', 'nd.rarity', 'nd.primary_skill_id',
                 'nd.wage_per_min', 'nd.food_per_min',
             ]);
 
@@ -478,6 +479,9 @@ final class NpcService
             'id'                   => (int) $r->id,
             'npc_id'               => $r->npc_id,
             'name_key'             => $r->name_key,
+            // 中文名(§6.3 的 150 条扩充带入)。N001~N030 暂为 null —— 前端遇到 null 回落 name_key,
+            // 不在服务端编一个占位名字(拟名待批,编出来的名字会被当成正式名传播出去)
+            'name_zh'              => $r->name_zh,
             'category'             => $r->category,
             'rarity'               => $r->rarity,
             'primary_skill_id'     => $r->primary_skill_id,
@@ -506,7 +510,7 @@ final class NpcService
             ->get([
                 'cn.id', 'cn.npc_id', 'cn.skill_level', 'cn.xp', 'cn.skill_value', 'cn.morale',
                 'cn.status', 'cn.assigned_instance_id', 'cn.acquired_source',
-                'nd.name_key', 'nd.category', 'nd.rarity', 'nd.primary_skill_id',
+                'nd.name_key', 'nd.name_zh', 'nd.category', 'nd.rarity', 'nd.primary_skill_id',
                 'nd.wage_per_min', 'nd.food_per_min',
             ]);
 

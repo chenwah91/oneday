@@ -154,14 +154,19 @@ class ItemDefinitionTest extends TestCase
         // 国防 flat(M3-D5 W4-B 起可执行):§7 IT008「国防值 flat(+8)」。
         // op 是 flat 不是 pct —— 它加的是绝对国防点数,不是百分比
         $this->assertSpec($definitions['IT008'], ModifierTarget::DEFENSE_SCORE_FLAT, ModifierSpec::SCOPE_CITY, null, 8.0);
+        // 运输容量(M3-W5 起可执行):§7 IT018「运输容量(+15%)」。
+        // 全城作用域 —— 运输容量是全城读数(§10.7 物流负载的分母),不是某一栋楼的属性
+        $this->assertSpec($definitions['IT018'], ModifierTarget::TRANSPORT_CAPACITY_PCT, ModifierSpec::SCOPE_CITY, null, 0.15);
     }
 
     // 映射不到已登记 target 的效果:specs 为空 + unmapped_zh 有原文(不发明 target,也不静默丢弃)
     public function test_unmapped_effects_are_recorded_not_invented(): void
     {
-        // IT008 已于 M3-D5(W4-B)提升为可执行:defense_score_flat 登记后它有了消费点,
-        // 断言改到 test_effect_mapping_table 里。其余 6 件仍然没有可挂的 target
-        $unmappedItems = ['IT012', 'IT015', 'IT018', 'IT019', 'IT020', 'IT024'];
+        // 两件已先后提升为可执行,断言改到 test_effect_mapping_table 里:
+        //   IT008 —— M3-D5(W4-B)登记 defense_score_flat;
+        //   IT018 —— M3-W5 登记 transport_capacity_pct(「运输容量+15%」终于有了消费点)。
+        // 其余 5 件仍然没有可挂的 target(医疗 / 资金效率 / 停机 / 巨型工程)
+        $unmappedItems = ['IT012', 'IT015', 'IT019', 'IT020', 'IT024'];
 
         foreach ($unmappedItems as $itemId) {
             $def = ItemDefinition::find($itemId);

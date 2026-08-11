@@ -9,7 +9,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
-// NPC 定义层 Seeder(v3.2 §6.1 / §6.2 / §6.3)。
+// NPC 定义层 Seeder(v3.2 §6.1 / §6.2 / §6.3 + 150 条扩充)。
 //
 // 数据在 database/data/npcs.json,这里只做「JSON 行 → 表行」的转换 + 守门。
 // 守门不是可选项:M2 的 upgrade_to 断链就是因为「解析不到就静默变 NULL」,36 条链丢了很久没人发现。
@@ -34,9 +34,9 @@ class NpcDefinitionSeeder extends Seeder
             ['xp_to_next', 'primary_bonus', 'maintenance_reduction_cap']
         );
         DB::table('npc_definition')->upsert(
-            self::npcRows($data['npcs'], $data['skills']),
+            self::npcRows($data['npcs'], $data['skills'], withNameZh: true),
             ['npc_id'],
-            ['name_key', 'category', 'min_era', 'primary_skill_id', 'initial_skill_value',
+            ['name_key', 'name_zh', 'category', 'min_era', 'primary_skill_id', 'initial_skill_value',
                 'initial_skill_level', 'max_level', 'wage_per_min', 'food_per_min', 'rarity',
                 'recruit_source', 'recruit_desc_zh', 'trait_desc_zh', 'trait_json']
         );
@@ -71,12 +71,16 @@ class NpcDefinitionSeeder extends Seeder
         ], $curve);
     }
 
-    // §6.3 的 30 行原型
-    public static function npcRows(array $npcs, array $skills): array
+    // §6.3 的原型行(v3.2 原表 30 行 + 150 条扩充草案的 N031~N150,合计 150 行)。
+    //
+    // $withNameZh:是否把 name_zh 列一起带出来。默认 **false** —— 2026_08_12_100001 之前的迁移
+    // (400001 / 400005 / 900002)也调用本方法,它们运行时 npc_definition 还没有 name_zh 这一列,
+    // 带上去会直接 SQL 报错。Seeder 与新迁移显式传 true。
+    public static function npcRows(array $npcs, array $skills, bool $withNameZh = false): array
     {
         $skillIds = array_flip(array_column($skills, 'skill_id'));
 
-        return array_map(function ($n) use ($skillIds) {
+        return array_map(function ($n) use ($skillIds, $withNameZh) {
             if (! isset($skillIds[$n['primary_skill_id']])) {
                 throw new RuntimeException("npcs.json:{$n['npc_id']} 的 primary_skill_id「{$n['primary_skill_id']}」不在 §6.1 的技能表里");
             }
@@ -89,7 +93,7 @@ class NpcDefinitionSeeder extends Seeder
 
             self::assertTraitJson($n['npc_id'], $n['trait_json'] ?? null);
 
-            return [
+            $row = [
                 'npc_id'              => $n['npc_id'],
                 'name_key'            => $n['name_key'],
                 'category'            => $n['category'],
@@ -106,6 +110,13 @@ class NpcDefinitionSeeder extends Seeder
                 'trait_desc_zh'       => $n['trait_desc_zh'],
                 'trait_json'          => json_encode($n['trait_json'] ?? ['specs' => [], 'unmapped_zh' => []], JSON_UNESCAPED_UNICODE),
             ];
+
+            if ($withNameZh) {
+                // N001~N030 的中文名尚待项目负责人拟定 → 留 NULL,前端回落 name_key(不在这里编名字)
+                $row['name_zh'] = $n['name_zh'] ?? null;
+            }
+
+            return $row;
         }, $npcs);
     }
 

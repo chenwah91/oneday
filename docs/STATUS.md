@@ -7,7 +7,9 @@
 
 ## 一句话状态
 
-**M2 完成(v1.1.0),M3 进行中 —— W4 交付(778 测试):电力系统 + 国防威胁等级上线,七乘区全部真实接线完毕。**
+**M2 完成(v1.1.0),M3 进行中 —— W5 交付(811 测试):NPC 池 30→150 + 三组悬空 target 清偿,30 条事件复活至 25 条。**
+
+M3-W5 内容:①**NPC 150 接入**(用户提供 120 新原型+中文名零重名、10 个新军事 NPC 国防特性同步提升、name_zh 列落库、EVT_BRAIN_DRAIN 复活、开局即可招募=时代 I 新增 4 原型);②**target 清偿**(transport/trade/finance_capacity_pct+tax_income_pct+market_price_pct 五条登记接线、复活 EVT_ROUTE_BREAK/PORT_CONGESTION/CRIME/CORRUPTION/SPECULATION/OIL_SHOCK 六条、trade_capacity 接市场限额分母含 200/窗基础额度不禁市、价格冲击只打该城买入侧防抛货套利、国防有效值统一到 security/幸福两处=时代门槛刻意除外)。仍停用 5 条(疫病/矿藏/海外订单/全球危机/税收抗议)。遗留:governance_capacity_pct 死 target(约 20 处治理加成不生效,W6 清)。
 
 M3-W4 内容:①**M.1 电力**(§3.3 专属曲线缺电线性打折下限0、发电走容量类装机、耗电以 power_per_min 单一口径收敛双计、EVT_BLACKOUT 复活含保工业/保民生选项、维护费折扣+施工加速两消费点接线=折扣在前欠费判定在后、电力存量折算资金归零);②**D5 国防**(威胁等级 low/medium/high 派生自 §5.1 九档需求单一来源、defense flat/pct/threat_demand 三 target 唯一消费点合成、EVT_RAID 复活按缺口率×档位倍率扣非资金库存+三选项、EVT_BORDER_TENSION 复活、「国防达标」权重改读威胁档)。8+4 项参数设定化。遗留:电站名义发电口子(需总线两阶段 prepare)、缺电建造闸门并 M.6、security/幸福仍读建筑口径国防(内核合并后三处换一行)。
 

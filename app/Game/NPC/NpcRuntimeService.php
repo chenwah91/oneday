@@ -162,26 +162,105 @@ final class NpcRuntimeService
             }
 
             DB::table('city_npcs')->where('id', $n->id)->update([
-                'morale'               => round($morale, 2),
-                'status'               => $left ? NpcCode::STATUS_LEFT : $n->status,
-                'assigned_instance_id' => $left ? null : $n->assigned_instance_id,
-                'updated_at'           => now(),
+                'morale'     => round($morale, 2),
+                'updated_at' => now(),
             ]);
 
             if ($left) {
-                AuditLogger::record(AuditAction::NPC_LEAVE, 'success', [
-                    // 不是玩家操作:actor 是 system,但 user_id / city_id 照记,方便按玩家回查
-                    'actor_type' => 'system', 'actor_id' => null,
-                    'user_id' => $locked->user_id, 'city_id' => $locked->id,
-                    'entity_type' => 'city_npc', 'entity_id' => (string) $n->id,
-                    'reason_code' => 'MORALE_TOO_LOW',
-                    'before_json' => ['status' => $n->status, 'morale' => (float) $n->morale],
-                    'after_json'  => ['status' => NpcCode::STATUS_LEFT, 'morale' => round($morale, 2)],
-                    'delta_json'  => ['morale' => round($morale - (float) $n->morale, 2)],
-                    'metadata_json' => ['npc_id' => $n->npc_id, 'windows' => $windows],
-                ]);
+                // 离场本身走统一入口:状态位 / 岗位解绑 / 审计口径只有一份实现
+                self::markLeft(
+                    $locked,
+                    $n,
+                    'MORALE_TOO_LOW',
+                    before: ['status' => $n->status, 'morale' => (float) $n->morale],
+                    after: ['status' => NpcCode::STATUS_LEFT, 'morale' => round($morale, 2)],
+                    delta: ['morale' => round($morale - (float) $n->morale, 2)],
+                    metadata: ['windows' => $windows],
+                );
             }
         }
+    }
+
+    // ---------- 离场:两个来源共用的唯一写入点 ----------
+
+    // 把一名在编 NPC 翻成 left(顺手解绑岗位)并写 NPC.LEAVE 审计。
+    //
+    // 两个调用方:① A4 士气过低自行离职;② D4 事件 EVT_BRAIN_DRAIN 的人才流失。
+    // 抽成一处不是为了少写几行,而是为了让「NPC 怎么离场」只有一份口径 ——
+    // 状态位、assigned_instance_id 解绑、审计的 actor/entity 三件事各写一遍迟早会走样。
+    private static function markLeft(
+        object $locked,
+        object $npc,
+        string $reasonCode,
+        array $before,
+        array $after,
+        array $delta,
+        array $metadata
+    ): void {
+        DB::table('city_npcs')->where('id', $npc->id)->update([
+            'status'               => NpcCode::STATUS_LEFT,
+            'assigned_instance_id' => null,
+            'updated_at'           => now(),
+        ]);
+
+        AuditLogger::record(AuditAction::NPC_LEAVE, 'success', [
+            // 不是玩家操作:actor 是 system,但 user_id / city_id 照记,方便按玩家回查
+            'actor_type' => 'system', 'actor_id' => null,
+            'user_id' => $locked->user_id, 'city_id' => $locked->id,
+            'entity_type' => 'city_npc', 'entity_id' => (string) $npc->id,
+            'reason_code' => $reasonCode,
+            'before_json' => $before,
+            'after_json'  => $after,
+            'delta_json'  => $delta,
+            'metadata_json' => array_merge(['npc_id' => $npc->npc_id], $metadata),
+        ]);
+    }
+
+    // 随机流失一名在编 NPC(v3.2 §9.2 EVT_BRAIN_DRAIN 人才流失的落点)。
+    //
+    // 为什么写在 NPC 模块而不是事件模块:city_npcs 的状态位归本模块所有(D1 的职责边界),
+    // 事件系统只负责「什么时候流失」,不负责「怎么流失」。EVT_BRAIN_DRAIN 在 M3-D4 交付时
+    // 之所以 Fail Closed 停用,原因正是这一条 —— 现在入口开在这里,边界仍然成立。
+    //
+    // 掷点由调用方注入($pick(count) → 下标):事件要的是**可重算**的确定性随机
+    // (EventRandom = HMAC(密钥, 城市|窗口|标签),§11.3 防止玩家重登录刷结果),
+    // 而本模块自己的掷点走 CSPRNG。两套随机源不该互相知道对方,所以用闭包传进来。
+    //
+    // 没有在编 NPC 时返回 null(空转,不抛):一座刚建好的城照样可能抽中这条事件,
+    // 那时候「没人可流失」是正常状态,不是错误。
+    public static function leaveRandom(object $locked, string $reasonCode, callable $pick, array $metadata = []): ?array
+    {
+        $npcs = DB::table('city_npcs')
+            ->where('city_id', $locked->id)
+            ->whereIn('status', NpcCode::ACTIVE_STATUSES)
+            ->orderBy('id') // 顺序固定,掷点才可重算
+            ->lockForUpdate()
+            ->get();
+
+        if ($npcs->isEmpty()) {
+            return null;
+        }
+
+        $index = max(0, min($npcs->count() - 1, (int) $pick($npcs->count())));
+        $npc = $npcs[$index];
+
+        $def = DB::table('npc_definition')->where('npc_id', $npc->npc_id)->first();
+
+        self::markLeft(
+            $locked,
+            $npc,
+            $reasonCode,
+            before: ['status' => $npc->status, 'assigned_instance_id' => $npc->assigned_instance_id],
+            after: ['status' => NpcCode::STATUS_LEFT, 'assigned_instance_id' => null],
+            // delta:流失释放掉的常态开销速率(与辞退同口径 —— 走人的经济含义就是这两条)
+            delta: [
+                'wage_money_per_min' => -(float) ($def->wage_per_min ?? 0),
+                'food_per_min'       => -(float) ($def->food_per_min ?? 0),
+            ],
+            metadata: array_merge(['pool' => $npcs->count(), 'picked_index' => $index], $metadata),
+        );
+
+        return ['city_npc_id' => (int) $npc->id, 'npc_id' => (string) $npc->npc_id];
     }
 
     // ---------- A1:自然增长 ----------

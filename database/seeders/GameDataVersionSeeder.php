@@ -148,5 +148,41 @@ class GameDataVersionSeeder extends Seeder
                 'notes'       => 'M3-D5 国防联动:EVT_RAID / EVT_BORDER_TENSION 复活 + IT008 国防 flat 与 N010/N016/N027 国防特性由 unmapped 提升为可执行',
             ]
         );
+
+        // NPC 池 30 → 150 落地(定义表行集 + 列集都变了,吃次版本位)。
+        // 已有数据的库由 2026_08_12_100004 迁移递增到同一版本。
+        // 为什么不是补丁位:npc_definition 从 30 行变成 150 行(招募候选池整整多了 120 个原型,
+        // 时代 I 从此也能招募)、多了 name_zh 一列,10 行军事 NPC 的国防特性由 unmapped 提升为 spec
+        // (有效国防值 / 威胁覆盖率 / EVT_RAID 损失比例都会跟着变),EVT_BRAIN_DRAIN 由停用转启用。
+        // ⚠️ 版本号必须严格升序追加在末尾:current() 取 id 最大的一行,插反了「当前版本」会回退。
+        DB::table('game_data_versions')->updateOrInsert(
+            ['version' => 'V3.6.0'],
+            [
+                'deployed_at' => now(),
+                'deployed_by' => 'seed',
+                'notes'       => 'NPC 原型池 30 → 150(新增 N031~N150 + name_zh 中文名)+ 10 行军事 NPC 国防特性提升为 spec + EVT_BRAIN_DRAIN 人才流失复活',
+            ]
+        );
+
+        // M3-W5 容量 / 税收 / 市场价格三组 target 接线(19 行定义数据的行内容变了,吃补丁位)。
+        // 已有数据的库由 2026_08_12_200003 迁移递增到同一版本。
+        // 为什么是补丁位:没有新表、没有新行、没有一栋建筑的产出 / 成本 / 升级链被改 ——
+        //   event_definition 六行由停用转启用(EVT_ROUTE_BREAK / EVT_PORT_CONGESTION / EVT_CRIME /
+        //     EVT_CORRUPTION / EVT_SPECULATION / EVT_OIL_SHOCK),EVT_TRADE_BOOM 两个选项提升,
+        //     EVT_TAX_PROTEST 只刷说明(维持停用:税率固定不可调);
+        //   item_definition 的 IT018、npc_definition 的 N013 与 10 位物流 NPC 由 unmapped 提升为 spec;
+        //   npc_skill_definition 的 SKILL_LOGISTICS 补上 effect_target。
+        // 但同一批定义数据在 V3.6.0 与 V3.6.1 下会算出不同结果(运输容量会被事件/NPC 改动 → 物流乘区跟着变、
+        // 税收会被事件打折、市场买入价会被价格冲击抬高、单城成交量上限开始受贸易容量约束),
+        // 所以仍要留一个版本号(§64 / §65)。
+        // ⚠️ 版本号必须严格升序追加在末尾:current() 取 id 最大的一行,插反了「当前版本」会回退。
+        DB::table('game_data_versions')->updateOrInsert(
+            ['version' => 'V3.6.1'],
+            [
+                'deployed_at' => now(),
+                'deployed_by' => 'seed',
+                'notes'       => 'M3-W5 容量/税收/价格三组 target 接线:六条事件复活(路线中断/港口拥堵/犯罪浪潮/贪腐案/市场投机/石油冲击)+ IT018 与 11 位 NPC 特性提升 + 贸易容量接市场成交量上限',
+            ]
+        );
     }
 }

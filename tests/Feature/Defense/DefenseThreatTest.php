@@ -190,6 +190,30 @@ class DefenseThreatTest extends DefenseTestCase
         $this->assertSame(100.0, $this->scoreAt($city, 100.0));
     }
 
+    // 150 池扩充进来的军事 NPC 走的是同一条 flat / pct 通道(黄金样本)。
+    // 这 10 行的国防特性在扩充草案里还挂在 unmapped_zh,本波次逐条提升为 spec;
+    // 提升对不对,只有把它们真的塞进 DefenseService 算一遍才知道 —— 定义层断言看不出「有没有生效」。
+    public function test_expansion_military_npc_traits_flow_through_defense_service(): void
+    {
+        [$city] = $this->makeCity('thrnpc150', ['era_order' => 10]);
+        $city = $city->fresh();
+
+        // N036 民兵长 +6 flat / N096 边哨 +7 flat
+        $this->addNpc($city, 'N036');
+        $this->addNpc($city, 'N096', NpcCode::STATUS_ASSIGNED);
+        $this->assertSame(113.0, $this->scoreAt($city, 100.0), '(100 + 6 + 7)');
+
+        // N117 +15% pct / N090 +30% pct → (100 + 13) × (1 + 0.15 + 0.30)
+        $this->addNpc($city, 'N117');
+        $this->addNpc($city, 'N090', NpcCode::STATUS_ASSIGNED);
+        $this->assertEqualsWithDelta(163.85, $this->scoreAt($city, 100.0), 0.0001);
+
+        $defense = DefenseService::evaluate($city, ['defenseScore' => 100.0]);
+        $this->assertSame(13.0, $defense['defense_flat']);
+        $this->assertEqualsWithDelta(0.45, $defense['defense_pct'], 1e-9);
+        $this->assertSame(100.0, $defense['defense_score_base'], '建筑口径不该被加成污染');
+    }
+
     // ---------- ⑥ 只加一次:三个来源同时在场 ----------
 
     public function test_all_sources_compose_once_in_fixed_order(): void

@@ -2,6 +2,8 @@
 
 namespace App\Game\Market;
 
+use App\Game\Modifier\ConsumptionPoint;
+use App\Game\Modifier\ModifierTarget;
 use App\Game\Resource\ResourceCode;
 use App\Game\Simulation\SimulationService;
 use App\Models\City;
@@ -117,8 +119,15 @@ final class TradeService
             $midPrice = PriceEngine::priceFor($def, $epoch);
 
             // ---- 9. 四机制之②:成交量上限(单笔 + 本窗累计 + 本小时累计)----
-            $windowQuota = MarketDefinition::windowQuota($def);
-            $hourlyQuota = MarketDefinition::hourlyQuota($def);
+            //
+            // W5 起额度多了一层**城市侧分母**(backlog §5.4):
+            //     单窗上限 = min(流动性口径, (基础额度 + 全城 trade_capacity) × 系数 × 窗口分钟数)
+            // 贸易容量取自本次结算结果(已乘过 trade_capacity_pct),不在这里另查建筑表 ——
+            // 那会立刻裂成第二份口径。这也是 C01~C04 / M01 / M02 六栋建筑第一次真正生效的地方:
+            // 没有市场建筑的城市仍能小额买卖(基础额度,后台可调),但做大宗就必须建市场。
+            $tradeCapacity = (float) ($sim['tradeCapacity'] ?? 0.0);
+            $windowQuota = MarketDefinition::cityWindowQuota($def, $tradeCapacity);
+            $hourlyQuota = MarketDefinition::cityHourlyQuota($def, $tradeCapacity);
 
             $windowUsed = (float) DB::table('city_market_quota')
                 ->where('city_id', $city->id)->where('resource_id', $resourceId)->where('window_index', $epoch)
@@ -140,6 +149,11 @@ final class TradeService
                     'window_remaining'  => round(max(0.0, $windowQuota - $windowUsed), 4),
                     'hourly_quota'      => round($hourlyQuota, 4),
                     'hourly_remaining'  => round(max(0.0, $hourlyQuota - $hourUsed), 4),
+                    // 两条口径都回给前端:玩家才看得出「是市场吃不下,还是我的贸易容量不够」——
+                    // 前者只能等下一窗,后者要去建 C 系列建筑,提示不同才有意义
+                    'liquidity_quota'   => round(MarketDefinition::windowQuota($def), 4),
+                    'trade_capacity'    => round($tradeCapacity, 4),
+                    'trade_capacity_quota' => round(MarketDefinition::tradeThroughputQuota($tradeCapacity), 4),
                 ]);
             }
 
@@ -153,10 +167,32 @@ final class TradeService
             // ---- 11. 四机制之①:手续费 ----
             $feeRate = MarketDefinition::effectiveFeeRate($def);
 
+            // ---- 11'. 事件价格冲击(D0.3 的 market_price_pct,**唯一消费点就是这里**)----
+            //
+            // 投稿者:§9.2 的 EVT_OIL_SHOCK(石油/燃料价格 +40%)与 EVT_SPECULATION(随机战略资源 +25%~50%)。
+            // 取数走 ConsumptionPoint::pctForResource —— 全城作用域 + 该资源作用域两项相加。
+            //
+            // ══ 三条口径,缺一条这里就是印钞机(裁决理由,改动前请先读完)══════════════
+            // ① **全服定价一个字不动**:PriceEngine 的价格是全服共享的纯函数(f(资源, epoch)),
+            //    而这两条事件是**城市级**实例。让一座城市的事件去推全服价格 = 玩家可以用自己的事件
+            //    改别人的行情,也会让「同一 epoch 内价格恒定」这条反刷前提失效。
+            // ② **只作用于买入侧**:两条都是 negative 事件,惩罚就该落在「买东西更贵」上。
+            //    若卖出价同步上抬,玩家只要囤着货等事件,事件期间抛售、事件后买回,
+            //    每轮净赚 pct×数量(受额度限制但可反复),那是一台确定性印钞机 ——
+            //    §13 要求四机制「同时存在」正是为了堵这种缝,不能自己再开一条。
+            // ③ 因此 EVT_SPECULATION 的选项 B「顺势交易:一次高风险套利机会」维持 unmapped:
+            //    它要的正是被 ② 否掉的那个方向,宁可不做,不发明。
+            //
+            // 夹到 ≥ 0:后台把强度调成大负数也不该出现负价格。
+            $eventPricePct = $side === self::SIDE_BUY
+                ? ConsumptionPoint::pctForResource(ModifierTarget::MARKET_PRICE_PCT, (int) $city->id, $resourceId)
+                : 0.0;
+            $eventPriceFactor = max(0.0, 1.0 + $eventPricePct);
+
             // 方向:买入把价格推高(玩家吃亏)、卖出把价格压低(玩家吃亏)。
             // 两个方向都对玩家不利,这正是滑点存在的意义 —— 它是「大额冲击市场」的代价,不是手续费的第二份
             $effectiveUnit = $side === self::SIDE_BUY
-                ? $midPrice * (1.0 + $slippageRate)
+                ? $midPrice * (1.0 + $slippageRate) * $eventPriceFactor
                 : $midPrice * (1.0 - $slippageRate);
 
             $gross = $effectiveUnit * $quantity;
@@ -283,6 +319,10 @@ final class TradeService
                     'slippage_rate' => round($slippageRate, 6),
                     'money_delta'   => round($moneyDelta, 4),
                     'window_index'  => $epoch,
+                    // 事件价格冲击与城市侧额度:半年后回查「他那天为什么买得这么贵 / 为什么只让买这么点」
+                    'event_price_pct' => round($eventPricePct, 6),
+                    'trade_capacity'  => round($tradeCapacity, 4),
+                    'window_quota'    => round($windowQuota, 4),
                 ],
             ]);
 
@@ -298,8 +338,13 @@ final class TradeService
                 'slippage_rate'    => round($slippageRate, 6),
                 'money_delta'      => round($moneyDelta, 4),
                 'window_index'     => $epoch,
+                // 额度提示一律按**城市侧口径**返回(= 玩家实际能用的那条),
+                // 流动性口径只在被拒时一并给出(见 MARKET_LIMIT_REACHED 的 payload)
+                'window_quota'     => round($windowQuota, 4),
                 'window_remaining' => round(max(0.0, $windowQuota - $windowUsed - $quantity), 4),
                 'hourly_remaining' => round(max(0.0, $hourlyQuota - $hourUsed - $quantity), 4),
+                // 本次成交实际吃到的事件价格冲击(0 = 没有事件在生效;卖出侧恒 0,见上面的口径说明)
+                'event_price_pct'  => round($eventPricePct, 6),
             ]);
         });
     }

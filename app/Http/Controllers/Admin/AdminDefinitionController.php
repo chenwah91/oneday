@@ -103,12 +103,13 @@ class AdminDefinitionController extends Controller
 
     // ---- NPC 定义(M3-D1)----
 
-    // 列表:30 行原型的可编辑数值 + 只读的结构列(稀有度 / 来源 / 技能),供后台先看后改。
-    // 30 行不分页:一屏看完才比较得出「这一档工资是不是偏了」
+    // 列表:150 行原型的可编辑数值 + 只读的结构列(中文名 / 稀有度 / 来源 / 技能),供后台先看后改。
+    // 不分页:全表一屏拉下来才比较得出「这一档工资是不是偏了」;
+    // name_zh 一起给出来 —— 150 行里只靠 N087 这样的 code 认人太难(N001~N030 尚未拟名,值为 null)
     public function npcs(): JsonResponse
     {
         $rows = DB::table('npc_definition')->orderBy('npc_id')->get(array_merge(
-            ['npc_id', 'name_key', 'category', 'min_era', 'primary_skill_id', 'rarity', 'recruit_source', 'trait_desc_zh'],
+            ['npc_id', 'name_key', 'name_zh', 'category', 'min_era', 'primary_skill_id', 'rarity', 'recruit_source', 'trait_desc_zh'],
             self::NPC_EDITABLE
         ));
 

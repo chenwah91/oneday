@@ -162,9 +162,25 @@ class CityController extends Controller
                 // ---- /M3-ITEM ----
 
                 // ---- M3-MARKET ----
-                // **本锚点刻意留空**:市场信息走独立端点 GET /api/market/prices,不塞进城市快照
+                // **价目表仍然不在这里**:市场行情走独立端点 GET /api/market/prices
                 // (backlog §5.3 / §10.2:既避免 CityController 成为两个 agent 的争抢点,也避免快照体积失控)。
-                // W2-B 不得在此插入任何字段。
+                //
+                // W5 只加两个**城市侧**读数(共 4 个标量,与体积无关):贸易容量 / 金融容量。
+                // 它们不是行情,是这座城市自己的容量读数 —— 与上面的 governance / logistics 块同类;
+                // 而且贸易容量是**单城成交量上限的分母**(backlog §5.4:上限 = min(流动性口径,
+                // (基础额度 + 贸易容量) × 系数 × 窗口分钟数)),不给出来,玩家就只能靠撞
+                // MARKET_LIMIT_REACHED 才知道自己该去建市场 —— 那正是 C01~C04 / M01 / M02
+                // 六栋建筑长期「像纯负债」的原因之一。
+                //   capacity / pct:pct 是事件与 NPC 的修正合计(容量值已经乘过它),分开给是为了
+                //   回答「为什么今天少了」;金融容量目前只有读数,尚无消费者(§5.4 的金融玩法未定)
+                'trade'               => [
+                    'capacity' => $sim['tradeCapacity'],
+                    'pct'      => $sim['tradeCapacityPct'],
+                ],
+                'finance'             => [
+                    'capacity' => $sim['financeCapacity'],
+                    'pct'      => $sim['financeCapacityPct'],
+                ],
                 // ---- /M3-MARKET ----
 
                 // ---- M3-EVENT ----(W3-B:active 事件实例数 / 最近一条通知,详情走 GET /api/city/events)

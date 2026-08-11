@@ -84,6 +84,9 @@ final class EventCondition
             'security'   => (float) ($sim['security'] ?? 0),
             'governance_load'    => (float) ($sim['governanceLoad'] ?? 0),
             'transport_capacity' => (float) ($sim['transportCapacity'] ?? 0),
+            // 贸易容量(W5):内核已在容量提取处聚合并乘过 trade_capacity_pct,这里只取不再算第二份。
+            // 内核未接入的库(或 elapsed=0 的极端调用)缺键 → 0.0,EVT_PORT_CONGESTION 的条件自然不成立
+            'trade_capacity'     => (float) ($sim['tradeCapacity'] ?? 0),
             'storage_capacity'   => (float) ($sim['storageCapacity'] ?? 0),
             'money'      => (float) ($sim['money'] ?? $lockedCity->money),
             'resources'  => $sim['resources'] ?? [],
@@ -149,6 +152,8 @@ final class EventCondition
             EventCode::METRIC_SECURITY        => $metrics['security'],
             EventCode::METRIC_GOVERNANCE_LOAD => $metrics['governance_load'],
             EventCode::METRIC_TRANSPORT_CAPACITY => $metrics['transport_capacity'],
+            // 贸易容量(W5):EVT_PORT_CONGESTION 的「贸易容量>800」
+            EventCode::METRIC_TRADE_CAPACITY     => (float) ($metrics['trade_capacity'] ?? 0),
             // 住房空余:绝对人数与比率两个口径(§9.2 里两种写法都出现过)
             EventCode::METRIC_HOUSING_FREE      => max(0.0, $metrics['population_capacity'] - $metrics['population']),
             EventCode::METRIC_HOUSING_FREE_RATE => $metrics['population_capacity'] > 0

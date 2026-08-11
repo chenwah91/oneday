@@ -22,10 +22,80 @@ class NpcDefinitionTest extends TestCase
 
     public function test_definition_row_counts_match_spec(): void
     {
-        // §6.1 = 12 条技能;§6.2 = 10 级曲线;§6.3 = 30 个原型
+        // §6.1 = 12 条技能;§6.2 = 10 级曲线;§6.3 原表 30 个原型 + 扩充草案 120 个 = 150
         $this->assertSame(12, DB::table('npc_skill_definition')->count());
         $this->assertSame(10, DB::table('npc_skill_level_curve')->count());
-        $this->assertSame(30, DB::table('npc_definition')->count());
+        $this->assertSame(150, DB::table('npc_definition')->count());
+
+        // 编号必须是连续的 N001~N150:断号意味着草案里漏了一行,而漏掉的那一行
+        // 在运行时只表现为「这个原型永远抽不到」—— 与 M2 的 upgrade_to 断链同一类静默故障
+        $ids = DB::table('npc_definition')->orderBy('npc_id')->pluck('npc_id')->all();
+        $expected = [];
+        for ($i = 1; $i <= 150; $i++) {
+            $expected[] = sprintf('N%03d', $i);
+        }
+        $this->assertSame($expected, $ids);
+    }
+
+    // 中文名落地(150 条扩充):N031~N150 逐条有名且**不重名**;N001~N030 暂留 NULL
+    public function test_name_zh_is_filled_for_the_expansion_and_null_for_the_original_thirty(): void
+    {
+        $rows = DB::table('npc_definition')->orderBy('npc_id')->get()->keyBy('npc_id');
+
+        $names = [];
+        foreach ($rows as $npcId => $row) {
+            $index = (int) substr($npcId, 1);
+
+            if ($index <= 30) {
+                // 拟名待项目负责人批准 → 服务端不编占位名,前端回落 name_key
+                $this->assertNull($row->name_zh, "{$npcId} 的中文名尚未批准,不该有值");
+
+                continue;
+            }
+
+            $this->assertNotNull($row->name_zh, "{$npcId} 缺中文名");
+            $this->assertNotSame('', trim((string) $row->name_zh));
+            $names[] = $row->name_zh;
+        }
+
+        $this->assertCount(120, $names);
+        $this->assertSame(count($names), count(array_unique($names)), '扩充版中文名不得重名');
+    }
+
+    // 军事 NPC 的国防特性必须**全部**是可执行 spec:
+    // W4-B 已经登记了 defense_score_flat / defense_score_pct 并接线到 DefenseService,
+    // 再留在 unmapped_zh 就是「数据写了、运行时不生效」—— 本波次逐条提升的就是这 10 行
+    public function test_military_defense_traits_are_all_executable_specs(): void
+    {
+        $expected = [
+            'N036' => ['flat', 6.0],   'N053' => ['flat', 15.0],
+            'N096' => ['flat', 7.0],   'N113' => ['flat', 14.0],
+            'N071' => ['pct', 0.18],   'N083' => ['pct', 0.22],
+            'N090' => ['pct', 0.30],   'N117' => ['pct', 0.15],
+            'N143' => ['pct', 0.24],   'N150' => ['pct', 0.32],
+        ];
+
+        $rows = DB::table('npc_definition')->get()->keyBy('npc_id');
+
+        foreach ($expected as $npcId => [$op, $value]) {
+            $trait = json_decode($rows[$npcId]->trait_json, true);
+            $target = $op === 'flat' ? ModifierTarget::DEFENSE_SCORE_FLAT : ModifierTarget::DEFENSE_SCORE_PCT;
+
+            $spec = collect($trait['specs'])->firstWhere('target', $target);
+            $this->assertNotNull($spec, "{$npcId} 的国防特性没有提升为 {$target}");
+            $this->assertSame('city', $spec['scope']);
+            $this->assertSame($op, $spec['op']);
+            $this->assertEqualsWithDelta($value, (float) $spec['value'], 1e-9);
+            $this->assertSame([], $trait['unmapped_zh'], "{$npcId} 提升后 unmapped_zh 应清空");
+        }
+
+        // 全表兜底:任何一行的 trait_desc_zh 里出现「国防」,都不该还挂在 unmapped_zh 里
+        foreach ($rows as $npcId => $row) {
+            $trait = json_decode($row->trait_json, true);
+            foreach ($trait['unmapped_zh'] ?? [] as $text) {
+                $this->assertStringNotContainsString('国防', $text, "{$npcId} 还有未提升的国防特性:{$text}");
+            }
+        }
     }
 
     public function test_level_curve_matches_spec_rows(): void
@@ -106,6 +176,8 @@ class NpcDefinitionTest extends TestCase
         $versions = DB::table('game_data_versions')->orderBy('id')->pluck('version')->all();
 
         $this->assertContains('V3.3.0', $versions);
+        // 30 → 150 扩充 + name_zh 列 + EVT_BRAIN_DRAIN 复活 = 次版本位
+        $this->assertContains('V3.6.0', $versions);
         // 插入顺序必须是版本号升序:current() 取的是 id 最大的一行
         $sorted = $versions;
         usort($sorted, 'version_compare');
