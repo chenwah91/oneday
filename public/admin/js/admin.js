@@ -99,6 +99,20 @@ const defResult = el('def-result');
 const defViewBtn = el('def-view-btn');
 const defSubmit = el('def-submit');
 
+// NPC 定义调整(权限 edit_definition,M3-D1)
+const npcDefPanel = el('npc-def-panel');
+const npcDefForm = el('npc-def-form');
+const npcDefId = el('npc-def-id');
+const npcDefOptions = el('npc-def-options');
+const npcDefField = el('npc-def-field');
+const npcDefValue = el('npc-def-value');
+const npcDefReason = el('npc-def-reason');
+const npcDefCurrent = el('npc-def-current');
+const npcDefError = el('npc-def-error');
+const npcDefResult = el('npc-def-result');
+const npcDefViewBtn = el('npc-def-view-btn');
+const npcDefSubmit = el('npc-def-submit');
+
 // 玩家补偿(权限 adjust_resource)
 const compPanel = el('comp-panel');
 const compForm = el('comp-form');
@@ -167,6 +181,7 @@ function hasPermission(permission) {
 function applyPermissionVisibility() {
     compPanel.classList.toggle('hidden', !hasPermission('adjust_resource'));
     settingPanel.classList.toggle('hidden', !hasPermission('edit_definition'));
+    npcDefPanel.classList.toggle('hidden', !hasPermission('edit_definition'));
 }
 
 // ---------- 玩家列表 ----------
@@ -296,6 +311,77 @@ defForm.addEventListener('submit', async (e) => {
         defError.classList.remove('hidden');
     } finally {
         defSubmit.disabled = false;
+    }
+});
+
+// ---------- NPC 定义调整(M3-D1)----------
+
+// 30 行原型一次取回:填 npc_id 时给 datalist 补全,查看当前值时也直接从这份缓存里读,
+// 免得每点一次「查看」就打一次接口
+let npcDefinitions = [];
+
+async function loadNpcDefinitions() {
+    const data = await api.get('/api/admin/definitions/npcs');
+    npcDefinitions = data.npcs || [];
+    npcDefOptions.innerHTML = npcDefinitions
+        .map((n) => `<option value="${escapeHtml(n.npc_id)}">${escapeHtml(n.npc_id)} · ${escapeHtml(n.category)} · ${escapeHtml(n.rarity)}</option>`)
+        .join('');
+}
+
+npcDefViewBtn.addEventListener('click', async () => {
+    npcDefError.classList.add('hidden');
+    const npcId = npcDefId.value.trim();
+    if (!npcId) {
+        npcDefError.textContent = '请先填写 npc_id';
+        npcDefError.classList.remove('hidden');
+        return;
+    }
+
+    npcDefCurrent.textContent = '查询中…';
+    try {
+        await loadNpcDefinitions();
+        const row = npcDefinitions.find((n) => n.npc_id === npcId);
+        if (!row) {
+            npcDefCurrent.textContent = `未找到 ${npcId}`;
+            return;
+        }
+        npcDefValue.value = row[npcDefField.value];
+        npcDefCurrent.textContent =
+            `${row.npc_id}(${row.category} · ${row.rarity} · ${row.min_era} · ${row.primary_skill_id} · 来源 ${row.recruit_source})`
+            + ` · 特性「${row.trait_desc_zh}」`
+            + ` · 工资 ${row.wage_per_min} · 口粮 ${row.food_per_min}`
+            + ` · 初始技能 ${row.initial_skill_value} · 初始等级 ${row.initial_skill_level} · 上限 ${row.max_level}`;
+    } catch (err) {
+        npcDefCurrent.textContent = '';
+        npcDefError.textContent = errorMessage(err);
+        npcDefError.classList.remove('hidden');
+    }
+});
+
+npcDefForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    npcDefError.classList.add('hidden');
+    npcDefResult.classList.add('hidden');
+    npcDefSubmit.disabled = true;
+    try {
+        const payload = {
+            npc_id: npcDefId.value.trim(),
+            field: npcDefField.value,
+            value: Number(npcDefValue.value),
+            reason: npcDefReason.value.trim(),
+        };
+        const data = await api.post('/api/admin/definitions/npc', payload);
+        npcDefResult.textContent = `调整成功:${payload.field} ${data.before} → ${data.after}(新版本号 ${data.version})`;
+        npcDefResult.classList.remove('hidden');
+        // 缓存已过期,重取一次;并刷新审计让新的 ADMIN.CONFIG_CHANGE 立刻可见
+        await loadNpcDefinitions().catch(() => {});
+        auditActionInput.value = '';
+        await loadAudit().catch(() => {});
+    } catch (err) {
+        npcDefError.textContent = errorMessage(err);
+        npcDefError.classList.remove('hidden');
+    } finally {
+        npcDefSubmit.disabled = false;
     }
 });
 
@@ -468,6 +554,57 @@ function mapEditorHtml(s) {
     `;
 }
 
+// 数值型设定的通用数字输入控件(M3 起「系统规则数据后台可调」的载体)。
+//
+// 完全数据驱动:控件只认服务器下发的 type / min_value / max_value,
+// 不在前端内置任何一个具体 key 的规则 —— 后端每登记一条新的数值参数,后台自动多出一行可编辑的输入框,
+// 不必再改这份 JS。前端校验只是体验优化(少一次往返),服务端 GameSetting::castValue 才是权威。
+function numberEditorHtml(s) {
+    const key = s.setting_key;
+    const min = s.min_value === null || s.min_value === undefined ? '' : s.min_value;
+    const max = s.max_value === null || s.max_value === undefined ? '' : s.max_value;
+    const range = (min === '' && max === '') ? '' : `<div class="muted">允许范围:${min} ~ ${max}</div>`;
+
+    return `
+        <div class="number-editor">
+            <input type="number" step="any" value="${escapeHtml(String(s.value))}"
+                   min="${escapeHtml(String(min))}" max="${escapeHtml(String(max))}"
+                   data-number-input="${escapeHtml(key)}"
+                   data-number-min="${escapeHtml(String(min))}" data-number-max="${escapeHtml(String(max))}">
+            ${range}
+        </div>
+    `;
+}
+
+// 取值 + 前端范围校验。返回 null 表示不合法(错误信息已写进 settingError)
+function numberEditorValue(key) {
+    const input = settingTable.querySelector(`[data-number-input="${key}"]`);
+    if (!input) return null;
+
+    if (input.value.trim() === '') {
+        settingError.textContent = '请填写数值';
+        settingError.classList.remove('hidden');
+        return null;
+    }
+
+    const value = Number(input.value);
+    if (!Number.isFinite(value)) {
+        settingError.textContent = '数值必须是有效数字';
+        settingError.classList.remove('hidden');
+        return null;
+    }
+
+    const min = input.dataset.numberMin === '' ? null : Number(input.dataset.numberMin);
+    const max = input.dataset.numberMax === '' ? null : Number(input.dataset.numberMax);
+    if ((min !== null && value < min) || (max !== null && value > max)) {
+        settingError.textContent = `数值必须在 ${min} ~ ${max} 之间`;
+        settingError.classList.remove('hidden');
+        return null;
+    }
+
+    return value;
+}
+
 async function loadSettings() {
     settingStatus.textContent = '加载中…';
     settingError.classList.add('hidden');
@@ -484,6 +621,9 @@ async function loadSettings() {
             } else if (s.registered && s.type === 'resource_map') {
                 valueCell = mapEditorHtml(s);
                 actionCell = `<button type="button" class="btn btn-ghost" data-map-save="${escapeHtml(s.setting_key)}">保存</button>`;
+            } else if (s.registered && s.type === 'number') {
+                valueCell = numberEditorHtml(s);
+                actionCell = `<button type="button" class="btn btn-ghost" data-number-save="${escapeHtml(s.setting_key)}">保存</button>`;
             }
 
             return `
@@ -541,7 +681,8 @@ settingTable.addEventListener('click', async (e) => {
     const saveBtn = e.target.closest('[data-map-save]');
     const addBtn = e.target.closest('[data-map-add]');
     const removeBtn = e.target.closest('[data-map-remove]');
-    if (!toggleBtn && !saveBtn && !addBtn && !removeBtn) return;
+    const numberBtn = e.target.closest('[data-number-save]');
+    if (!toggleBtn && !saveBtn && !addBtn && !removeBtn && !numberBtn) return;
 
     settingError.classList.add('hidden');
     settingResult.classList.add('hidden');
@@ -574,6 +715,15 @@ settingTable.addEventListener('click', async (e) => {
 
     if (toggleBtn) {
         await submitSetting(toggleBtn, toggleBtn.dataset.settingToggle, toggleBtn.dataset.settingNext === 'true', reason);
+        return;
+    }
+
+    if (numberBtn) {
+        const numberKey = numberBtn.dataset.numberSave;
+        const value = numberEditorValue(numberKey);
+        // null = 前端校验没过,错误信息已经显示,不发请求
+        if (value === null) return;
+        await submitSetting(numberBtn, numberKey, value, reason);
         return;
     }
 
@@ -630,7 +780,10 @@ async function loadDashboard() {
     }
     showView('dashboard');
     loadAudit().catch(() => {});
-    if (hasPermission('edit_definition')) loadSettings().catch(() => {});
+    if (hasPermission('edit_definition')) {
+        loadSettings().catch(() => {});
+        loadNpcDefinitions().catch(() => {});
+    }
 }
 
 async function afterLogin(user) {

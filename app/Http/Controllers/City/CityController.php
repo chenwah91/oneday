@@ -5,6 +5,8 @@ namespace App\Http\Controllers\City;
 use App\Game\City\CityFactory;
 use App\Game\City\EraService;
 use App\Game\Definition\GameDataVersion;
+use App\Game\NPC\NpcRuntimeService;
+use App\Game\NPC\NpcService;
 use App\Game\Population\WorkerService;
 use App\Game\Simulation\SimulationService;
 use App\Game\Technology\TechService;
@@ -29,6 +31,12 @@ class CityController extends Controller
         // 刻意不放进 SimulationService —— 解锁不产生资源变化,不该占结算内核的一段;
         // 放在结算之后是为了让「知识刚够、这一秒才产出」的场景也能按最新库存判断(研究端点锁内另有一次)
         TechService::settleFinished((int) $city->id);
+
+        // NPC 运行时懒结算(M3-D1:XP / 士气 / 离职 / 自然增长)。
+        // 与科技懒结算同一条路径、同一个理由:这四件事都不产生资源变化,不该占结算内核的一段;
+        // 它们要写 city_npcs,而 M3 只允许内核改一处(总线的通用支出消费点)。
+        // 位置在结算之后:士气要用结算后的幸福与欠费状态,自然增长要用结算后的人口与人口容量
+        NpcRuntimeService::settle($city, $sim);
 
         $city = $city->fresh();
 
@@ -127,6 +135,12 @@ class CityController extends Controller
                 // 市场就是因为这条被明确挡在快照之外的(见下面的 M3-MARKET 锚点)。
 
                 // ---- M3-NPC ----(W2-A:NPC 摘要 / 未分配徽标 / 工资口粮速率)
+                // 已招募清单 + 派驻关系(building_instance_id => [city_npc_id…])。
+                // 为什么放进快照而不是独立端点:NPC 数量是个位到几十的量级(自然增长有上限、
+                // 招募要花钱),体积可控;而建筑详情面板要画「NPC 槽位」区块时必须和建筑列表同一帧,
+                // 拆成两个端点反而会出现「楼已经在了、人还没到」的闪烁。
+                // 定义数据(名称 / 特性 / 等级曲线)不在这里,前端另取一次即可
+                'npcs'                => NpcService::snapshot((int) $city->id),
                 // ---- /M3-NPC ----
 
                 // ---- M3-ITEM ----(W3-A:建筑装备摘要 / 耐久预警)

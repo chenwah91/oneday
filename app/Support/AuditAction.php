@@ -38,6 +38,28 @@ final class AuditAction
     // metadata 记达标当时的逐维实测值(事后回查「他当时是靠什么过的线」)
     public const ERA_UPGRADE = 'ERA.UPGRADE';
 
+    // 市场成交(M3-D3,§56 明文要求经济类日志带资源变化):
+    // delta_json 记 {资源: ±数量, money: ±金额};
+    // metadata_json 记 resource / quantity / unit_price / mid_price / fee / slippage / money_delta / window_index,
+    // 让「价格投诉」能被拆回「基准价 × 滑点 × 手续费」三段
+    public const MARKET_BUY = 'MARKET.BUY';
+    public const MARKET_SELL = 'MARKET.SELL';
+
+    // NPC(M3-D1):
+    // RECRUIT   招募,delta 记 {money: -招募价};metadata 记服务器掷出的稀有度与被抽中的 npc_id
+    //           (§30/§66:稀有度由服务器权威掷点,掷出结果必须落库才不可复掷)
+    // ASSIGN    派驻到建筑实例,delta 记该 NPC 给这栋楼带来的百分比加成
+    // UNASSIGN  撤下,delta 同上取负
+    // DISMISS   辞退,delta 记释放掉的工资 / 口粮速率(这是辞退唯一的经济意义)
+    // LEAVE     士气过低自行离职(由懒结算写,不是玩家操作,actor 是 system)
+    // NATURAL_GROWTH 自然增长送人(同上,actor 是 system)
+    public const NPC_RECRUIT = 'NPC.RECRUIT';
+    public const NPC_ASSIGN = 'NPC.ASSIGN';
+    public const NPC_UNASSIGN = 'NPC.UNASSIGN';
+    public const NPC_DISMISS = 'NPC.DISMISS';
+    public const NPC_LEAVE = 'NPC.LEAVE';
+    public const NPC_NATURAL_GROWTH = 'NPC.NATURAL_GROWTH';
+
     // 安全:越权操作被拒
     public const SECURITY_AUTHORIZATION_FAILED = 'SECURITY.AUTHORIZATION_FAILED';
 

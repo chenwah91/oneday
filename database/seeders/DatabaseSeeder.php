@@ -27,12 +27,14 @@ class DatabaseSeeder extends Seeder
             // 禁止重排、禁止格式化他人行、禁止在锚点外改动。锚点是纯注释,预置本身零行为变化。
 
             // ---- M3-NPC ----(W2-A:npc_skill_definition / npc_skill_level_curve / npc_definition)
+            NpcDefinitionSeeder::class,
             // ---- /M3-NPC ----
 
             // ---- M3-ITEM ----(W3-A:item_definition 24 行)
             // ---- /M3-ITEM ----
 
             // ---- M3-MARKET ----(W1-B / W2-B:market_definition 26 行)
+            MarketDefinitionSeeder::class,
             // ---- /M3-MARKET ----
 
             // ---- M3-EVENT ----(W3-B:event_definition 30 行)

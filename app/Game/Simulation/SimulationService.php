@@ -368,6 +368,23 @@ class SimulationService
         // $eraOrder 在上面的准备段之前已按同一套兜底口径取好,这里直接复用,避免两处各写一份兜底
         $taxPerCapita = self::taxPerCapitaPerMin($eraOrder);
 
+        // ==== M3 内核里唯一的「系统级常态开销」消费点(用户 2026-08-11 以内核所有者身份对 W2-A 一次性豁免)====
+        //
+        // 背景:§10.5 的 expenses 口径里,NPC 工资 / 口粮与建筑维护同级,但 D0 总线只有乘区与
+        // happiness/security 两条 flat 通道,没有「按分钟扣钱扣粮」的出口。与其让 NPC(以及后面的
+        // 工具维护、事件持续扣费)各自往内核里插一段,不如在 ModifierTarget 里登记两条**通用**支出
+        // target,内核只在这里读一次 —— 新系统接入时改的是自己的 Provider,内核仍然一个字都不动。
+        //
+        // 纪律三条:
+        //   ① 取值在**分段循环之外**,循环内零查库(与七乘区同一条纪律);
+        //   ② 资金侧直接并进 $maintenanceMoneyPerMin —— 这样欠费判定、半停工、财政预警、
+        //      返回给前端的维护速率四处自动同口径,不会出现「预警没算工资」这种两套真相;
+        //   ③ 口粮侧作为参数交给 segmentRates,和 §10.1 的人均粮耗落在同一行,不另开扣粮路径。
+        //
+        // 支出通道对整段窗口取一次值(NPC 在结算窗口内不增不减:招募/辞退各自的端点会先跑一次结算)。
+        $maintenanceMoneyPerMin += $bus->flat(ModifierTarget::EXPENSE_MONEY_PER_MIN, 0.0, $totalMinutes);
+        $expenseFoodPerMin = $bus->flat(ModifierTarget::EXPENSE_FOOD_PER_MIN, 0.0, $totalMinutes);
+
         $ratePerMin = [];        // 资源 => 每分钟净速率(最后一段口径,返回给前端显示)
         $grossProduction = [];   // 资源 => 每分钟 gross 产出(已含乘数与满足率)
         $grossConsumption = [];  // 资源 => 每分钟 gross 配方消耗(不含维护与人口吃粮)
@@ -410,7 +427,7 @@ class SimulationService
             }
 
             // 本段速率:满足率用段起库存、人口吃粮用段起人口(段内人口视为恒定)
-            [$ratePerMin, $grossProduction, $grossConsumption] = self::segmentRates($units, $resources, $population, $span);
+            [$ratePerMin, $grossProduction, $grossConsumption] = self::segmentRates($units, $resources, $population, $span, $expenseFoodPerMin);
 
             $foodBefore = (float) ($resources[ResourceCode::FOOD] ?? 0);
 
@@ -561,7 +578,8 @@ class SimulationService
     // 单段速率:给定段起库存与段起人口,算出本段的资源净速率与 gross 产出/消耗。
     // gross 产出与 gross 消耗分开累计、不提前合并成 net:
     // production_utilization、food_net_rate 的分子分母、§68 理论最大 delta 都要的是分开的值。
-    private static function segmentRates(array $units, array $resources, float $population, float $minutes): array
+    // $expenseFoodPerMin = 总线通用支出通道的口粮侧(M3-D1:NPC 口粮),与人均粮耗同级、同一行扣
+    private static function segmentRates(array $units, array $resources, float $population, float $minutes, float $expenseFoodPerMin = 0.0): array
     {
         $ratePerMin = [];
 
@@ -614,9 +632,12 @@ class SimulationService
             }
         }
 
-        // 人口粮食消耗:基础粮食消耗/分钟 = population × 0.03(§10.1),段内人口恒定
+        // 人口粮食消耗:基础粮食消耗/分钟 = population × 0.03(§10.1),段内人口恒定。
+        // 另减总线支出通道的口粮(§6.3 NPC 的 food_per_min):NPC 吃的是同一仓粮食,
+        // 与人口粮耗一样不进配方、不受乘区与满足率影响,缺粮时由落库处的 max(0,…) 夹住
         $ratePerMin[ResourceCode::FOOD] = ($ratePerMin[ResourceCode::FOOD] ?? 0)
-            - $population * SimConstants::FOOD_PER_CAPITA_PER_MIN;
+            - $population * SimConstants::FOOD_PER_CAPITA_PER_MIN
+            - $expenseFoodPerMin;
 
         return [$ratePerMin, $grossProduction, $grossConsumption];
     }

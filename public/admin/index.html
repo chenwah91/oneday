@@ -150,6 +150,48 @@
         </form>
       </section>
 
+      <!-- NPC 定义调整(M3-D1,权限 edit_definition):与建筑等级同一套机制,改数值同样 bump 数值版本。
+           只放数值列;稀有度 / 主技能 / 来源 / 特性属于结构,改它们要走 Seed + 迁移 -->
+      <section id="npc-def-panel" class="panel hidden">
+        <div class="panel-header">
+          <h2>NPC 定义调整</h2>
+        </div>
+        <form id="npc-def-form" class="def-form">
+          <div class="def-row">
+            <div class="auth-field">
+              <label class="auth-label" for="npc-def-id">npc_id</label>
+              <input id="npc-def-id" type="text" placeholder="如 N012" required maxlength="16" list="npc-def-options">
+              <datalist id="npc-def-options"></datalist>
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="npc-def-field">字段</label>
+              <select id="npc-def-field" required>
+                <option value="wage_per_min">wage_per_min(每分钟工资)</option>
+                <option value="food_per_min">food_per_min(每分钟口粮)</option>
+                <option value="initial_skill_value">initial_skill_value(初始技能值)</option>
+                <option value="initial_skill_level">initial_skill_level(初始等级 1~10)</option>
+                <option value="max_level">max_level(上限等级 1~10)</option>
+              </select>
+            </div>
+            <div class="auth-field">
+              <label class="auth-label" for="npc-def-value">value</label>
+              <input id="npc-def-value" type="number" step="any" min="0" required>
+            </div>
+          </div>
+          <div class="auth-field">
+            <label class="auth-label" for="npc-def-reason">调整原因(必填)</label>
+            <input id="npc-def-reason" type="text" required minlength="2" maxlength="80" placeholder="说明本次调整原因">
+          </div>
+          <div id="npc-def-current" class="status muted"></div>
+          <div id="npc-def-error" class="auth-error hidden"></div>
+          <div id="npc-def-result" class="def-result hidden"></div>
+          <div class="def-actions">
+            <button id="npc-def-view-btn" type="button" class="btn btn-ghost">查看当前值</button>
+            <button id="npc-def-submit" type="submit" class="btn btn-primary">提交调整</button>
+          </div>
+        </form>
+      </section>
+
       <!-- 玩家补偿(权限 adjust_resource:game_master 及以上;无权限时整块隐藏) -->
       <section id="comp-panel" class="panel hidden">
         <div class="panel-header">

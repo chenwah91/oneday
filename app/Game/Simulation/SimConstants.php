@@ -179,6 +179,29 @@ class SimConstants
     // 帽仍由 multiplierProduct 统一夹,这里不自己夹第二次
     public const TECH_BRANCH_EFFICIENCY_BONUS = 0.02;
 
+    // ---- NPC 加成(v3.2 §6.4,M3-D1)----
+
+    // 岗位不匹配的折扣(§6.4「岗位不匹配 = 主技能加成 × 0.25」)
+    public const NPC_JOB_MISMATCH_RATE = 0.25;
+
+    // 副技能折扣(§6.4「副技能加成 = 对应副技能加成 × 0.50」)。
+    // v3.2 §6.3 的 30 行原型没有副技能列 → 现有数据下这条通道恒为 0,常量先落位
+    public const NPC_SECONDARY_SKILL_RATE = 0.50;
+
+    // 单个 NPC 对单栋建筑的效率封顶(§6.4「单NPC对单建筑效率建议封顶 1.60」)
+    public const NPC_SINGLE_BUILDING_CAP = 1.60;
+
+    // NPC 侧总帽:§6.4 原文建议 1.90,**用户 2026-08-11 拍板收紧到 1.50**。
+    //
+    // 出处与理由(backlog §11.1「§13 硬帽的实际余量测算」的方向①):
+    //   满配 tech 1.20 × npc 1.90 × tool 1.18 = 2.690,而 §13 的普通硬帽是 2.75 ——
+    //   留给事件的余量只剩 2.2%,四大系统上线后正向事件对强城市 100% 无效,
+    //   玩家花资源做的工具也看不到任何数字变化。收到 1.50 后乘积降到 2.12,余量回到 1.30。
+    //
+    // 落点纪律:本常量是 **NPC 系统内部**的合成规则(在 NpcBonus::forBuilding 里夹完再交出一格),
+    // 与 §13 的 MULTIPLIER_CAP 不是同一件事 —— 后者仍然只在 multiplierProduct() 夹一次
+    public const NPC_TOTAL_CAP = 1.50;
+
     // ---- 建筑升级期间(v3.2 §3.2)----
 
     // 「Level 2/3 升级时建筑进入 upgrading 状态:生产建筑默认暂停生产;

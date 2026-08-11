@@ -392,3 +392,23 @@ html, body {
     border-radius: 4px;
     color: #e7ecf3;
 }
+
+/* 数值型设定的通用数字输入(M3 起所有 TYPE_NUMBER 规则参数共用这一个控件) */
+.number-editor {
+    min-width: 180px;
+}
+
+.number-editor input[type="number"] {
+    width: 130px;
+    padding: 4px 6px;
+    background: #151a22;
+    border: 1px solid #2a3140;
+    border-radius: 4px;
+    color: #e7ecf3;
+}
+
+/* 允许范围提示:与输入框同宽的一行小字,让运营改之前就看得到闭区间 */
+.number-editor .muted {
+    margin-top: 4px;
+    font-size: 11px;
+}

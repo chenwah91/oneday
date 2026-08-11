@@ -49,6 +49,16 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip())->response(self::rejected('snapshot'));
         });
 
+        // 市场限流(CLAUDE §48 明文「市场、建筑、事件接口不能与普通 GET 使用完全一样的频率规则」):
+        // 按用户每分钟 30 次,同时覆盖价目查询与买卖。
+        // 为什么比 api(60/分)严:市场是全项目经济风险最高的接口(§69),
+        // 而正常玩法下「看行情 → 下单」是人手动作,30 次/分钟已是极宽松;
+        // 脚本化的高频探价 / 连环下单会先撞上这道闸并留下 SECURITY.RATE_LIMIT。
+        // 价目与买卖共用同一个计数器是刻意的:纯读的探价同样是套利脚本的组成部分,分开计等于给它免费额度
+        RateLimiter::for('market', function (Request $request) {
+            return Limit::perMinute(30)->by($request->user()?->id ?: $request->ip())->response(self::rejected('market'));
+        });
+
         // 后台写操作限流(补偿 / 规则开关):按管理员每分钟 20 次。
         // 这类操作是人工逐条提交的,20 次/分钟远超正常客服节奏;
         // 单独立一个限流器是为了:管理员账号一旦被盗,批量刷补偿会先撞上限并留下 SECURITY.RATE_LIMIT

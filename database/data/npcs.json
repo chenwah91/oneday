@@ -1,0 +1,296 @@
+{
+  "_source": "docs/templates/v3.2.md §6 NPC 技能系统(§6.1 通用技能 12 条 / §6.2 等级曲线 10 行 / §6.3 NPC 原型 30 行)。数值逐行照抄,不得在这里改数;改数值走后台 AdminDefinitionController 并 bump game_data_version。",
+  "_trait_note": "trait_json 的结构化口径见 backlog §9 A2:文案里已有数字的直接取,scope/op 按 App\\Game\\Modifier\\ModifierSpec 的取值。specs 里只放 ModifierTarget 已登记的 target;§6.3 里暂时没有对应消费点的效果(税收/健康/医疗/运输容量/工人需求/土地利用/国防百分比)原样留在 unmapped_zh,等 D2/D4/D5 波次登记了各自的消费点再提升为 spec —— 不在这里发明 target,也不静默丢弃。",
+
+  "skills": [
+    { "skill_id": "SKILL_GATHERING",    "name_key": "skill.gathering.name",      "effect_target": "npc",                       "effect_desc_zh": "采集/伐木/狩猎产量" },
+    { "skill_id": "SKILL_AGRICULTURE",  "name_key": "skill.agriculture.name",    "effect_target": "npc",                       "effect_desc_zh": "农业产量与肥力损耗控制" },
+    { "skill_id": "SKILL_MINING",       "name_key": "skill.mining.name",         "effect_target": "npc",                       "effect_desc_zh": "矿产产量与事故风险" },
+    { "skill_id": "SKILL_PROCESSING",   "name_key": "skill.processing.name",     "effect_target": "npc",                       "effect_desc_zh": "加工产量与原料损耗" },
+    { "skill_id": "SKILL_CONSTRUCTION", "name_key": "skill.construction.name",   "effect_target": "construction_speed_pct",     "effect_desc_zh": "建造/升级速度" },
+    { "skill_id": "SKILL_COMMERCE",     "name_key": "skill.commerce.name",       "effect_target": "market_fee_pct",            "effect_desc_zh": "贸易收入与市场手续费" },
+    { "skill_id": "SKILL_ADMIN",        "name_key": "skill.administration.name", "effect_target": "governance_capacity_pct",   "effect_desc_zh": "治理容量与税收效率" },
+    { "skill_id": "SKILL_RESEARCH",     "name_key": "skill.research.name",       "effect_target": "research_speed_pct",        "effect_desc_zh": "知识产量与研究速度" },
+    { "skill_id": "SKILL_MEDICINE",     "name_key": "skill.medicine.name",       "effect_target": null,                        "effect_desc_zh": "医疗容量与疾病恢复" },
+    { "skill_id": "SKILL_ENGINEERING",  "name_key": "skill.engineering.name",    "effect_target": "maintenance_cost_pct",      "effect_desc_zh": "工业效率与维护成本" },
+    { "skill_id": "SKILL_LOGISTICS",    "name_key": "skill.logistics.name",      "effect_target": null,                        "effect_desc_zh": "运输容量与拥堵损失" },
+    { "skill_id": "SKILL_DEFENSE",      "name_key": "skill.defense.name",        "effect_target": "event_loss_reduction_pct",  "effect_desc_zh": "国防值与事件损失减免" }
+  ],
+
+  "level_curve": [
+    { "level": 1,  "xp_to_next": 100,  "primary_bonus": 0.0,   "maintenance_reduction_cap": 0.0  },
+    { "level": 2,  "xp_to_next": 303,  "primary_bonus": 0.035, "maintenance_reduction_cap": 0.02 },
+    { "level": 3,  "xp_to_next": 580,  "primary_bonus": 0.07,  "maintenance_reduction_cap": 0.04 },
+    { "level": 4,  "xp_to_next": 919,  "primary_bonus": 0.105, "maintenance_reduction_cap": 0.06 },
+    { "level": 5,  "xp_to_next": 1313, "primary_bonus": 0.14,  "maintenance_reduction_cap": 0.08 },
+    { "level": 6,  "xp_to_next": 1758, "primary_bonus": 0.175, "maintenance_reduction_cap": 0.1  },
+    { "level": 7,  "xp_to_next": 2250, "primary_bonus": 0.21,  "maintenance_reduction_cap": 0.12 },
+    { "level": 8,  "xp_to_next": 2786, "primary_bonus": 0.245, "maintenance_reduction_cap": 0.14 },
+    { "level": 9,  "xp_to_next": 3363, "primary_bonus": 0.28,  "maintenance_reduction_cap": 0.16 },
+    { "level": 10, "xp_to_next": 0,    "primary_bonus": 0.315, "maintenance_reduction_cap": 0.18 }
+  ],
+
+  "npcs": [
+    {
+      "npc_id": "N001", "name_key": "npc.N001.name", "category": "leadership", "min_era": "I",
+      "primary_skill_id": "SKILL_ADMIN", "initial_skill_value": 70, "initial_skill_level": 5, "max_level": 10,
+      "wage_per_min": 0, "food_per_min": 1.2, "rarity": "rare",
+      "recruit_source": "initial", "recruit_desc_zh": "初始获得", "trait_desc_zh": "治理+10%,危机事件稳定度提高",
+      "trait_json": { "specs": [
+        { "target": "governance_capacity_pct", "scope": "city", "op": "pct", "value": 0.10 },
+        { "target": "event_loss_reduction_pct", "scope": "city", "op": "pct", "value": 0.10 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N002", "name_key": "npc.N002.name", "category": "gathering", "min_era": "I",
+      "primary_skill_id": "SKILL_GATHERING", "initial_skill_value": 40, "initial_skill_level": 2, "max_level": 10,
+      "wage_per_min": 1, "food_per_min": 1, "rarity": "common",
+      "recruit_source": "natural_growth", "recruit_desc_zh": "自然增长", "trait_desc_zh": "采集产量+5%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "building_category", "scope_key": "raw_material_extraction", "op": "pct", "value": 0.05 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N003", "name_key": "npc.N003.name", "category": "gathering", "min_era": "I",
+      "primary_skill_id": "SKILL_GATHERING", "initial_skill_value": 45, "initial_skill_level": 2, "max_level": 10,
+      "wage_per_min": 1, "food_per_min": 1.1, "rarity": "common",
+      "recruit_source": "natural_growth", "recruit_desc_zh": "自然增长", "trait_desc_zh": "肉类产量+8%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "resource", "scope_key": "food", "op": "pct", "value": 0.08 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N004", "name_key": "npc.N004.name", "category": "production", "min_era": "I",
+      "primary_skill_id": "SKILL_GATHERING", "initial_skill_value": 45, "initial_skill_level": 2, "max_level": 10,
+      "wage_per_min": 1, "food_per_min": 1, "rarity": "common",
+      "recruit_source": "natural_growth", "recruit_desc_zh": "自然增长", "trait_desc_zh": "木材产量+8%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "resource", "scope_key": "wood", "op": "pct", "value": 0.08 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N005", "name_key": "npc.N005.name", "category": "agriculture", "min_era": "II",
+      "primary_skill_id": "SKILL_AGRICULTURE", "initial_skill_value": 50, "initial_skill_level": 3, "max_level": 10,
+      "wage_per_min": 2, "food_per_min": 1, "rarity": "common",
+      "recruit_source": "natural_growth", "recruit_desc_zh": "自然增长", "trait_desc_zh": "农业产量+10%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "building_category", "scope_key": "food_production", "op": "pct", "value": 0.10 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N006", "name_key": "npc.N006.name", "category": "processing", "min_era": "II",
+      "primary_skill_id": "SKILL_PROCESSING", "initial_skill_value": 55, "initial_skill_level": 3, "max_level": 10,
+      "wage_per_min": 2, "food_per_min": 1, "rarity": "common",
+      "recruit_source": "recruit", "recruit_desc_zh": "培训", "trait_desc_zh": "磨坊效率+10%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "resource", "scope_key": "flour", "op": "pct", "value": 0.10 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N007", "name_key": "npc.N007.name", "category": "commerce", "min_era": "II",
+      "primary_skill_id": "SKILL_COMMERCE", "initial_skill_value": 55, "initial_skill_level": 3, "max_level": 10,
+      "wage_per_min": 3, "food_per_min": 1, "rarity": "common",
+      "recruit_source": "recruit", "recruit_desc_zh": "市场吸引", "trait_desc_zh": "贸易收入+5%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "building_category", "scope_key": "commerce", "op": "pct", "value": 0.05 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N008", "name_key": "npc.N008.name", "category": "construction", "min_era": "II",
+      "primary_skill_id": "SKILL_CONSTRUCTION", "initial_skill_value": 50, "initial_skill_level": 3, "max_level": 10,
+      "wage_per_min": 3, "food_per_min": 1.1, "rarity": "common",
+      "recruit_source": "recruit", "recruit_desc_zh": "培训", "trait_desc_zh": "建造速度+8%",
+      "trait_json": { "specs": [
+        { "target": "construction_speed_pct", "scope": "city", "op": "pct", "value": 0.08 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N009", "name_key": "npc.N009.name", "category": "processing", "min_era": "III",
+      "primary_skill_id": "SKILL_PROCESSING", "initial_skill_value": 65, "initial_skill_level": 4, "max_level": 10,
+      "wage_per_min": 5, "food_per_min": 1.1, "rarity": "uncommon",
+      "recruit_source": "recruit", "recruit_desc_zh": "学堂/招募", "trait_desc_zh": "青铜产量+15%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "resource", "scope_key": "bronze", "op": "pct", "value": 0.15 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N010", "name_key": "npc.N010.name", "category": "military", "min_era": "III",
+      "primary_skill_id": "SKILL_DEFENSE", "initial_skill_value": 60, "initial_skill_level": 4, "max_level": 10,
+      "wage_per_min": 4, "food_per_min": 1.3, "rarity": "common",
+      "recruit_source": "recruit", "recruit_desc_zh": "兵营训练", "trait_desc_zh": "国防值+12",
+      "trait_json": { "specs": [], "unmapped_zh": ["国防值+12"] }
+    },
+    {
+      "npc_id": "N011", "name_key": "npc.N011.name", "category": "mining", "min_era": "IV",
+      "primary_skill_id": "SKILL_MINING", "initial_skill_value": 55, "initial_skill_level": 3, "max_level": 10,
+      "wage_per_min": 4, "food_per_min": 1.2, "rarity": "common",
+      "recruit_source": "recruit", "recruit_desc_zh": "培训", "trait_desc_zh": "矿产+10%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "building_category", "scope_key": "raw_material_extraction", "op": "pct", "value": 0.10 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N012", "name_key": "npc.N012.name", "category": "processing", "min_era": "IV",
+      "primary_skill_id": "SKILL_PROCESSING", "initial_skill_value": 70, "initial_skill_level": 5, "max_level": 10,
+      "wage_per_min": 6, "food_per_min": 1.2, "rarity": "uncommon",
+      "recruit_source": "recruit", "recruit_desc_zh": "学堂+铁匠铺", "trait_desc_zh": "铁制品+18%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "resource", "scope_key": "iron_tools", "op": "pct", "value": 0.18 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N013", "name_key": "npc.N013.name", "category": "administration", "min_era": "IV",
+      "primary_skill_id": "SKILL_ADMIN", "initial_skill_value": 72, "initial_skill_level": 5, "max_level": 10,
+      "wage_per_min": 8, "food_per_min": 1, "rarity": "uncommon",
+      "recruit_source": "recruit", "recruit_desc_zh": "行政建筑招募", "trait_desc_zh": "税收+8%,治理+30",
+      "trait_json": { "specs": [
+        { "target": "governance_capacity_pct", "scope": "city", "op": "flat", "value": 30 }
+      ], "unmapped_zh": ["税收+8%"] }
+    },
+    {
+      "npc_id": "N014", "name_key": "npc.N014.name", "category": "education", "min_era": "V",
+      "primary_skill_id": "SKILL_RESEARCH", "initial_skill_value": 75, "initial_skill_level": 5, "max_level": 10,
+      "wage_per_min": 10, "food_per_min": 1, "rarity": "uncommon",
+      "recruit_source": "recruit", "recruit_desc_zh": "学院培养", "trait_desc_zh": "知识+15%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "resource", "scope_key": "knowledge", "op": "pct", "value": 0.15 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N015", "name_key": "npc.N015.name", "category": "medicine", "min_era": "V",
+      "primary_skill_id": "SKILL_MEDICINE", "initial_skill_value": 78, "initial_skill_level": 5, "max_level": 10,
+      "wage_per_min": 10, "food_per_min": 1, "rarity": "rare",
+      "recruit_source": "recruit", "recruit_desc_zh": "学院/医馆培养", "trait_desc_zh": "健康+8,疾病死亡率下降",
+      "trait_json": { "specs": [], "unmapped_zh": ["健康+8", "疾病死亡率下降"] }
+    },
+    {
+      "npc_id": "N016", "name_key": "npc.N016.name", "category": "military", "min_era": "V",
+      "primary_skill_id": "SKILL_DEFENSE", "initial_skill_value": 80, "initial_skill_level": 6, "max_level": 10,
+      "wage_per_min": 12, "food_per_min": 1.4, "rarity": "rare",
+      "recruit_source": "recruit", "recruit_desc_zh": "军事事件/训练", "trait_desc_zh": "区域国防+15%",
+      "trait_json": { "specs": [], "unmapped_zh": ["区域国防+15%"] }
+    },
+    {
+      "npc_id": "N017", "name_key": "npc.N017.name", "category": "agriculture", "min_era": "VI",
+      "primary_skill_id": "SKILL_AGRICULTURE", "initial_skill_value": 74, "initial_skill_level": 5, "max_level": 10,
+      "wage_per_min": 10, "food_per_min": 1.1, "rarity": "uncommon",
+      "recruit_source": "recruit", "recruit_desc_zh": "大学/庄园", "trait_desc_zh": "农业+12%,维护-5%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "building_category", "scope_key": "food_production", "op": "pct", "value": 0.12 },
+        { "target": "maintenance_cost_pct", "scope": "city", "op": "pct", "value": -0.05 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N018", "name_key": "npc.N018.name", "category": "education", "min_era": "VI",
+      "primary_skill_id": "SKILL_RESEARCH", "initial_skill_value": 82, "initial_skill_level": 6, "max_level": 10,
+      "wage_per_min": 14, "food_per_min": 1, "rarity": "rare",
+      "recruit_source": "recruit", "recruit_desc_zh": "大学培养", "trait_desc_zh": "知识+20%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "resource", "scope_key": "knowledge", "op": "pct", "value": 0.20 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N019", "name_key": "npc.N019.name", "category": "commerce", "min_era": "VII",
+      "primary_skill_id": "SKILL_COMMERCE", "initial_skill_value": 80, "initial_skill_level": 6, "max_level": 10,
+      "wage_per_min": 18, "food_per_min": 1, "rarity": "rare",
+      "recruit_source": "recruit", "recruit_desc_zh": "银行招募", "trait_desc_zh": "贸易/利息收益+12%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "building_category", "scope_key": "commerce", "op": "pct", "value": 0.12 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N020", "name_key": "npc.N020.name", "category": "engineering", "min_era": "VII",
+      "primary_skill_id": "SKILL_ENGINEERING", "initial_skill_value": 76, "initial_skill_level": 5, "max_level": 10,
+      "wage_per_min": 15, "food_per_min": 1.1, "rarity": "uncommon",
+      "recruit_source": "recruit", "recruit_desc_zh": "研究院培养", "trait_desc_zh": "设备维护-10%",
+      "trait_json": { "specs": [
+        { "target": "maintenance_cost_pct", "scope": "city", "op": "pct", "value": -0.10 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N021", "name_key": "npc.N021.name", "category": "engineering", "min_era": "VIII",
+      "primary_skill_id": "SKILL_ENGINEERING", "initial_skill_value": 85, "initial_skill_level": 7, "max_level": 10,
+      "wage_per_min": 22, "food_per_min": 1.2, "rarity": "rare",
+      "recruit_source": "recruit", "recruit_desc_zh": "大学+工业建筑", "trait_desc_zh": "工业效率+18%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "building_category", "scope_key": "processing", "op": "pct", "value": 0.18 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N022", "name_key": "npc.N022.name", "category": "logistics", "min_era": "VIII",
+      "primary_skill_id": "SKILL_LOGISTICS", "initial_skill_value": 80, "initial_skill_level": 6, "max_level": 10,
+      "wage_per_min": 18, "food_per_min": 1, "rarity": "uncommon",
+      "recruit_source": "recruit", "recruit_desc_zh": "培训", "trait_desc_zh": "铁路容量+15%",
+      "trait_json": { "specs": [], "unmapped_zh": ["铁路容量+15%"] }
+    },
+    {
+      "npc_id": "N023", "name_key": "npc.N023.name", "category": "medicine", "min_era": "IX",
+      "primary_skill_id": "SKILL_MEDICINE", "initial_skill_value": 90, "initial_skill_level": 8, "max_level": 10,
+      "wage_per_min": 28, "food_per_min": 1, "rarity": "epic",
+      "recruit_source": "recruit", "recruit_desc_zh": "大学+医院", "trait_desc_zh": "医疗效率+25%",
+      "trait_json": { "specs": [], "unmapped_zh": ["医疗效率+25%"] }
+    },
+    {
+      "npc_id": "N024", "name_key": "npc.N024.name", "category": "research", "min_era": "IX",
+      "primary_skill_id": "SKILL_RESEARCH", "initial_skill_value": 92, "initial_skill_level": 8, "max_level": 10,
+      "wage_per_min": 32, "food_per_min": 1, "rarity": "epic",
+      "recruit_source": "recruit", "recruit_desc_zh": "科研中心培养", "trait_desc_zh": "知识+30%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "resource", "scope_key": "knowledge", "op": "pct", "value": 0.30 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N025", "name_key": "npc.N025.name", "category": "engineering", "min_era": "IX",
+      "primary_skill_id": "SKILL_ENGINEERING", "initial_skill_value": 90, "initial_skill_level": 8, "max_level": 10,
+      "wage_per_min": 30, "food_per_min": 1.1, "rarity": "epic",
+      "recruit_source": "recruit", "recruit_desc_zh": "科研中心", "trait_desc_zh": "自动化建筑工人需求-10%",
+      "trait_json": { "specs": [], "unmapped_zh": ["自动化建筑工人需求-10%"] }
+    },
+    {
+      "npc_id": "N026", "name_key": "npc.N026.name", "category": "administration", "min_era": "IX",
+      "primary_skill_id": "SKILL_ADMIN", "initial_skill_value": 88, "initial_skill_level": 7, "max_level": 10,
+      "wage_per_min": 26, "food_per_min": 1, "rarity": "rare",
+      "recruit_source": "recruit", "recruit_desc_zh": "大学/行政", "trait_desc_zh": "土地利用+5%,治理+8%",
+      "trait_json": { "specs": [
+        { "target": "governance_capacity_pct", "scope": "city", "op": "pct", "value": 0.08 }
+      ], "unmapped_zh": ["土地利用+5%"] }
+    },
+    {
+      "npc_id": "N027", "name_key": "npc.N027.name", "category": "military", "min_era": "IX",
+      "primary_skill_id": "SKILL_DEFENSE", "initial_skill_value": 90, "initial_skill_level": 8, "max_level": 10,
+      "wage_per_min": 30, "food_per_min": 1.3, "rarity": "epic",
+      "recruit_source": "recruit", "recruit_desc_zh": "军事设施", "trait_desc_zh": "国防+20%,事件损失-10%",
+      "trait_json": { "specs": [
+        { "target": "event_loss_reduction_pct", "scope": "city", "op": "pct", "value": 0.10 }
+      ], "unmapped_zh": ["国防+20%"] }
+    },
+    {
+      "npc_id": "N028", "name_key": "npc.N028.name", "category": "research", "min_era": "X",
+      "primary_skill_id": "SKILL_RESEARCH", "initial_skill_value": 98, "initial_skill_level": 10, "max_level": 10,
+      "wage_per_min": 55, "food_per_min": 1.1, "rarity": "legendary",
+      "recruit_source": "recruit", "recruit_desc_zh": "终局科研", "trait_desc_zh": "知识+40%",
+      "trait_json": { "specs": [
+        { "target": "npc", "scope": "resource", "scope_key": "knowledge", "op": "pct", "value": 0.40 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N029", "name_key": "npc.N029.name", "category": "administration", "min_era": "X",
+      "primary_skill_id": "SKILL_ADMIN", "initial_skill_value": 96, "initial_skill_level": 9, "max_level": 10,
+      "wage_per_min": 50, "food_per_min": 1, "rarity": "legendary",
+      "recruit_source": "event", "recruit_desc_zh": "终局事件", "trait_desc_zh": "治理+20%,贸易+10%",
+      "trait_json": { "specs": [
+        { "target": "governance_capacity_pct", "scope": "city", "op": "pct", "value": 0.20 },
+        { "target": "npc", "scope": "building_category", "scope_key": "commerce", "op": "pct", "value": 0.10 }
+      ], "unmapped_zh": [] }
+    },
+    {
+      "npc_id": "N030", "name_key": "npc.N030.name", "category": "engineering", "min_era": "X",
+      "primary_skill_id": "SKILL_ENGINEERING", "initial_skill_value": 98, "initial_skill_level": 10, "max_level": 10,
+      "wage_per_min": 60, "food_per_min": 1.2, "rarity": "legendary",
+      "recruit_source": "recruit", "recruit_desc_zh": "终局招募", "trait_desc_zh": "超级工程速度+25%",
+      "trait_json": { "specs": [
+        { "target": "construction_speed_pct", "scope": "city", "op": "pct", "value": 0.25 }
+      ], "unmapped_zh": [] }
+    }
+  ]
+}

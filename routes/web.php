@@ -86,12 +86,35 @@ Route::prefix('api')->group(function () {
         // 目的:把两个 agent 并行时的 git 冲突面压到最小。
 
         // ---- M3-NPC ----(W2-A:招募 / 分配 / 辞退 / 加薪,全安全链 + Idempotency)
+
+        // 招募:扣费 + **服务器权威掷点**决定抽到谁(入参没有 npc_id,§30 / §66)。
+        // 与建造同档 throttle:api —— 它和建造一样是「花钱换实体」的经济写操作
+        Route::post('/city/npc/recruit', [\App\Http\Controllers\City\NpcController::class, 'recruit'])->middleware('throttle:api');
+
+        // 派驻 / 撤下:所有权 + 一 NPC 一岗互斥 + 单栋槽位上限(CLAUDE §48 明文要求 NPC Assign 限流)
+        Route::post('/city/npc/assign', [\App\Http\Controllers\City\NpcController::class, 'assign'])->middleware('throttle:api');
+        Route::post('/city/npc/unassign', [\App\Http\Controllers\City\NpcController::class, 'unassign'])->middleware('throttle:api');
+
+        // 辞退:释放工资与口粮负担(idle 的 NPC 照样发工资,这是唯一的主动止损手段)
+        Route::post('/city/npc/dismiss', [\App\Http\Controllers\City\NpcController::class, 'dismiss'])->middleware('throttle:api');
+
         // ---- /M3-NPC ----
 
         // ---- M3-ITEM ----(W3-A:制作 / 装备 / 卸下)
         // ---- /M3-ITEM ----
 
         // ---- M3-MARKET ----(W2-B:GET /market/prices 独立端点 + buy / sell,限流走独立 throttle:market)
+
+        // 价目表:全服共享的只读端点,刻意不进城市快照(见 MarketPriceController 顶部注释)。
+        // 与买卖同挂 throttle:market —— §48 明文「市场接口不能与普通 GET 使用完全一样的频率规则」
+        Route::get('/market/prices', \App\Http\Controllers\City\MarketPriceController::class)->middleware('throttle:market');
+
+        // 买入 / 卖出:完整安全链(停市 / 输入 / 可交易 / 幂等 / Revision / 结算 / 服务器算价 /
+        // 手续费 + 滑点 + 成交量上限 + 移动平均 / 余额库存 / 仓储 / 行锁 / Invariant / 流水 / 审计)。
+        // 入参不含成交价 —— 客户端不得提交价格(§45 / §66 / v3.2 §8.1)
+        Route::post('/market/buy', [\App\Http\Controllers\City\MarketTradeController::class, 'buy'])->middleware('throttle:market');
+        Route::post('/market/sell', [\App\Http\Controllers\City\MarketTradeController::class, 'sell'])->middleware('throttle:market');
+
         // ---- /M3-MARKET ----
 
         // ---- M3-EVENT ----(W3-B:GET /city/events + POST /city/events/{instance}/resolve)
@@ -123,6 +146,16 @@ Route::prefix('api/admin')->middleware(['auth:web', 'admin', 'throttle:api'])->g
     // 查看当前值是「调整流程」的第一步,与提交同挂 edit_definition:support / game_master 不碰游戏数值
     Route::get('/definitions/building-levels', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'buildingLevels'])->middleware('admin:edit_definition');
     Route::post('/definitions/building-level', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editBuildingLevel'])->middleware('admin:edit_definition');
+
+    // NPC 定义调整(M3-D1):与建筑等级同一套机制(allowlist 字段 + 强制 reason + 审计 + 版本递增)
+    Route::get('/definitions/npcs', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'npcs'])->middleware('admin:edit_definition');
+    Route::post('/definitions/npc', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editNpc'])->middleware('admin:edit_definition');
+
+    // 市场定义(M3-D3,v3.2 §8 的 26 行):查看 / 调整基础价、波动率、弹性、费率、流动性、价格区间。
+    // 与建筑等级 / NPC 同权限(edit_definition):改一行基础价就是改全服价格,属最高风险的数值改动。
+    // 全市场级的开关与系数(停市 / 手续费倍率 / 滑点系数 / 成交量上限)在 /api/admin/settings,不在这里
+    Route::get('/definitions/market', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'marketDefinitions'])->middleware('admin:edit_definition');
+    Route::post('/definitions/market', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editMarketDefinition'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
 
     // 管理员补偿(CLAUDE §80 / E7):查目标城市余额 / 提交补偿。
     // 权限 adjust_resource(game_master 及以上);写入端点再叠一层 admin_write 限流,

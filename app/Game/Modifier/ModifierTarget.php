@@ -70,6 +70,12 @@ final class ModifierTarget
     public const RESEARCH_SPEED_PCT = 'research_speed_pct';
     public const EVENT_LOSS_REDUCTION_PCT = 'event_loss_reduction_pct';
 
+    // 通用支出通道(M3-D1 W2-A 新增,op 一律 flat,单位是「每分钟」):
+    // 系统级的常态开销 —— NPC 工资与口粮是第一个投稿者,D2 工具的维护、D4 事件的持续扣费同理。
+    // 做成**通用**两条而不是 npc_wage_* 专用,是为了让内核那唯一一个消费点不必随系统增长
+    public const EXPENSE_MONEY_PER_MIN = 'expense_money_per_min';
+    public const EXPENSE_FOOD_PER_MIN = 'expense_food_per_min';
+
     // target => ['consumer' => 唯一消费点, 'wave' => 计划接线的波次, 'desc' => 中文说明]
     //
     // 'consumer' 写到类名一级即可(方法名会随实现调整,写死反而会过期)。
@@ -104,6 +110,21 @@ final class ModifierTarget
             'consumer' => 'App\Game\Event\EventService',
             'wave'     => 'W3-B',
             'desc'     => '负面事件的资源损失减免:防御工具与危机管理特性',
+        ],
+        // 下面两条的消费点是**内核里唯一一处**为「系统级常态开销」开的口子
+        // (用户 2026-08-11 以内核所有者身份对 W2-A 一次性豁免):
+        // SimulationService::applyLocked 在分段循环之前一次性取值,资金侧并进全城维护速率、
+        // 口粮侧并进人口粮耗基线,循环内零查库。新系统要扣常态开销一律投稿到这两个 target,
+        // **不许再往内核里加第二处消费点**。
+        self::EXPENSE_MONEY_PER_MIN => [
+            'consumer' => 'App\Game\Simulation\SimulationService',
+            'wave'     => 'W2-A',
+            'desc'     => '系统级常态资金支出(资金/分钟):NPC 工资(§6.3 wage_per_min)是首个投稿者',
+        ],
+        self::EXPENSE_FOOD_PER_MIN => [
+            'consumer' => 'App\Game\Simulation\SimulationService',
+            'wave'     => 'W2-A',
+            'desc'     => '系统级常态口粮支出(粮食/分钟):NPC 口粮(§6.3 food_per_min)是首个投稿者',
         ],
     ];
 

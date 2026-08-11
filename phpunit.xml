@@ -23,6 +23,9 @@
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <!-- 审计 Hash Chain 用固定测试密钥:避免每次跑测试都走「从 APP_KEY 派生」的降级分支刷 warning -->
         <env name="AUDIT_HMAC_SECRET" value="testing-audit-hmac-secret"/>
+        <!-- 市场定价用固定测试密钥:避免每次跑测试都走「从 APP_KEY 派生」的降级分支刷 warning,
+             同时保证价格在 CI / 本地之间完全可复现(定价是该密钥与窗口号的纯函数) -->
+        <env name="MARKET_PRICE_SECRET" value="testing-market-price-secret"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>

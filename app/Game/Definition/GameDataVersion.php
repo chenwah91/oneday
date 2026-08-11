@@ -4,6 +4,7 @@ namespace App\Game\Definition;
 
 use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 // 游戏数据版本(§64 / §65):递增 V3.1.N → V3.1.(N+1),并为该版 Definition 内容留下 checksum 指纹
 class GameDataVersion
@@ -20,6 +21,15 @@ class GameDataVersion
         'building_definition'       => ['building_id'],
         'building_level_definition' => ['building_id', 'level'],
         'technology_definition'     => ['tech_id'],
+        // M3-D3 市场定义(26 行 = v3.2 §8):基础价 / 波动率 / 流动性都是「游戏数值」,
+        // 后台改一行就会改变全服价格,必须进指纹,否则半年后回查「当时为什么是这个价」会查不出来
+        'market_definition'         => ['resource_id'],
+        // M3-D1 NPC 定义(v3.2 §6):三张表都是「游戏数值」——
+        // npc_definition 后台可改(工资 / 口粮 / 初始技能),等级曲线决定每一级的乘区加成,
+        // 技能表决定岗位匹配。三张里任何一行变了,玩家看到的产量就会变,所以都要进指纹
+        'npc_skill_definition'      => ['skill_id'],
+        'npc_skill_level_curve'     => ['level'],
+        'npc_definition'            => ['npc_id'],
     ];
 
     // 当前(最新)版本号。一次请求内只查一次库,后续调用走 Context 缓存;库里没有任何版本时返回 null。
@@ -74,6 +84,13 @@ class GameDataVersion
         $buffer = '';
 
         foreach (self::CHECKSUM_TABLES as $table => $primaryKey) {
+            // 表清单会随每个 M3 波次增长,而**早期的 bump 迁移**会在新表建出来之前就跑
+            // (例:V3.2.1 的迁移排在 NPC / 市场建表迁移之前)。缺表就跳过而不是炸掉整条迁移链:
+            // 少一张表只是让那一版的指纹不含它,而炸掉迁移会让线上升级卡在半路
+            if (! Schema::hasTable($table)) {
+                continue;
+            }
+
             $query = DB::table($table);
             foreach ($primaryKey as $column) {
                 $query->orderBy($column);

@@ -65,6 +65,7 @@ composer install --no-dev --optimize-autoloader
 | `SESSION_DRIVER` | `database` | 与开发一致 |
 | `SESSION_SECURE_COOKIE` | `true` | **必须**,生产是 HTTPS,Cookie 必须标记 Secure(`.env.example` 里有中文注释提示,开发环境默认 `false`) |
 | `AUDIT_HMAC_SECRET` | (生成强随机值) | **必须**,审计 Hash Chain 的 HMAC 密钥(`CLAUDE.md` §58/§75)。见下方生成命令 |
+| `MARKET_PRICE_SECRET` | (生成强随机值) | **必须**(M3 起),市场价格噪声的确定性随机密钥。缺失时价格恒不波动(保守降级);泄漏 = 玩家可预知未来价格。生成方式同 `AUDIT_HMAC_SECRET`,同级保密,但**可以轮换**(只影响未来窗口的噪声,不破坏任何历史数据) |
 
 生成 `APP_KEY`:
 
@@ -272,6 +273,14 @@ php artisan release:check
 | Error Response 不泄露 Stack Trace | `APP_DEBUG=false` 前提下,故意打一个不存在的端点应只回 `{success,error,request_id}` |
 | 依赖漏洞检查 | `composer audit`(前端依赖只有随仓库提交的 `pixi.min.js`,版本固定) |
 | PWA Cache Version 正确 | 本文第 5.1 步:`apg-v9` |
+
+**M3 追加的上线专项**(不属 §82,但同级重要):
+
+| 项 | 怎么做 |
+|---|---|
+| 市场灰度 | 上线时先把后台设定 `market_enabled` 关为 `false`,经济回归跑够(至少观察若干个价格窗口 + 抽查审计)再开市——改一条设定即可,不用发版 |
+| 高波动资源套利收紧 | `electronic_components`(v=0.10)/`rare_metals`/`advanced_materials`(v=0.12)存在苛刻条件下的跨窗套利边际;开市前任选其一收紧:滑点系数 0.5→0.91 / 费率倍率 1→2.35 / 调低单窗额度或流动性倍率(均为后台设定) |
+| `MARKET_PRICE_SECRET` 已配置 | 见第 3 步 `.env` 表;缺失时价格恒不波动(保守降级,不算故障但玩法变味) |
 
 ---
 
