@@ -3,6 +3,7 @@
 namespace App\Game\Event;
 
 use App\Game\City\EraService;
+use App\Game\Defense\DefenseService;
 use App\Game\Resource\ResourceCode;
 use App\Support\GameSetting;
 use Illuminate\Support\Facades\DB;
@@ -68,6 +69,11 @@ final class EventCondition
         $population = (float) ($sim['population'] ?? $lockedCity->population);
         $populationCapacity = (float) ($sim['populationCapacity'] ?? 0.0);
 
+        // ④ 国防读数(M3-D5 W4-B):威胁需求 / 有效国防值 / 覆盖率 / 威胁档一次算齐。
+        //    整块原样带走 —— EVT_RAID 的损失公式(EventEffect)与权重的「国防达标」修正
+        //    都读这一份,和快照的 defense 区块同源同值,不在事件侧另算一次
+        $defense = DefenseService::evaluate($lockedCity, $sim);
+
         return [
             'city_id'    => $cityId,
             'era_order'  => (int) ($lockedCity->era_order ?? 1),
@@ -92,6 +98,15 @@ final class EventCondition
             'workers_series'          => $workersBySeries,
             'constructing_count'      => $constructing,
             'npc_skill_count'         => $highSkillNpcs,
+            // 威胁等级(M3-D5 W4-B):档序号 + 整块读数。
+            // threat_rank 供条件判定(「威胁等级≥中」)与权重的「国防达标」修正比较;
+            // defense 整块供 EVT_RAID 的损失公式取覆盖率,免得它再算一次(两处必须同值)
+            'threat_rank'             => (int) $defense['threat_rank'],
+            'threat_level'            => (string) $defense['threat_level'],
+            'defense'                 => $defense,
+            // 电力使用率(M.1 W4-A):内核已经在 $sim 里算好,这里只取不再算第二份。
+            // 电力系统未接入的库(或 elapsed=0 的极端调用)缺键 → 0.0,即「不缺电」,EVT_BLACKOUT 不成立
+            'power_usage_rate'        => (float) ($sim['powerUsageRate'] ?? 0),
         ];
     }
 
@@ -141,6 +156,11 @@ final class EventCondition
                 : 0.0,
             EventCode::METRIC_CONSTRUCTING_COUNT => (float) $metrics['constructing_count'],
             EventCode::METRIC_NPC_SKILL_COUNT    => (float) $metrics['npc_skill_count'],
+            // 威胁等级按**档序号**比较(low 0 / medium 1 / high 2):
+            // §9.2 EVT_RAID 的「威胁等级≥中」= threat_level >= 1
+            EventCode::METRIC_THREAT_LEVEL       => (float) $metrics['threat_rank'],
+            // 电力使用率(M.1 W4-A):EVT_BLACKOUT 的「电力使用率>85%」
+            EventCode::METRIC_POWER_USAGE_RATE   => (float) ($metrics['power_usage_rate'] ?? 0),
             default => NAN,
         };
     }
@@ -240,10 +260,11 @@ final class EventCondition
             && in_array($category, EventCode::CATEGORY_GROUP_CIVIL, true)) {
             $m *= (float) GameSetting::get(GameSetting::EVENT_WEIGHT_HIGH_HEALTH);
         }
-        // 「国防达标」:D5 的 threat_level 要到 W4-B 才有,这里用 §10.8 的治安覆盖值作代理指标
-        // (阈值是后台设定 event_defense_ok_security_min)。D5 上线后把这一条改读 threat_level 即可,
-        // 系数与分组都不用动
-        if ($metrics['security'] >= (float) GameSetting::get(GameSetting::EVENT_DEFENSE_OK_SECURITY_MIN)
+        // 「国防达标」(9.D2 的第七条):W4-B 起改读 D5 的**威胁档**,不再用治安覆盖值作代理。
+        // 达标 = 威胁档序号 ≤ 后台门槛(默认 0,即只有「安全」档算达标)。
+        // 系数(event_weight_defense_ok = 0.5)与 category 分组(CATEGORY_GROUP_DEFENSE)一个没动 ——
+        // 换的只是「怎么判定达标」这一句;旧的 event_defense_ok_security_min 就此停用(登记保留)
+        if ($metrics['threat_rank'] <= (float) GameSetting::get(GameSetting::EVENT_DEFENSE_OK_MAX_THREAT_RANK)
             && in_array($category, EventCode::CATEGORY_GROUP_DEFENSE, true)) {
             $m *= (float) GameSetting::get(GameSetting::EVENT_WEIGHT_DEFENSE_OK);
         }

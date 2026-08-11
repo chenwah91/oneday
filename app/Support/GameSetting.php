@@ -211,6 +211,58 @@ final class GameSetting
     // 「高技能 NPC」的等级门槛(§6 未定义,EVT_BRAIN_DRAIN 的条件要用)
     public const EVENT_NPC_HIGH_SKILL_LEVEL = 'event_npc_high_skill_level';
 
+    // 「国防达标」的判定门槛(M3-D5 W4-B 起生效):**威胁档序号** ≤ 本值即视为达标。
+    // 序号 = DefenseService::LEVEL_RANKS(low 0 / medium 1 / high 2),默认 0 = 只有「安全」档算达标。
+    // 它取代了上面 event_defense_ok_security_min 的治安代理判定;
+    // 9.D2 的系数(event_weight_defense_ok = 0.5)与 category 分组(CATEGORY_GROUP_DEFENSE)一个没动
+    public const EVENT_DEFENSE_OK_MAX_THREAT_RANK = 'event_defense_ok_max_threat_rank';
+
+    // ---------- M3-M.1 电力规则参数(v3.2 §3.3 energyFactor + §8 RS017 capacity_contract)----------
+    //
+    // 分工与前面四个系统完全一致:**逐建筑**的发电量 / 耗电量是定义数据
+    // (building_level_definition 的 output_json.electricity 与 power_per_min 两列,改它要 bump 数值版本);
+    // 这里登记的是**全局**曲线参数 —— 「一改就影响全服电网」的那一档。
+    // 同一个数不允许有两个来源:发电与耗电的数值一个都不在这里。
+
+    // 电力总开关:关掉后 power 乘区恒 1.0(= 接入前的历史行为),运营救急用
+    public const POWER_GATE_ENABLED = 'power_gate_enabled';
+
+    // 电力率下限:§3.3「energyFactor = clamp(powerReceived / powerDemand, 0, 1)」的下界,
+    // 与物流的 0.25 不同,电力**没有**下限保护(§15 回归表要求「获取电力为 0 → 产出为 0」)
+    public const POWER_FACTOR_MIN = 'power_factor_min';
+
+    // 满供拐点:覆盖率(可用发电 / 耗电需求)≥ 本值即视为满供,不打折。
+    // 默认 1.00 = §3.3 的纯线性口径(无宽限档);想给一档「轻微缺电不降产」把它调到 0.95 即可
+    public const POWER_FULL_SUPPLY_RATIO = 'power_full_supply_ratio';
+
+    // 起算时代:低于本时代序号的城市一律不计电力需求(与物流的 LOGISTICS_MIN_ERA_ORDER 同款闸门)。
+    // 默认 8 = 全表最早的发电建筑 E03 与最早的耗电建筑 F08 / P07 / P08 都在时代 VIII
+    public const POWER_MIN_ERA_ORDER = 'power_min_era_order';
+
+    // ---------- M3-D5 国防联动规则参数(backlog §9 E 区批准口径 + v3.2 §17 国防行)----------
+    //
+    // 分工照旧,且这一组刻意**不含任何数值表**:
+    //   ① 威胁需求的九档数字在 EraService::REQUIREMENTS(= §5.1「国防最低」),**单一来源**,
+    //      这里只给一个全局倍率让运营调难度,绝不复制第二份九档数字;
+    //   ② 逐事件的开关 / 权重 / 效果强度仍在 event_definition 表(后台按行改 + bump 数值版本);
+    //   ③ 这里登记的是「一改就影响全服国防判定」的那一档:分档阈值 + RAID 损失公式的四个系数。
+
+    // 威胁分档的两个覆盖率阈值(E1 的判定口径)。coverage = 有效国防值 / 威胁需求:
+    //   coverage ≥ SAFE → low(安全);SAFE > coverage ≥ TENSE → medium(紧张);低于 TENSE → high(危险)
+    public const DEFENSE_THREAT_COVERAGE_SAFE = 'defense_threat_coverage_safe';
+    public const DEFENSE_THREAT_COVERAGE_TENSE = 'defense_threat_coverage_tense';
+
+    // 威胁需求的全局倍率:威胁需求 = §5.1「国防最低」× 本值 × (1 + Σthreat_demand_pct)
+    public const DEFENSE_THREAT_DEMAND_MULTIPLIER = 'defense_threat_demand_multiplier';
+
+    // EVT_RAID 损失公式(9.E2 的 clamp 口径 + §17「事件损失倍率」的威胁档缩放):
+    //   缺口率 = clamp(1 − coverage, 0, 1)
+    //   损失率 = clamp(缺口率 × 基础倍率 × 威胁档倍率, 0, 上限)
+    public const DEFENSE_RAID_LOSS_BASE_MULTIPLIER = 'defense_raid_loss_base_multiplier';
+    public const DEFENSE_RAID_LOSS_MAX_PCT = 'defense_raid_loss_max_pct';
+    public const DEFENSE_RAID_LOSS_MULT_MEDIUM = 'defense_raid_loss_mult_medium';
+    public const DEFENSE_RAID_LOSS_MULT_HIGH = 'defense_raid_loss_mult_high';
+
     // ---------- 设定类型 ----------
 
     // 布尔开关(true / false 二选一)
@@ -750,7 +802,7 @@ final class GameSetting
             'type'        => self::TYPE_NUMBER,
             'min'         => 0,
             'max'         => 100,
-            'description' => '「国防达标」的代理阈值:D5 的 threat_level 尚未落地(W4-B),暂用 §10.8 的治安覆盖值 ≥ 本值近似。D5 上线后改读 threat_level',
+            'description' => '【已停用,保留登记】D5 落地前的「国防达标」治安代理阈值。W4-B 起判定改读威胁档(见 event_defense_ok_max_threat_rank),本项不再被任何代码读取;保留登记只为不让后台出现无主残留行,是否删行请运营决定',
         ],
         self::EVENT_GOVERNANCE_OVERLOAD_LOAD => [
             'default'     => 1,
@@ -779,6 +831,92 @@ final class GameSetting
             'min'         => 1,
             'max'         => 10,
             'description' => '「高技能 NPC」的等级门槛(§6 未定义,EVT_BRAIN_DRAIN 的触发条件要用):技能等级 ≥ 本值的在编 NPC 计入',
+        ],
+
+        // ---- M3-M.1 电力曲线参数(默认值 = v3.2 §3.3 原文口径,逐条对照见交付汇报)----
+        self::POWER_GATE_ENABLED => [
+            'default'     => true,
+            'type'        => self::TYPE_BOOL,
+            'description' => '电力总开关:关闭后 power 乘区恒为 1.0(缺电不再打折产量),运营救急用。发电 / 耗电读数照常显示',
+        ],
+        self::POWER_FACTOR_MIN => [
+            'default'     => 0,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 1,
+            'description' => '电力率下限:§3.3 的 clamp 下界 = 0(与物流的 0.25 不同,电力没有下限保护 —— §15 要求「获取电力为 0 → 产出为 0」)。调高等于给缺电城市兜底',
+        ],
+        self::POWER_FULL_SUPPLY_RATIO => [
+            'default'     => 1,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0.1,
+            'max'         => 1,
+            'description' => '满供拐点:电力覆盖率(可用发电 / 耗电需求)≥ 本值即视为满供不打折。默认 1.00 = §3.3 的纯线性口径;调到 0.95 等于给「轻微缺电」加一档宽限',
+        ],
+        self::POWER_MIN_ERA_ORDER => [
+            'default'     => 8,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 1,
+            'max'         => 10,
+            'description' => '电力起算时代序号:低于本时代的城市不计电力需求(与物流的时代闸门同款)。默认 8 = 全表最早的发电建筑 E03 与最早的耗电建筑 F08/P07/P08 都在时代 VIII',
+        ],
+
+        // ---- M3-D5 国防联动参数(默认值 = backlog §9 E 区已批准口径,逐条对照见交付汇报)----
+        self::DEFENSE_THREAT_COVERAGE_SAFE => [
+            'default'     => 1,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '威胁分档:国防覆盖率(有效国防值 / 威胁需求)≥ 本值 = 安全档 low。默认 1.00 = 「达到 §5.1 的国防最低即安全」(E1)',
+        ],
+        self::DEFENSE_THREAT_COVERAGE_TENSE => [
+            'default'     => 0.6,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '威胁分档:覆盖率 ≥ 本值(且低于安全档阈值)= 紧张档 medium,低于本值 = 危险档 high。EVT_RAID 的触发条件是「≥ 紧张」,调高本值等于让危险档更容易出现',
+        ],
+        self::DEFENSE_THREAT_DEMAND_MULTIPLIER => [
+            'default'     => 1,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '威胁需求全局倍率:威胁需求 = §5.1「国防最低」× 本值 ×(1 + 事件抬升)。九档数字只在 EraService::REQUIREMENTS 一处,这里是运营调难度的唯一旋钮',
+        ],
+        self::DEFENSE_RAID_LOSS_BASE_MULTIPLIER => [
+            'default'     => 1,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 10,
+            'description' => 'EVT_RAID 损失基础倍率:损失率 = clamp(缺口率 × 本值 × 威胁档倍率, 0, 上限),缺口率 = clamp(1 − 覆盖率, 0, 1)。默认 1.0 = 9.E2 原式',
+        ],
+        self::DEFENSE_RAID_LOSS_MAX_PCT => [
+            'default'     => 0.3,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 1,
+            'description' => 'EVT_RAID 单次库存损失率上限(9.E2 = 0.30 即 30%):无论威胁档多差,一次劫掠最多损失非资金库存的这个比例',
+        ],
+        self::DEFENSE_RAID_LOSS_MULT_MEDIUM => [
+            'default'     => 1,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 10,
+            'description' => 'EVT_RAID 威胁档倍率:紧张档 medium(默认 1.0,即 9.E2 的原式)。安全档恒 0(不该被劫掠)',
+        ],
+        self::DEFENSE_RAID_LOSS_MULT_HIGH => [
+            'default'     => 1.5,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 10,
+            'description' => 'EVT_RAID 威胁档倍率:危险档 high(默认 1.5,§17「事件损失倍率随国防缺口放大」的落地)。放大后仍受上限夹取',
+        ],
+        self::EVENT_DEFENSE_OK_MAX_THREAT_RANK => [
+            'default'     => 0,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 2,
+            'description' => '「国防达标」的威胁档门槛:威胁档序号(low 0 / medium 1 / high 2)≤ 本值即达标,defense 类事件权重 ×event_weight_defense_ok。默认 0 = 只有安全档算达标',
         ],
     ];
 

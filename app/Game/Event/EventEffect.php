@@ -2,6 +2,7 @@
 
 namespace App\Game\Event;
 
+use App\Game\Defense\DefenseService;
 use App\Game\Modifier\ModifierSpec;
 use App\Game\Modifier\ModifierTarget;
 use App\Game\Resource\ResourceCode;
@@ -127,12 +128,19 @@ final class EventEffect
             EventCode::EFFECT_SECURITY              => $this->security($effect, $instanceId, $startsAt, $endsAt),
             EventCode::EFFECT_POPULATION_PCT        => $this->populationPct($effect, $label, $rolled, $applied),
             EventCode::EFFECT_CONSTRUCTION_DELAY_PCT => $this->constructionDelay($effect, $label, $rolled),
+            EventCode::EFFECT_THREAT_LOSS_PCT       => $this->threatLoss($effect, $rolled),
 
             // ---- 选项专用:改「已经发生的效果」----
             EventCode::EFFECT_LOSS_SCALE     => $this->adjustLoss($rolled, $applied, scale: (float) $effect['value']),
             EventCode::EFFECT_LOSS_SET_PCT   => $this->adjustLoss($rolled, $applied, targetPct: (float) $effect['value']),
             EventCode::EFFECT_ROLL_TAKE_MAX  => $this->rollTakeMax($rolled, $applied),
-            EventCode::EFFECT_MODIFIER_SET_VALUE => $this->setModifierValue($instanceId, (float) $effect['value']),
+            EventCode::EFFECT_MODIFIER_SET_VALUE => $this->setModifierValue(
+                $instanceId,
+                (float) $effect['value'],
+                // target 省略 → event 乘区(既有行为,30 条里除 EVT_BLACKOUT 外全部走这条)。
+                // M.1 起可以点名别的乘区:EVT_BLACKOUT 的「减益降为-10%」改的是 power 那一行
+                (string) ($effect['target'] ?? ModifierTarget::SLOT_EVENT)
+            ),
             EventCode::EFFECT_FLAT_SET       => $this->setFlat($effect, $instanceId, $startsAt, $endsAt, $applied),
             EventCode::EFFECT_DURATION_SCALE => $this->rescheduleScale($instance, (float) $effect['value']),
             EventCode::EFFECT_DURATION_SET_MINUTES => $this->rescheduleTo($instance, now()->copy()->addMinutes((int) $effect['value'])),
@@ -480,6 +488,111 @@ final class EventEffect
         $rolled['construction']['reverted'] = true;
     }
 
+    // ---------- 威胁等级损失(M3-D5,§9.2 EVT_RAID)----------
+
+    // §9.2「按威胁需求/国防值计算资源损失」。比例不在 events.json 里 ——
+    // 由 DefenseService 按「国防缺口 × 威胁档」算(9.E2 + §17),所以这条效果只带作用范围:
+    //   不带 resource      → 全部**非资金**库存(9.E2「作用于非资金库存」);
+    //   带 resource: money → 只作用于资金(选项 B 赎金:资金损失,库存无损)。
+    private function threatLoss(array $effect, array &$rolled): void
+    {
+        $pct = $this->threatLossPct($rolled);
+
+        if ($pct <= 0) {
+            // 威胁档为安全(或后台把倍率调成 0):没有损失。
+            // 不静默 —— 玩家收到一条「敌军劫掠」却毫发无损时,审计里要答得出为什么
+            $this->notes[] = 'threat_loss:当前威胁档不产生损失(覆盖率已达标或倍率为 0)';
+
+            return;
+        }
+
+        // ---- 单一资源(赎金)----
+        if (isset($effect['resource'])) {
+            $code = (string) $effect['resource'];
+            $base = $this->stock($code);
+            $amount = -$base * $pct;
+
+            $this->addDelta($code, $amount);
+            $rolled['threat']['ransom'] = [
+                'resource' => $code,
+                'base'     => round($base, 4),
+                'amount'   => round($amount, 4),
+            ];
+
+            return;
+        }
+
+        // ---- 全部非资金库存 ----
+        // 资金不在 city_resources 里(单列 cities.money),$sim['resources'] 天然只有库存资源;
+        // 顺序按 code 排序固定,rolled 的内容才可复盘、测试才可断言
+        $stocks = $this->sim['resources'] ?? [];
+        ksort($stocks);
+
+        $entries = [];
+        $totalBase = 0.0;
+        $totalAmount = 0.0;
+
+        foreach ($stocks as $code => $stock) {
+            $base = (float) $stock;
+            if ((string) $code === ResourceCode::MONEY || $base <= 0) {
+                continue;
+            }
+
+            $amount = -$base * $pct;
+            $this->addDelta((string) $code, $amount);
+
+            $entries[] = ['resource' => (string) $code, 'base' => round($base, 4), 'amount' => round($amount, 4)];
+            $totalBase += $base;
+            $totalAmount += $amount;
+        }
+
+        if ($entries === []) {
+            $this->notes[] = 'threat_loss:本城没有可损失的库存,本次无损失';
+
+            return;
+        }
+
+        // 与 resourcePctOfStock 同一个 rolled.loss 结构,多一个 entries ——
+        // 「损失减半 / 损失归零」类选项(adjustLoss)因此对两种损失一视同仁,不必分两套退还逻辑
+        $rolled['loss'] ??= [
+            'resource' => null, // 多资源,单资源字段留空
+            'pct'      => round(-$pct, 6),
+            'base'     => round($totalBase, 4),
+            'amount'   => round($totalAmount, 4),
+            'entries'  => $entries,
+        ];
+    }
+
+    // 本实例的损失比例(正数)。**触发时算一次、落 rolled、之后只读**(§11.3 掷点纪律):
+    // 否则玩家可以先造几栋防御建筑再回来结算,把已经发生的损失算小 —— 或者反过来被算大。
+    // 落的是**最终值**(已乘事件强度、已过损失减免链),选项路径直接复用,不会二次减免。
+    private function threatLossPct(array &$rolled): float
+    {
+        if (isset($rolled['threat']['loss_pct'])) {
+            return (float) $rolled['threat']['loss_pct'];
+        }
+
+        $defense = DefenseService::evaluate($this->city, $this->sim);
+        $pct = DefenseService::raidLossPct($defense) * $this->strength();
+
+        // 事件损失减免(D0.3 的 event_loss_reduction_pct,消费点是 EventService::lossReduction):
+        // 与 resourcePctOfStock 同一条链,防御工具 / 危机管理特性对劫掠一样有效
+        if ($pct > 0 && $this->lossReduction > 0) {
+            $pct *= max(0.0, 1.0 - $this->lossReduction);
+        }
+
+        $rolled['threat'] = [
+            'level'          => $defense['threat_level'],
+            'coverage'       => $defense['coverage'],
+            'demand'         => $defense['threat_demand'],
+            'defense_score'  => $defense['defense_score'],
+            'loss_reduction' => round($this->lossReduction, 6),
+            'loss_pct'       => round($pct, 6),
+        ];
+
+        return $pct;
+    }
+
     // ---------- 选项:调整已发生的效果 ----------
 
     // 「损失减半」/「损失降至 3%」:按 rolled.loss 的 base × 新旧比例差退还。
@@ -503,8 +616,23 @@ final class EventEffect
         }
 
         $refund = (float) $loss['base'] * ($newPct - $oldPct); // 正数 = 退还
+
         if ($refund > 0) {
-            $this->addDelta((string) $loss['resource'], $refund);
+            // 两种损失形态用同一条退还逻辑:
+            //   单资源(resource_pct_of_stock,如 EVT_GRANARY_PEST 的粮食)→ 直接退那一种;
+            //   多资源(threat_loss_pct,EVT_RAID 的全库存)→ 按各自的 base 比例逐种退,
+            //   合计恰好等于 base 合计 × 比例差(测试里对账的就是这一条)
+            if (isset($loss['entries']) && is_array($loss['entries'])) {
+                foreach ($loss['entries'] as $i => $entry) {
+                    $entryRefund = (float) $entry['base'] * ($newPct - $oldPct);
+                    if ($entryRefund > 0) {
+                        $this->addDelta((string) $entry['resource'], $entryRefund);
+                    }
+                    $rolled['loss']['entries'][$i]['amount'] = round((float) $entry['base'] * $newPct, 4);
+                }
+            } else {
+                $this->addDelta((string) $loss['resource'], $refund);
+            }
         }
 
         $rolled['loss']['pct'] = round($newPct, 6);
@@ -543,12 +671,23 @@ final class EventEffect
         $rolled['population_roll']['amount'] = (int) ($roll['amount'] ?? 0) + $amount;
     }
 
-    // 「减益降为 -15%」:把本实例写下的 event 乘区 modifier 值整体改掉
-    private function setModifierValue(int $instanceId, float $value): void
+    // 「减益降为 -15%」:把本实例写下的某一格乘区 modifier 值整体改掉。
+    //
+    // $target 默认 event 乘区(= M3-D4 落地时的既有行为)。M.1 电力上线后多了一个合法取值:
+    // EVT_BLACKOUT 的自动效果写的是 target=power(全城电力可用量 -40%),
+    // 它的选项 A「启用备用燃料 → 减益降为 -10%」自然也要改 power 那一行而不是 event 那一行。
+    // 只允许改**七乘区**里的 target:flat 通道有自己的 setFlat(),消费点类 target 没有「减益」语义
+    private function setModifierValue(int $instanceId, float $value, string $target = ModifierTarget::SLOT_EVENT): void
     {
+        if (! ModifierTarget::isSlot($target)) {
+            $this->notes[] = "modifier_set_value:target「{$target}」不是七乘区之一,本条跳过";
+
+            return;
+        }
+
         DB::table('city_active_modifiers')
             ->where('source_type', 'event')->where('source_id', $instanceId)
-            ->where('target', ModifierTarget::SLOT_EVENT)
+            ->where('target', $target)
             ->update(['value' => round($value * $this->strength(), 4)]);
     }
 

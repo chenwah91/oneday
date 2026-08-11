@@ -91,7 +91,9 @@
       "item_id": "IT008", "name_key": "item.IT008.name", "category": "defense_equipment", "min_era": "III",
       "equip_target_desc_zh": "青铜卫士", "durability": 120, "durability_tier": "normal", "durability_mode": "work_minutes",
       "effect_code": "defense_score_flat", "effect_value": 8, "unit": "flat",
-      "effect_json": { "specs": [], "unmapped_zh": ["国防值 flat(+8):ModifierTarget 尚无 defense_score_flat 这一 target,消费点由 W4-B(D5 国防联动)登记后再提升为 spec"] },
+      "effect_json": { "specs": [
+        { "target": "defense_score_flat", "scope": "city", "op": "flat", "value": 8 }
+      ], "unmapped_zh": [] },
       "craft_cost": { "wood": 3, "bronze": 10, "money": 20 },
       "crafting_source_desc_zh": "青铜作坊", "crafting_building_id": "P03", "crafting_unmapped_zh": null,
       "trade_value": 40, "note": "简单装备数值"

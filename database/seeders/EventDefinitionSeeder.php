@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Game\Definition\EnumCode;
 use App\Game\Event\EventCode;
 use App\Game\Modifier\ModifierSpec;
+use App\Game\Modifier\ModifierTarget;
 use App\Game\Resource\ResourceCode;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -174,8 +175,30 @@ class EventDefinitionSeeder extends Seeder
                 EventCode::EFFECT_RESOURCE_PCT_OF_STOCK => self::assertResource($id, $effect['resource'] ?? null),
                 EventCode::EFFECT_GRANT_PRODUCTION_PCT  => self::assertGrant($id, $where, $type, $effect),
                 EventCode::EFFECT_MODIFIER              => self::assertModifier($id, $where, $type, $effect),
+                EventCode::EFFECT_MODIFIER_SET_VALUE    => self::assertModifierSetValue($id, $where, $effect),
+                EventCode::EFFECT_THREAT_LOSS_PCT       => self::assertThreatLoss($id, $where, $type, $effect),
                 default                                 => null,
             };
+        }
+    }
+
+    // threat_loss_pct = 按威胁等级计算的损失(M3-D5)。**只属于负向事件**:
+    // 「按国防缺口扣库存」在正向事件里没有任何语义,写错了只会表现成一条莫名其妙的扣资源。
+    // 比例由 DefenseService 在运行时算,所以这里不校验 value(events.json 里根本不该写它);
+    // 带 resource 时(赎金的资金)照常走资源 allowlist
+    private static function assertThreatLoss(string $id, string $where, string $type, array $effect): void
+    {
+        if ($type !== EventCode::TYPE_NEGATIVE) {
+            throw new RuntimeException("events.json:{$id} 的 {$where} 在正向事件里用了 threat_loss_pct(按国防缺口扣库存只属于负向事件)");
+        }
+        if (isset($effect['value'])) {
+            throw new RuntimeException(
+                "events.json:{$id} 的 {$where} threat_loss_pct 不接受 value —— " .
+                '损失比例由 DefenseService::raidLossPct(国防缺口 × 威胁档)在运行时算,写死在定义里会变成第二份口径'
+            );
+        }
+        if (isset($effect['resource'])) {
+            self::assertResource($id, $effect['resource']);
         }
     }
 
@@ -197,22 +220,41 @@ class EventDefinitionSeeder extends Seeder
         }
     }
 
+    // 选项里的「减益降为 -X%」:只允许点名七乘区,且同样不许把减益改成加成。
+    // M.1 起 target 可省略(默认 event 乘区);EVT_BLACKOUT 的选项 A 点名 power
+    private static function assertModifierSetValue(string $id, string $where, array $effect): void
+    {
+        $target = (string) ($effect['target'] ?? ModifierTarget::SLOT_EVENT);
+
+        if (! ModifierTarget::isSlot($target)) {
+            throw new RuntimeException("events.json:{$id} 的 {$where} modifier_set_value 的 target「{$target}」不是七乘区之一");
+        }
+        if ((float) ($effect['value'] ?? 0) > 0) {
+            throw new RuntimeException("events.json:{$id} 的 {$where} modifier_set_value 把乘区改成了加成(值必须 ≤ 0)");
+        }
+    }
+
     // modifier = 持续型效果。三重 allowlist 由 ModifierSpec 的构造函数完成(target / scope / op),
-    // 这里另加一条本系统自己的规矩:event 乘区里只放惩罚
+    // 这里另加一条本系统自己的规矩:**任何七乘区**里都只放惩罚。
+    //
+    // M.1 之前这条规矩只写给 event 一格(那时事件也只会往 event 乘区投稿);
+    // EVT_BLACKOUT 复活后事件多了一个合法落点(power 乘区的「全城电力可用量-40%」),
+    // 所以把判定从「target === 'event'」放宽成「target 是七乘区之一」——
+    // 规矩本身没变、还更严了一点:将来谁想往 npc / tool / tech 任何一格塞加成都会当场 seed 失败
     private static function assertModifier(string $id, string $where, string $type, array $effect): void
     {
         $value = (float) ($effect['value'] ?? 0);
         $scope = (string) ($effect['scope'] ?? '');
         $target = (string) ($effect['target'] ?? '');
 
-        if ($target === 'event' && $value > 0) {
+        if (ModifierTarget::isSlot($target) && $value > 0) {
             throw new RuntimeException(
-                "events.json:{$id} 的 {$where} 往 event 乘区放了正向加成({$value})。" .
+                "events.json:{$id} 的 {$where} 往 {$target} 乘区放了正向加成({$value})。" .
                 '§13 帽修正方向:正向效果一律走 grant_production_pct 直接发资源,乘区里只放 <1.0 的惩罚'
             );
         }
-        if ($target === 'event' && $type === EventCode::TYPE_POSITIVE) {
-            throw new RuntimeException("events.json:{$id} 的 {$where} 在正向事件里用了 event 乘区");
+        if (ModifierTarget::isSlot($target) && $type === EventCode::TYPE_POSITIVE) {
+            throw new RuntimeException("events.json:{$id} 的 {$where} 在正向事件里用了 {$target} 乘区");
         }
 
         // scope_keys(随机二选一)与 pick(随机挑一栋建筑)在触发时才定得下具体的 scope_key,

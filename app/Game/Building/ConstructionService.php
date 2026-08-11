@@ -2,6 +2,8 @@
 
 namespace App\Game\Building;
 
+use App\Game\Modifier\ConsumptionPoint;
+use App\Game\Modifier\ModifierTarget;
 use App\Game\Resource\ResourceCode;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +35,36 @@ class ConstructionService
     // 取消返还:该次未完工工程材料 × 70%(v3.2 §3.2 / §16.3)。
     // 高于拆除的 50% 是刻意的 —— §10.9「拆除返还低于升级取消返还 70%,防止拆建套利」
     public const CANCEL_REFUND_RATE = 0.70;
+
+    // 施工加速的最低速度倍率(安全夹取):construction_speed_pct 合计到 −90% 以下就按 0.1 倍速算。
+    // 现有数据里这条 target 只有正值(N008 +8% / N030 +25% / IT005 +8% / IT013 +15%),
+    // 这个夹子是为「将来有负面事件投稿 −100% 甚至更负」准备的:除数不能是 0 或负数,
+    // 否则工期会变成无穷大或负数(负工期 = 建筑瞬间完工,那是能被刷的)
+    public const CONSTRUCTION_SPEED_FLOOR = 0.1;
+
+    // ---- 施工加速(D0.3 登记的 construction_speed_pct,**唯一消费点就是这里**)----
+
+    // 本城当前的施工速度倍率。投稿者:§6.3 的建造类 NPC 特性(N008 / N030)与 §7 的建造工具(IT005 / IT013)。
+    //
+    // 「速度 +25%」按**速度**解释,不是按工期解释:工期 = 基础工期 ÷ (1 + pct)。
+    // 两种解释在小数值上差别不大(+8% → 92.6% vs 92%),但速度式永远得不到 0 工期,
+    // 而工期式在 pct 累加到 +100% 时会直接把工期打成 0(建筑瞬间完工)—— 这正是要避开的。
+    public static function speedMultiplier(int $cityId): float
+    {
+        $pct = ConsumptionPoint::pct(ModifierTarget::CONSTRUCTION_SPEED_PCT, $cityId);
+
+        return max(self::CONSTRUCTION_SPEED_FLOOR, 1.0 + $pct);
+    }
+
+    // 折减后的实际工期(秒)。$baseSeconds = building_level_definition.duration_seconds。
+    //
+    // 取整方向:round。工期不是资源,四舍五入不产生任何可套利的零头
+    //(材料返还那种「玩家净收益」才需要 floor 的保守方向,见 scale() 的注释)。
+    // 下限 0:后台把速度调到极限时至少还是「立刻完工」,不会出现负的完工时刻
+    public static function plannedSeconds(int $cityId, int $baseSeconds): int
+    {
+        return (int) max(0, round(max(0, $baseSeconds) / self::speedMultiplier($cityId)));
+    }
 
     // ---- 懒完工 ----
 

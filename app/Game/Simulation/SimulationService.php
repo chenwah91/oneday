@@ -6,7 +6,9 @@ use App\Game\Building\ConstructionService;
 use App\Game\Modifier\ModifierBus;
 use App\Game\Modifier\ModifierContext;
 use App\Game\Modifier\ModifierTarget;
+use App\Game\Modifier\ConsumptionPoint;
 use App\Game\Modifier\Providers\LogisticsMultiplierProvider;
+use App\Game\Modifier\Providers\PowerMultiplierProvider;
 use App\Game\Resource\ResourceCode;
 use App\Models\City;
 use Carbon\CarbonInterface;
@@ -188,7 +190,10 @@ class SimulationService
             ->select(
                 'ci.id as instance_id', 'ci.building_id', 'ci.level', 'ci.assigned_workers', 'ci.status',
                 'bl.output_json', 'bl.input_json', 'bl.worker_required',
-                'bl.maintenance_money_per_min', 'bl.maintenance_food_per_min'
+                'bl.maintenance_money_per_min', 'bl.maintenance_food_per_min',
+                // 耗电(M.1):v3.2 §3.5 把 power_per_min 与三项维护并列成一组「常态开销」,
+                // 它是全城耗电需求的**唯一**口径(input_json 里的 electricity 是同一件事的 V2 遗留写法)
+                'bl.power_per_min'
             )
             ->get();
 
@@ -214,6 +219,9 @@ class SimulationService
         // 运输容量(§10.7):同样是容量类产出,M2-C4 起从「暂不结算仅显示」转为真实参与 ——
         // 它是 transportLoad 的分母,直接决定 logistics 乘区。唯一来源 = 建筑 output_json 的 transport_capacity
         $transportCapacity = 0.0;
+        // 电力装机容量(M.1 / §8 RS017 capacity_contract):唯一来源 = 建筑 output_json 的 electricity。
+        // 它是 powerFactor 的分子,与 transportCapacity 在物流里的角色一一对应
+        $powerCapacityPerMin = 0.0;
         $maintenanceMoneyPerMin = 0.0;
 
         // ---- M3-D0.1 modifier 总线 ----
@@ -244,6 +252,13 @@ class SimulationService
             if (! $upgrading) {
                 foreach (json_decode($lv->input_json ?: '[]', true) as $i) {
                     $res = $i['resource'];
+                    // 电力不再从库存扣(M.1 / 9.F4「电力做流量不做库存」)。
+                    // 耗电的唯一口径是 power_per_min 那一列;input_json 里的 electricity 是
+                    // V2 遗留的同一件事的第二种写法(36 行里 33 行两值完全相等,F08 / F09 / F10
+                    // 三栋的 power_per_min 反而更高)。两处都读 = 双计,与 M2 踩过的
+                    // governance_bonus / output_json 双口径是同一个坑,所以这里整条跳过。
+                    // 顺带的口径后果:电力不再计入 §10.7 的运输需求 —— 电走电网不走车队
+                    if ($res === ResourceCode::ELECTRICITY) { continue; }
                     $grossIn[$res] = ($grossIn[$res] ?? 0) + (float) $i['rate_per_min'];
                 }
             }
@@ -262,6 +277,13 @@ class SimulationService
                 if ($res === ResourceCode::DEFENSE_SCORE) { $defenseScore += $r; continue; }
                 if ($res === ResourceCode::GOVERNANCE_CAPACITY) { $governanceCapacity += $r; continue; }
                 if ($res === ResourceCode::TRANSPORT_CAPACITY) { $transportCapacity += $r; continue; }
+                // 电力(M.1):§8 RS017 的 trade_mode = capacity_contract —— 它是**产能合约**不是库存资源。
+                // 所以走与仓储 / 人口 / 治理 / 运输容量完全相同的通道:在这里提取成全城装机容量,
+                // 不进 grossOut → 不入 city_resources、不占运力、不受乘区与满足率影响。
+                // 「不受乘区与满足率影响」的代价是电站不派工 / 没煤也照发电,与仓储建筑不派工也给仓容
+                // 是同一条既有口径(见 PowerMultiplierProvider 顶部的说明);升级中的电站同样按
+                // 容量类口径保留 100%(§3.2 只点名住宅 50%,其余容量类不施加没写过的惩罚)
+                if ($res === ResourceCode::ELECTRICITY) { $powerCapacityPerMin += $r; continue; }
                 if (ResourceCode::isCapacity($res)) { continue; } // 其他容量(贸易/金融):M2-C4 阶段仍不结算
                 // 非容量类产出:升级中一律不产(§3.2「生产建筑默认暂停生产」)
                 if ($upgrading) { continue; }
@@ -283,6 +305,10 @@ class SimulationService
                 // 所以放进中间结构而不是在这里就算成乘数
                 'workerRequired'  => (int) $lv->worker_required,
                 'assignedWorkers' => (int) $lv->assigned_workers,
+                // 耗电速率(M.1):PowerMultiplierProvider 用它聚合全城需求,
+                // 并按 §3.3 的 `hasPowerDemand ? energyFactor : 1` 逐实例判定要不要打折。
+                // upgrading 的实例根本进不到这里(§3.2 不产不耗),所以升级期间天然不占电
+                'powerPerMin'     => (float) $lv->power_per_min,
                 // 七乘区:本循环结束、容量与时代都定型之后,由 ModifierBus 一次性填满(见下)
                 'multipliers' => [],
                 // 维护欠费率(§10.5):1.0 = 维护付得起;0.5 = 本段欠费半停工。
@@ -317,6 +343,7 @@ class SimulationService
                 ModifierContext::CAP_DEFENSE    => $defenseScore,
                 ModifierContext::CAP_GOVERNANCE => $governanceCapacity,
                 ModifierContext::CAP_TRANSPORT  => $transportCapacity,
+                ModifierContext::CAP_POWER      => $powerCapacityPerMin,
             ],
             city: $lockedCity,
             now: $now,
@@ -335,6 +362,19 @@ class SimulationService
         $transportLoad = $logisticsProvider->load();
         $logisticsFactor = $logisticsProvider->factor();
         $transportCongestion = $logisticsProvider->congestion();
+
+        // 电力读数(M.1 / §3.3):装机 / 可用 / 需求 / 余量 / 使用率 / 电力率 / 缺电警报,
+        // 全部由 PowerMultiplierProvider 在准备段算好,这里只取回来放进返回值给前端与事件条件用 ——
+        // 结算侧已经通过 power 那一格生效,不再二次使用(与物流读数逐字同构)
+        /** @var PowerMultiplierProvider $powerProvider */
+        $powerProvider = $bus->provider(ModifierTarget::SLOT_POWER);
+        $powerDemandPerMin = $powerProvider->demandPerMin();
+        $powerAvailablePerMin = $powerProvider->availablePerMin();
+        $powerSparePerMin = $powerProvider->sparePerMin();
+        $powerUsageRate = $powerProvider->usageRate();
+        $powerFactor = $powerProvider->factor();
+        $powerShortage = $powerProvider->shortage();
+        $powerEventPct = $powerProvider->eventPct();
 
         // ---- 分段结算 ----
         //
@@ -381,6 +421,27 @@ class SimulationService
         //      返回给前端的维护速率四处自动同口径,不会出现「预警没算工资」这种两套真相;
         //   ③ 口粮侧作为参数交给 segmentRates,和 §10.1 的人均粮耗落在同一行,不另开扣粮路径。
         //
+        // ---- 维护费减免(D0.3 登记的 maintenance_cost_pct,**唯一消费点就是这里**)----
+        //
+        // 投稿者:§6.3 的 NPC 特性(N017 −5% / N020 −10%)与 §7 的工程类工具(IT016 −8%),
+        // 取数走 ConsumptionPoint(三个来源一次读齐),同样在**分段循环之外**取一次值。
+        //
+        // ══ 与欠费判定的叠加顺序(本波次定死,四处口径靠这一行统一)═══════════════
+        //   ① 先按建筑维护费打折:$maintenanceMoneyPerMin ×= max(0, 1 + pct);
+        //   ② 再并入总线的通用支出通道(NPC 工资)—— 工资**不打折**:
+        //      maintenance_cost_pct 的登记说明是「建筑维护资金」,把它顺手作用到工资上
+        //      等于让一条 target 有了两种语义,也会让「减免 10%」在有 NPC 的城市变成一个说不清的数;
+        //   ③ 打折后的这个总额同时是:欠费判定的应付额、半停工的触发依据、财政预警的分母、
+        //      以及返回给前端的 maintenance_money_per_min —— **四处同源**,不会出现两套真相。
+        // 一句话:**折扣在前,欠费判定在后**。省钱先生效,省完还付不起才半停工。
+        //
+        // 夹取:factor 夹到 ≥ 0(负维护 = 白送钱,后台把减免填成 −200% 也不该变成收入来源);
+        // 上方向不夹 —— 「维护费 +X%」将来若由负面事件投稿,涨多少就是多少
+        $maintenanceCostPct = ConsumptionPoint::pct(
+            ModifierTarget::MAINTENANCE_COST_PCT, (int) $lockedCity->id, $now
+        );
+        $maintenanceMoneyPerMin *= max(0.0, 1.0 + $maintenanceCostPct);
+
         // 支出通道对整段窗口取一次值(NPC 在结算窗口内不增不减:招募/辞退各自的端点会先跑一次结算)。
         $maintenanceMoneyPerMin += $bus->flat(ModifierTarget::EXPENSE_MONEY_PER_MIN, 0.0, $totalMinutes);
         $expenseFoodPerMin = $bus->flat(ModifierTarget::EXPENSE_FOOD_PER_MIN, 0.0, $totalMinutes);
@@ -560,6 +621,9 @@ class SimulationService
             'maintenanceMoneyPerMin'  => $maintenanceMoneyPerMin,
             'maintenanceRate'         => $maintenanceRate,
             'maintenanceArrears'      => $maintenanceArrears,
+            //   maintenanceCostPct 维护费减免的合计比例(D0.3 的 maintenance_cost_pct,
+            //   −0.10 = 减免 10%)。已经作用在 maintenanceMoneyPerMin 上,给前端只为「为什么便宜了」
+            'maintenanceCostPct'      => $maintenanceCostPct,
             //   fiscalWarning 财政预警三态 'none' | 'yellow' | 'red'(§10.5:< 10 分钟维护 → 黄;< 3 分钟 → 红)
             'fiscalWarning'           => $fiscalWarning,
             // 物流(§10.7),同样全是派生值,不落库:
@@ -572,6 +636,24 @@ class SimulationService
             'transportLoad'           => $transportLoad,
             'logisticsFactor'         => $logisticsFactor,
             'transportCongestion'     => $transportCongestion,
+            // 电力(M.1 / §3.3 / §8 RS017),同样全是派生值,一个都不落库
+            //(电力不进 city_resources —— 9.F4「流量不做库存」):
+            //   powerCapacityPerMin   全城装机容量(唯一来源 = output_json 的 electricity)
+            //   powerAvailablePerMin  事件减益(EVT_BLACKOUT)之后的可用发电
+            //   powerDemandPerMin     全城耗电需求(唯一来源 = building_level_definition.power_per_min)
+            //   powerSparePerMin      余量 = 可用 − 需求(§4 的 power_spare_per_min 特殊前置将来读它)
+            //   powerUsageRate        电力使用率 = 需求 / max(1, **装机**)(EVT_BLACKOUT 的条件 metric)
+            //   powerFactor           power 乘区里生效的就是它
+            //   powerShortage         缺电警报(有需求且 factor < 1),与物流的 congestion 对称
+            //   powerEventPct         本窗口内生效的电力事件减益合计(≤ 0,已按覆盖比例折算)
+            'powerCapacityPerMin'     => $powerCapacityPerMin,
+            'powerAvailablePerMin'    => $powerAvailablePerMin,
+            'powerDemandPerMin'       => $powerDemandPerMin,
+            'powerSparePerMin'        => $powerSparePerMin,
+            'powerUsageRate'          => $powerUsageRate,
+            'powerFactor'             => $powerFactor,
+            'powerShortage'           => $powerShortage,
+            'powerEventPct'           => $powerEventPct,
         ];
     }
 

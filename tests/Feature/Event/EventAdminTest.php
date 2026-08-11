@@ -46,10 +46,20 @@ class EventAdminTest extends EventTestCase
         $this->assertGreaterThan(0, $drought['mapped_effect_count']);
         $this->assertArrayHasKey('unmapped_effect_count', $drought);
 
-        // 停用的事件必须带原因(后台要能一眼看出为什么是灰的)
+        // 停用的事件必须带原因(后台要能一眼看出为什么是灰的)。
+        // 不再点名具体某一条:依赖落地的波次会陆续把它们复活(EVT_BLACKOUT 已在 M.1 电力波次复活),
+        // 点名会让这条断言每复活一条就红一次 —— 真正要守的是「停用必有原因」这条不变量
+        $disabled = collect($events)->filter(fn ($e) => (int) $e['enabled'] === 0)->values();
+        $this->assertGreaterThan(0, $disabled->count());
+        foreach ($disabled as $row) {
+            $this->assertNotEmpty($row['disabled_reason'], "{$row['event_id']} 停用了却没写原因");
+        }
+
+        // 反向:启用的行不许挂着停用原因。EVT_BLACKOUT 就是 M.1 电力落地后复活的那一条
         $blackout = collect($events)->firstWhere('event_id', 'EVT_BLACKOUT');
-        $this->assertSame(0, (int) $blackout['enabled']);
-        $this->assertStringContainsString('电力', $blackout['disabled_reason']);
+        $this->assertSame(1, (int) $blackout['enabled'], 'M.1 电力落地后 EVT_BLACKOUT 已复活');
+        $this->assertNull($blackout['disabled_reason']);
+        $this->assertGreaterThan(0, $blackout['mapped_effect_count'], '复活的事件必须有能执行的效果');
     }
 
     public function test_list_requires_edit_definition_permission(): void
@@ -119,15 +129,21 @@ class EventAdminTest extends EventTestCase
         ])->assertStatus(404);
     }
 
-    // 启用一条「效果全是 unmapped」的事件:不拦,但要明确告知开了也没后果
+    // 启用一条「自动效果全是 unmapped」的事件:不拦,但要明确告知开了也没后果。
+    // 样本换成 EVT_NEW_DEPOSIT(整条依赖资源节点系统 M.6,自动效果仍然是空的)——
+    // 原来的样本 EVT_BLACKOUT 已在 M.1 电力波次复活,自动效果不再为空
     public function test_enabling_an_unmappable_event_returns_a_warning(): void
     {
+        $this->assertSame([], json_decode((string) DB::table('event_definition')
+            ->where('event_id', 'EVT_NEW_DEPOSIT')->value('auto_effect_json'), true)['effects'],
+            '样本前提:该事件的自动效果确实为空');
+
         $res = $this->actingAs($this->admin())->postJson('/api/admin/definitions/event', [
-            'event_id' => 'EVT_BLACKOUT', 'field' => 'enabled', 'value' => 1, 'reason' => '电力上线了先试试',
+            'event_id' => 'EVT_NEW_DEPOSIT', 'field' => 'enabled', 'value' => 1, 'reason' => '先试试',
         ])->assertOk();
 
         $this->assertNotNull($res->json('data.warning'));
-        $this->assertSame(1, (int) DB::table('event_definition')->where('event_id', 'EVT_BLACKOUT')->value('enabled'));
+        $this->assertSame(1, (int) DB::table('event_definition')->where('event_id', 'EVT_NEW_DEPOSIT')->value('enabled'));
     }
 
     // ---- 硬约束:后台改动即刻影响后续触发 ----

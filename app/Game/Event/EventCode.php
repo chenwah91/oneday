@@ -35,8 +35,9 @@ final class EventCode
     // ---------- 条件 DSL 的 metric allowlist ----------
     //
     // 每一条都必须在 EventCondition::value() 里有对应实现;新增 metric 必须两边一起加。
-    // 「当前系统读不出来」的条件(威胁等级 / 电力使用率 / 税率)不在这里 ——
+    // 「当前系统读不出来」的条件(税率等)不在这里 ——
     // 它们原样留在 condition_json.unmapped_zh,由 events.json 的 enabled=false 兜住(Fail Closed)。
+    // 威胁等级已由 W4-B(D5 国防联动)落地,见本表末尾的 METRIC_THREAT_LEVEL。
     public const METRIC_BUILDING_COUNT = 'building_count';        // 已建成建筑数(按 category / series 过滤)
     public const METRIC_POPULATION = 'population';                // 结算后人口
     public const METRIC_RESOURCE_STOCK = 'resource_stock';        // 某资源库存(money 也走这里)
@@ -49,6 +50,15 @@ final class EventCode
     public const METRIC_CONSTRUCTING_COUNT = 'constructing_count';// 在建 / 升级中的实例数
     public const METRIC_ASSIGNED_WORKERS = 'assigned_workers';    // 已派工人数(按 category / series 过滤)
     public const METRIC_NPC_SKILL_COUNT = 'npc_skill_count';      // 技能等级 ≥ 门槛的在编 NPC 数(门槛走后台设定)
+    // 威胁等级(M3-D5 W4-B):取 DefenseService::LEVEL_RANKS 的**档序号**(low 0 / medium 1 / high 2)。
+    // 用序号而不是字符串,是因为 §9.2 EVT_RAID 的条件原文是「威胁等级≥中」—— 枚举字符串没有大小关系。
+    // 分档阈值本身是后台设定(defense_threat_coverage_safe / _tense),这里只比序号
+    public const METRIC_THREAT_LEVEL = 'threat_level';
+    // 电力使用率(M.1 W4-A):= 全城耗电需求 / max(1, 名义装机容量)。
+    // §9.2 EVT_BLACKOUT 的条件原文「电力使用率>85%」在电力系统落地之前读不出来,
+    // 一直挂在 condition_json.unmapped_zh 里 + 整条事件 enabled=false;M.1 上线后它才有口径。
+    // 分母用**名义装机**而不是「减益后的可用发电」,理由见 PowerService::usageRate 的注释
+    public const METRIC_POWER_USAGE_RATE = 'power_usage_rate';
 
     public const CONDITION_METRICS = [
         self::METRIC_BUILDING_COUNT,
@@ -63,6 +73,8 @@ final class EventCode
         self::METRIC_CONSTRUCTING_COUNT,
         self::METRIC_ASSIGNED_WORKERS,
         self::METRIC_NPC_SKILL_COUNT,
+        self::METRIC_THREAT_LEVEL,
+        self::METRIC_POWER_USAGE_RATE,
     ];
 
     // 比较运算符 allowlist(不接受任何自由文本)
@@ -100,6 +112,13 @@ final class EventCode
     // 在建 / 升级项目按剩余工期百分比延期(§9.2 的「进度回退 10%」)
     public const EFFECT_CONSTRUCTION_DELAY_PCT = 'construction_delay_pct';
 
+    // 按**威胁等级**计算的库存损失(§9.2 EVT_RAID「按威胁需求/国防值计算资源损失」,公式 9.E2)。
+    // 比例不写在 events.json 里 —— 它是 DefenseService::raidLossPct(国防缺口 × 威胁档)算出来的动态值。
+    //   不带 resource      → 作用于**全部非资金库存**(9.E2「作用于非资金库存」);
+    //   带 resource: money → 只作用于资金(选项 B 赎金:「资金损失,建筑与库存无损」)。
+    // 掷点纪律同 §11.3:比例在**触发时**算一次并落 rolled.threat.loss_pct,选项路径只读不重算
+    public const EFFECT_THREAT_LOSS_PCT = 'threat_loss_pct';
+
     // ---- 以下只允许出现在**选项**里:它们改的是「本实例已经发生的效果」----
 
     public const EFFECT_LOSS_SCALE = 'loss_scale';                        // 损失 ×系数,差额退还
@@ -121,6 +140,7 @@ final class EventCode
         self::EFFECT_SECURITY,
         self::EFFECT_POPULATION_PCT,
         self::EFFECT_CONSTRUCTION_DELAY_PCT,
+        self::EFFECT_THREAT_LOSS_PCT,
         self::EFFECT_LOSS_SCALE,
         self::EFFECT_LOSS_SET_PCT,
         self::EFFECT_MODIFIER_SET_VALUE,

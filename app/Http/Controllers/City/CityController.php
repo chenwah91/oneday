@@ -174,9 +174,33 @@ class CityController extends Controller
                 // ---- /M3-EVENT ----
 
                 // ---- M3-POWER ----(W4-A:发电 / 耗电 / powerFactor)
+                // 电力(§3.3 energyFactor + §8 RS017 capacity_contract + 9.F4「流量不做库存」)。
+                // 与 logistics 块逐字同构:capacity 是分子、demand 是分母、factor 就是七乘区里
+                // power 那一格的实际值、shortage 对应物流的 congestion。
+                // electricity **不在 resources 里**(它不是库存资源),想看电网只能看这一块。
+                //   available_per_min 是事件减益(EVT_BLACKOUT)之后的可用发电,capacity 是名义装机;
+                //   usage_rate 用名义装机作分母(经营指标不该被断电本身推高,见 PowerService 的注释)
+                'power'               => [
+                    'capacity_per_min'  => $sim['powerCapacityPerMin'],
+                    'available_per_min' => $sim['powerAvailablePerMin'],
+                    'demand_per_min'    => $sim['powerDemandPerMin'],
+                    'spare_per_min'     => $sim['powerSparePerMin'],
+                    'usage_rate'        => $sim['powerUsageRate'],
+                    'factor'            => $sim['powerFactor'],
+                    'shortage'          => $sim['powerShortage'],
+                    'event_pct'         => $sim['powerEventPct'],
+                ],
                 // ---- /M3-POWER ----
 
                 // ---- M3-DEFENSE ----(W4-B:threat_level 与国防区块,§11 的两个字段)
+                // 国防(§11 的 defense_score / threat_level + §17「国防值 + 威胁等级」)。
+                // 派生值,不落库 —— 与 health / security 同一条口径:
+                //   defense_score      有效国防值 =(建筑口径 + 工具/NPC flat)×(1 + NPC/事件 pct)
+                //   defense_score_base 建筑口径(内核从 output_json 聚合的容量值),两者并列给出,
+                //                      玩家才分得清「常备城防」与「临时增援」
+                //   threat_demand      §5.1「国防最低」× 全局倍率 ×(1 + 事件抬升),来源是 EraService(单一来源)
+                //   threat_level       low / medium / high(§11 的 enum),按覆盖率分档,阈值后台可调
+                'defense'             => \App\Game\Defense\DefenseService::snapshot($city, $sim),
                 // ---- /M3-DEFENSE ----
 
                 // ================= M3 锚点结束 =================

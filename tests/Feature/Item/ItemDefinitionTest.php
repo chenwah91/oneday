@@ -151,12 +151,17 @@ class ItemDefinitionTest extends TestCase
         $this->assertSpec($definitions['IT022'], ModifierTarget::GOVERNANCE_CAPACITY_PCT, ModifierSpec::SCOPE_CITY, null, 0.10);
         // 减免类必须是**负值**:维护成本 -8%,写成 +0.08 就成了「装上工具维护更贵」
         $this->assertSpec($definitions['IT016'], ModifierTarget::MAINTENANCE_COST_PCT, ModifierSpec::SCOPE_CITY, null, -0.08);
+        // 国防 flat(M3-D5 W4-B 起可执行):§7 IT008「国防值 flat(+8)」。
+        // op 是 flat 不是 pct —— 它加的是绝对国防点数,不是百分比
+        $this->assertSpec($definitions['IT008'], ModifierTarget::DEFENSE_SCORE_FLAT, ModifierSpec::SCOPE_CITY, null, 8.0);
     }
 
     // 映射不到已登记 target 的效果:specs 为空 + unmapped_zh 有原文(不发明 target,也不静默丢弃)
     public function test_unmapped_effects_are_recorded_not_invented(): void
     {
-        $unmappedItems = ['IT008', 'IT012', 'IT015', 'IT018', 'IT019', 'IT020', 'IT024'];
+        // IT008 已于 M3-D5(W4-B)提升为可执行:defense_score_flat 登记后它有了消费点,
+        // 断言改到 test_effect_mapping_table 里。其余 6 件仍然没有可挂的 target
+        $unmappedItems = ['IT012', 'IT015', 'IT018', 'IT019', 'IT020', 'IT024'];
 
         foreach ($unmappedItems as $itemId) {
             $def = ItemDefinition::find($itemId);

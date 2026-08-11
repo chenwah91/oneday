@@ -168,7 +168,10 @@ class EventDefinitionTest extends TestCase
         $this->expectExceptionMessageMatches('/未在 EventCode::CONDITION_METRICS 登记/');
 
         $this->seedWithMutation(function (array &$event) {
-            $event['condition_json']['all'][0]['metric'] = 'threat_level';
+            // 取一个**至今仍无口径**的 metric 作反例:§9.2 EVT_TAX_PROTEST 的「税率偏高」
+            // 一直挂在 unmapped_zh 里,税率政策系统没落地过。
+            //(原本用的 threat_level 已于 M3-D5 W4-B 登记,不再是「未知 metric」)
+            $event['condition_json']['all'][0]['metric'] = 'tax_rate';
         });
     }
 

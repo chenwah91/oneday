@@ -24,6 +24,9 @@ final class ModifierContext
     public const CAP_DEFENSE = 'defense';
     public const CAP_GOVERNANCE = 'governance';
     public const CAP_TRANSPORT = 'transport';
+    // 电力装机容量(M.1):§8 RS017 的 trade_mode 是 capacity_contract —— 电力是产能不是库存,
+    // 所以建筑 output_json 里的 electricity 与仓储 / 人口 / 治理 / 运输一样在内核提取成全城容量
+    public const CAP_POWER = 'power';
 
     public function __construct(
         public readonly int $cityId,

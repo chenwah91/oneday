@@ -276,6 +276,26 @@ class EraService
 
     // ---- 只读查询 ----
 
+    // 某个时代的「国防最低」(§5.1 九档)—— **威胁需求(M3-D5)的唯一来源**。
+    //
+    // 口径:处在时代 N 的城市,它的威胁需求 = 「升出时代 N 所需的国防最低」= REQUIREMENTS[N+1]。
+    // 时代 I 的城市看的就是 §5.1 第一行的 I→II 20,与 backlog 9.E1 批准的
+    // 「threat_requirement(era) = §5.1 的国防最低列(I→II 20、II→III 60、…、IX→X 8000)」逐字对应。
+    // 最高时代 X 没有下一档,沿用最后一档 8000(不新造第十个数字)。
+    //
+    // 为什么开这个访问器而不是让 DefenseService 抄一份九档数字:抄第二份就有两个来源,
+    // 后台改了时代门槛而威胁需求不动(或反过来)——正是 M2 governance_bonus 双口径踩过的坑。
+    public static function defenseRequirement(int $eraOrder): float
+    {
+        $key = max(1, $eraOrder) + 1;
+
+        if (isset(self::REQUIREMENTS[$key])) {
+            return (float) self::REQUIREMENTS[$key]['defense'];
+        }
+
+        return (float) self::REQUIREMENTS[max(array_keys(self::REQUIREMENTS))]['defense'];
+    }
+
     // era_key => era_order(建造/研究闸门共用;era 表只有 10 行,查一次很便宜)
     public static function orders(): array
     {

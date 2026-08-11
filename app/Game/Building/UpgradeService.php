@@ -117,7 +117,11 @@ class UpgradeService
             // 影响行数校验:防止实例在扣款与写状态之间被并发拆除,产生"扣了钱但没开工"的幽灵升级。
             // status 也进 where:并发的第二次升级下单只有一方能把 active 改成 upgrading
             // (升级不自动调整工人:派工由玩家自理,§10.4 用户裁决 2026-08-10;超编对产出无害,workerFactor 封顶 1)
-            $finishedAt = $now->copy()->addSeconds(max(0, (int) $lvl->duration_seconds));
+            // 施工加速(D0.3 的 construction_speed_pct,消费点在 ConstructionService):
+            // 与建造同一条通道 —— §7 / §6.3 的文案是「建造速度」,升级同样是施工
+            $baseSeconds = max(0, (int) $lvl->duration_seconds);
+            $durationSeconds = ConstructionService::plannedSeconds((int) $city->id, $baseSeconds);
+            $finishedAt = $now->copy()->addSeconds($durationSeconds);
             $affected = DB::table('city_building_instances')
                 ->where('id', $instanceId)->where('city_id', $city->id)
                 ->where('status', ConstructionService::STATUS_ACTIVE)
@@ -156,7 +160,9 @@ class UpgradeService
                 'metadata_json' => [
                     'buildingId'      => $inst->building_id,
                     'targetLevel'     => $nextLevel,
-                    'durationSeconds' => (int) $lvl->duration_seconds,
+                    // durationSeconds 记的是**实际**工期(已含施工加速);baseDurationSeconds 是定义值
+                    'durationSeconds' => $durationSeconds,
+                    'baseDurationSeconds' => $baseSeconds,
                     'finishedAt'      => $finishedAt->toIso8601String(),
                 ],
             ]);

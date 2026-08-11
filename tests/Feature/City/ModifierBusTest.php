@@ -32,7 +32,7 @@ use Tests\TestCase;
 //
 // 本文件验的是**结构与契约**,不是玩法数值:
 //   ① 七乘区每一格都恰好有一个 Provider(少一格 = 某些实例会拿到不完整的乘区表);
-//   ② 四个占位槽(power / npc / tool / event)恒 1.0 = 接入前的历史行为;
+//   ② 四个后接线的槽(power / npc / tool / event)在**没有任何投稿**时恒 1.0 = 接入前的历史行为;
 //   ③ 三个已接线槽(worker / tech / logistics)的输出与重构前逐槽一致(黄金样本);
 //   ④ flat 通道在没有投稿者时恒 0.0,有投稿者时按 target 求和;
 //   ⑤ 非产量 target 的消费点登记表唯一且完整(D0.3)。
@@ -106,7 +106,12 @@ class ModifierBusTest extends TestCase
 
     // ---- ② 占位槽恒 1.0 ----
 
-    // power / npc / tool / event 四格在 M3 接入前必须恒为 1.0,否则就是偷偷改了全服产量
+    // power / npc / tool / event 四格在**没有任何投稿**时必须恒为 1.0(= 接入前的历史行为),
+    // 否则就是偷偷改了全服产量。
+    //
+    // 四格如今都已接线(npc W2-A / tool W3-A / event W3-B / power W4-A),但这条不变量仍然成立
+    // 且更重要了:空城(没 NPC、没工具、没事件、没耗电建筑)拿到的必须还是精确的 1.0。
+    // power 那一格的具体曲线与缺电打折在 PowerTest 里逐档验
     public function test_placeholder_slots_return_exactly_one(): void
     {
         $bus = ModifierBus::default();

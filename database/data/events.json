@@ -712,38 +712,46 @@
       "base_weight": 6,
       "cooldown_minutes": 60,
       "duration_minutes": 0,
-      "enabled": false,
-      "disabled_reason": "条件「威胁等级≥中」与损失公式都依赖 D5 国防联动(cities.threat_level + 威胁需求表,W4-B 才落地)。→ Fail Closed 停用",
+      "enabled": true,
+      "disabled_reason": null,
       "condition_desc_zh": "威胁等级≥中",
       "auto_effect_desc_zh": "按威胁需求/国防值计算资源损失",
       "option_a_desc_zh": "动员守军:粮食-300,临时国防+25%",
       "option_b_desc_zh": "支付赎金:资金损失,建筑无损",
       "option_c_desc_zh": "迎击:按国防值结算",
       "condition_json": {
-        "all": [],
-        "unmapped_zh": ["威胁等级≥中:threat_level 由 D5(W4-B)落地"]
+        "all": [
+          { "metric": "threat_level", "op": ">=", "value": 1 }
+        ],
+        "unmapped_zh": []
       },
       "auto_effect_json": {
-        "effects": [],
-        "unmapped_zh": ["按威胁需求/国防值计算资源损失:公式见 backlog 9.E2,依赖 D5 的威胁需求表"]
+        "effects": [
+          { "kind": "threat_loss_pct" }
+        ],
+        "unmapped_zh": []
       },
       "options_json": {
         "a": {
           "label_zh": "动员守军",
           "effects": [
-            { "kind": "resource_delta", "resource": "food", "value": -300 }
+            { "kind": "resource_delta", "resource": "food", "value": -300 },
+            { "kind": "modifier", "target": "defense_score_pct", "scope": "city", "value": 0.25 }
           ],
-          "unmapped_zh": ["临时国防+25%:国防值是容量类产出,不经乘区"]
+          "unmapped_zh": []
         },
         "b": {
           "label_zh": "支付赎金",
-          "effects": [],
-          "unmapped_zh": ["资金损失:金额取决于 D5 的损失公式"]
+          "effects": [
+            { "kind": "loss_set_pct", "value": 0 },
+            { "kind": "threat_loss_pct", "resource": "money" }
+          ],
+          "unmapped_zh": []
         },
         "c": {
           "label_zh": "迎击",
           "effects": [],
-          "unmapped_zh": ["按国防值结算:同上"]
+          "unmapped_zh": []
         }
       }
     },
@@ -757,8 +765,8 @@
       "base_weight": 5,
       "cooldown_minutes": 75,
       "duration_minutes": 20,
-      "enabled": false,
-      "disabled_reason": "「国防需求+30%」的落点是 D5 的威胁需求表(W4-B 才落地);国防值本身是容量类产出,不经乘区。→ Fail Closed 停用",
+      "enabled": true,
+      "disabled_reason": null,
       "condition_desc_zh": "人口≥3000",
       "auto_effect_desc_zh": "国防需求+30%",
       "option_a_desc_zh": "加强防务:维护+15%,国防+20%",
@@ -771,14 +779,18 @@
         "unmapped_zh": []
       },
       "auto_effect_json": {
-        "effects": [],
-        "unmapped_zh": ["国防需求+30%:威胁需求表由 D5(W4-B)落地"]
+        "effects": [
+          { "kind": "modifier", "target": "threat_demand_pct", "scope": "city", "value": 0.30 }
+        ],
+        "unmapped_zh": []
       },
       "options_json": {
         "a": {
           "label_zh": "加强防务",
-          "effects": [],
-          "unmapped_zh": ["维护+15%:消费点排在 W3-A", "国防+20%:国防值是容量类产出,不经乘区"]
+          "effects": [
+            { "kind": "modifier", "target": "defense_score_pct", "scope": "city", "value": 0.20 }
+          ],
+          "unmapped_zh": ["维护+15%:maintenance_cost_pct 的消费点在结算内核(W4-A 同期接线中),W4-B 不依赖并行波次的在途改动,保持未生效"]
         },
         "b": {
           "label_zh": "外交缓和",
@@ -943,33 +955,41 @@
       "base_weight": 5,
       "cooldown_minutes": 50,
       "duration_minutes": 8,
-      "enabled": false,
-      "disabled_reason": "整条依赖电力系统(M.1,W4-A):power 乘区至今恒 1.0,「电力使用率」也还没有口径。→ Fail Closed 停用,电力落地后开启即可",
+      "enabled": true,
+      "disabled_reason": null,
       "condition_desc_zh": "电力使用率>85%",
       "auto_effect_desc_zh": "全城电力可用量-40%",
       "option_a_desc_zh": "启用备用燃料:燃料-300,减益降为-10%",
       "option_b_desc_zh": "工业限电:民生建筑保持运行,工业停机",
       "option_c_desc_zh": "无",
       "condition_json": {
-        "all": [],
-        "unmapped_zh": ["电力使用率>85%:电力系统(M.1 / W4-A)未落地"]
+        "all": [
+          { "metric": "power_usage_rate", "op": ">", "value": 0.85 }
+        ],
+        "unmapped_zh": []
       },
       "auto_effect_json": {
-        "effects": [],
-        "unmapped_zh": ["全城电力可用量-40%:power 乘区由 W4-A 的 PowerService 认领"]
+        "effects": [
+          { "kind": "modifier", "target": "power", "scope": "city", "value": -0.4 }
+        ],
+        "unmapped_zh": []
       },
       "options_json": {
         "a": {
           "label_zh": "启用备用燃料",
           "effects": [
-            { "kind": "resource_delta", "resource": "fuel", "value": -300 }
+            { "kind": "resource_delta", "resource": "fuel", "value": -300 },
+            { "kind": "modifier_set_value", "target": "power", "value": -0.1 }
           ],
-          "unmapped_zh": ["减益降为-10%:依赖上面那条电力减益"]
+          "unmapped_zh": []
         },
         "b": {
           "label_zh": "工业限电",
-          "effects": [],
-          "unmapped_zh": ["民生保供 / 工业停机:同上"]
+          "effects": [
+            { "kind": "modifier_set_value", "target": "power", "value": 0 },
+            { "kind": "modifier", "target": "event", "scope": "building_category", "scope_key": "processing", "value": -1.0 }
+          ],
+          "unmapped_zh": ["「民生建筑保持运行」按「解除全城电力减益」落地;「工业停机」按 category=processing 停产落地。§9.2 没有给「工业 / 民生」的建筑分类口径,这是一次口径折算"]
         },
         "c": null
       }

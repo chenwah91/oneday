@@ -130,8 +130,12 @@ class BuildService
             // M2-C5 施工计时(v3.2 §16.3):落地即 constructing,完工时刻 = 服务器当前时间 + L1 duration_seconds。
             // 扣费仍是即时的(§16.3「资源在事务内扣除」);建筑要等懒完工翻正成 active 之后才进生产集合。
             // finished_at 一律用服务器时间算,客户端改时间不可能提前完工
+            // 施工加速(D0.3 的 construction_speed_pct,消费点在 ConstructionService):
+            // 建造类 NPC 特性与建造工具会缩短工期。锁内取一次值,与资源校验同一批读数
             $now = now();
-            $finishedAt = $now->copy()->addSeconds(max(0, (int) $lvl->duration_seconds));
+            $baseSeconds = max(0, (int) $lvl->duration_seconds);
+            $durationSeconds = ConstructionService::plannedSeconds((int) $city->id, $baseSeconds);
+            $finishedAt = $now->copy()->addSeconds($durationSeconds);
             $instanceId = DB::table('city_building_instances')->insertGetId([
                 'city_id' => $city->id, 'building_id' => $buildingId, 'level' => 1,
                 'x' => $x, 'y' => $y, 'status' => ConstructionService::STATUS_CONSTRUCTING,
@@ -163,7 +167,10 @@ class BuildService
                     'buildingId'      => $buildingId,
                     'x'               => $x,
                     'y'               => $y,
-                    'durationSeconds' => (int) $lvl->duration_seconds,
+                    // durationSeconds 记的是**实际**工期(已含施工加速);baseDurationSeconds 是定义值。
+                    // 两个都记:半年后要能回答「他这栋楼为什么只花了 27 秒」
+                    'durationSeconds' => $durationSeconds,
+                    'baseDurationSeconds' => $baseSeconds,
                     'finishedAt'      => $finishedAt->toIso8601String(),
                 ],
             ]);
