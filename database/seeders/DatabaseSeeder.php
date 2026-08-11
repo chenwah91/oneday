@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             // ---- /M3-NPC ----
 
             // ---- M3-ITEM ----(W3-A:item_definition 24 行)
+            ItemDefinitionSeeder::class,
             // ---- /M3-ITEM ----
 
             // ---- M3-MARKET ----(W1-B / W2-B:market_definition 26 行)
@@ -38,6 +39,7 @@ class DatabaseSeeder extends Seeder
             // ---- /M3-MARKET ----
 
             // ---- M3-EVENT ----(W3-B:event_definition 30 行)
+            EventDefinitionSeeder::class,
             // ---- /M3-EVENT ----
 
             // ---- M3-POWER ----(W4-A:电力若需要独立定义 Seed)

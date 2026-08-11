@@ -388,5 +388,35 @@
         "fee_rate": 0.03,
         "base_liquidity": 41,
         "note": "终局加工资源"
+    },
+    {
+        "rs_code": "RS027",
+        "resource_id": "cement",
+        "market_category": "construction_material",
+        "first_era": "VII",
+        "trade_mode": "spot",
+        "base_price": 14.0,
+        "min_price": 7.7,
+        "max_price": 33.6,
+        "volatility": 0.05,
+        "elasticity": 0.55,
+        "fee_rate": 0.03,
+        "base_liquidity": 2143,
+        "note": "现代建材(RESOURCE_SOURCE_MAPPING §7 新增)"
+    },
+    {
+        "rs_code": "RS028",
+        "resource_id": "medicine",
+        "market_category": "processed_food",
+        "first_era": "V",
+        "trade_mode": "spot",
+        "base_price": 8.0,
+        "min_price": 4.4,
+        "max_price": 19.2,
+        "volatility": 0.05,
+        "elasticity": 0.55,
+        "fee_rate": 0.03,
+        "base_liquidity": 3750,
+        "note": "医疗消耗品(RESOURCE_SOURCE_MAPPING §7 新增,收敛选项①)"
     }
 ]

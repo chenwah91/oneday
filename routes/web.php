@@ -101,6 +101,15 @@ Route::prefix('api')->group(function () {
         // ---- /M3-NPC ----
 
         // ---- M3-ITEM ----(W3-A:制作 / 装备 / 卸下)
+
+        // 制作:扣材料 + 建成一件工具实例(§7 的 crafting_source 与成本全部服务器判定)。
+        // 与建造同档 throttle:api —— 它和建造一样是「花材料换实体」的经济写操作
+        Route::post('/city/item/craft', [\App\Http\Controllers\City\ItemController::class, 'craft'])->middleware('throttle:api');
+
+        // 装备 / 卸下:所有权 + 一件工具一栋楼互斥 + 单栋槽位上限(§7 / B2);卸下保留耐久
+        Route::post('/city/item/equip', [\App\Http\Controllers\City\ItemController::class, 'equip'])->middleware('throttle:api');
+        Route::post('/city/item/unequip', [\App\Http\Controllers\City\ItemController::class, 'unequip'])->middleware('throttle:api');
+
         // ---- /M3-ITEM ----
 
         // ---- M3-MARKET ----(W2-B:GET /market/prices 独立端点 + buy / sell,限流走独立 throttle:market)
@@ -117,7 +126,18 @@ Route::prefix('api')->group(function () {
 
         // ---- /M3-MARKET ----
 
-        // ---- M3-EVENT ----(W3-B:GET /city/events + POST /city/events/{instance}/resolve)
+        // ---- M3-EVENT ----(W3-B:GET /city/events + POST /city/events/resolve)
+
+        // 事件列表:先跑一次结算再返回(事件是懒结算的,不跑就永远不触发)。
+        // 限流挂 throttle:snapshot 而不是 api —— 它和 /api/city 一样会跑完整结算 + 多表联查,
+        // 是最贵的 GET;§48 也明文要求事件接口不能与普通 GET 同一档频率
+        Route::get('/city/events', [\App\Http\Controllers\City\EventController::class, 'index'])->middleware('throttle:snapshot');
+
+        // 结算选项:§70 五道校验(归属 / ACTIVE / 未过期 / choice 合法 / 未领取)+ 幂等 + Revision + 审计。
+        // 入参是 {event_instance_id, choice?} —— 客户端不提交任何奖励数值(§45 / §66)。
+        // 与建造 / 招募同档 throttle:api:它同样是「一次点击 = 一次经济变化」的写操作
+        Route::post('/city/events/resolve', [\App\Http\Controllers\City\EventController::class, 'resolve'])->middleware('throttle:api');
+
         // ---- /M3-EVENT ----
 
         // ---- M3-POWER ----(W4-A:电力系统若需要独立只读端点,放这里;不塞进城市快照)
@@ -156,6 +176,19 @@ Route::prefix('api/admin')->middleware(['auth:web', 'admin', 'throttle:api'])->g
     // 全市场级的开关与系数(停市 / 手续费倍率 / 滑点系数 / 成交量上限)在 /api/admin/settings,不在这里
     Route::get('/definitions/market', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'marketDefinitions'])->middleware('admin:edit_definition');
     Route::post('/definitions/market', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editMarketDefinition'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
+
+    // 工具定义(M3-D2,v3.2 §7 的 24 行):查看 / 调整耐久、效果值、拆解基数。
+    // 与建筑等级 / NPC / 市场同权限(edit_definition):改一行 effect_value 就是改全服产量上限。
+    // 全局规则(装备槽位数 / 每档耐久分钟数 / 预警阈值 / 制作与耐久开关)在 /api/admin/settings,不在这里
+    Route::get('/definitions/items', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'items'])->middleware('admin:edit_definition');
+    Route::post('/definitions/item', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editItem'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
+
+    // 事件定义(M3-D4,v3.2 §9.2 的 30 行):查看 / 逐事件调整开关、权重、冷却、持续时间、效果强度。
+    // 用户 2026-08-10 拍板③「所有事件必须在管理员后台可设定」的落点。
+    // 与其它定义同权限(edit_definition):改一行权重就是改全服的事件频率。
+    // 全局规则(触发概率 / 并发上限 / 离线补算上限 / 权重三修正系数)在 /api/admin/settings,不在这里
+    Route::get('/definitions/events', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'events'])->middleware('admin:edit_definition');
+    Route::post('/definitions/event', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editEvent'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
 
     // 管理员补偿(CLAUDE §80 / E7):查目标城市余额 / 提交补偿。
     // 权限 adjust_resource(game_master 及以上);写入端点再叠一层 admin_write 限流,

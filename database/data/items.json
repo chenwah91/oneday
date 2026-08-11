@@ -1,0 +1,269 @@
+{
+  "_source": "docs/templates/v3.2.md §7 道具 / 工具规则(24 行逐行照抄)。数值不得在这里改;改数值走后台 AdminDefinitionController 并 bump game_data_version。",
+  "_effect_note": "effect_json 的结构化口径见 backlog §9 B3(建议默认值已批):产量类(*_output_pct / *_efficiency_pct / industry_output_pct)进 tool 乘区;其余进 ModifierTarget::CONSUMPTION_POINTS 已登记的消费点。映射不到已登记 target 的效果(国防 flat / 医疗 / 运输容量 / 资金效率 / 停机 / 巨型工程)原样留在 unmapped_zh,等 D5/W4 等波次登记各自的消费点再提升为 spec —— 不在这里发明 target,也不静默丢弃(与 npcs.json 的 trait_json 同一条纪律)。",
+  "_durability_note": "durability_tier 按 backlog §9 B1(已批):20 分钟档 = industrial_tool / engineering_tool / logistics_tool / planning_tool / research_tool(min_era ≥ IX);其余 10 分钟档;medical_item 为一次性消耗品(durability 即使用次数,durability_mode = uses,不随工作分钟递减)。每档实际几分钟扣 1 点由 game_settings 的 item_durability_minutes_normal / _industrial 决定,不在这里写死。",
+  "_crafting_note": "crafting_source_desc_zh 是 §7 原文;crafting_building_id 只在 94 栋建筑里能**精确对上名字**时才填。对不上的(木工作坊 / 石工作坊 / 工坊 / 研究院 / 现代工厂)填进 crafting_unmapped_zh,不发明映射;手工制作两件则两列皆空 = §7 明文的「无需建筑」。",
+
+  "items": [
+    {
+      "item_id": "IT001", "name_key": "item.IT001.name", "category": "gathering_tool", "min_era": "I",
+      "equip_target_desc_zh": "伐木工", "durability": 60, "durability_tier": "normal", "durability_mode": "work_minutes",
+      "effect_code": "wood_output_pct", "effect_value": 8, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.08, "scope_key": "wood" }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "wood": 4, "stone": 2, "money": 2 },
+      "crafting_source_desc_zh": "手工制作", "crafting_building_id": null, "crafting_unmapped_zh": null,
+      "trade_value": 8, "note": "早期工具"
+    },
+    {
+      "item_id": "IT002", "name_key": "item.IT002.name", "category": "hunting_tool", "min_era": "I",
+      "equip_target_desc_zh": "猎人", "durability": 50, "durability_tier": "normal", "durability_mode": "work_minutes",
+      "effect_code": "hunting_output_pct", "effect_value": 8, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.08, "scope_key": "berries" }
+      ], "unmapped_zh": ["§7 note_zh「也可提高基础防御」:国防 flat 通道尚未登记 target(W4-B),本波不发明"] },
+      "craft_cost": { "wood": 3, "stone": 3, "money": 2 },
+      "crafting_source_desc_zh": "手工制作", "crafting_building_id": null, "crafting_unmapped_zh": null,
+      "trade_value": 7, "note": "也可提高基础防御"
+    },
+    {
+      "item_id": "IT003", "name_key": "item.IT003.name", "category": "agriculture_tool", "min_era": "II",
+      "equip_target_desc_zh": "农夫", "durability": 80, "durability_tier": "normal", "durability_mode": "work_minutes",
+      "effect_code": "agriculture_output_pct", "effect_value": 10, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "tool", "scope": "building_category", "op": "pct", "value": 0.10, "scope_key": "food_production" }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "wood": 8, "stone": 2, "money": 5 },
+      "crafting_source_desc_zh": "木工作坊", "crafting_building_id": null, "crafting_unmapped_zh": "木工作坊",
+      "trade_value": 15, "note": "基础农业工具"
+    },
+    {
+      "item_id": "IT004", "name_key": "item.IT004.name", "category": "processing_tool", "min_era": "II",
+      "equip_target_desc_zh": "磨坊工", "durability": 100, "durability_tier": "normal", "durability_mode": "work_minutes",
+      "effect_code": "milling_efficiency_pct", "effect_value": 10, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.10, "scope_key": "flour" }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "wood": 2, "stone": 8, "money": 6 },
+      "crafting_source_desc_zh": "石工作坊", "crafting_building_id": null, "crafting_unmapped_zh": "石工作坊",
+      "trade_value": 18, "note": "降低加工损耗"
+    },
+    {
+      "item_id": "IT005", "name_key": "item.IT005.name", "category": "construction_tool", "min_era": "II",
+      "equip_target_desc_zh": "建筑工", "durability": 90, "durability_tier": "normal", "durability_mode": "work_minutes",
+      "effect_code": "construction_speed_pct", "effect_value": 8, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "construction_speed_pct", "scope": "city", "op": "pct", "value": 0.08 }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "wood": 7, "stone": 2, "money": 8 },
+      "crafting_source_desc_zh": "木工作坊", "crafting_building_id": null, "crafting_unmapped_zh": "木工作坊",
+      "trade_value": 20, "note": "建筑工具"
+    },
+    {
+      "item_id": "IT006", "name_key": "item.IT006.name", "category": "mining_tool", "min_era": "III",
+      "equip_target_desc_zh": "矿工", "durability": 110, "durability_tier": "normal", "durability_mode": "work_minutes",
+      "effect_code": "mining_output_pct", "effect_value": 14, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.14, "scope_key": "copper" },
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.14, "scope_key": "tin" },
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.14, "scope_key": "iron" },
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.14, "scope_key": "coal" },
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.14, "scope_key": "oil" },
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.14, "scope_key": "rare_metals" }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "wood": 4, "stone": 2, "copper": 2, "bronze": 8, "money": 15 },
+      "crafting_source_desc_zh": "青铜作坊", "crafting_building_id": "P03", "crafting_unmapped_zh": null,
+      "trade_value": 35, "note": "青铜时代矿业"
+    },
+    {
+      "item_id": "IT007", "name_key": "item.IT007.name", "category": "processing_tool", "min_era": "III",
+      "equip_target_desc_zh": "铸造师", "durability": 100, "durability_tier": "normal", "durability_mode": "work_minutes",
+      "effect_code": "bronze_output_pct", "effect_value": 12, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.12, "scope_key": "bronze" }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "stone": 8, "copper": 2, "bronze": 6, "money": 18 },
+      "crafting_source_desc_zh": "青铜作坊", "crafting_building_id": "P03", "crafting_unmapped_zh": null,
+      "trade_value": 38, "note": "降低金属损耗"
+    },
+    {
+      "item_id": "IT008", "name_key": "item.IT008.name", "category": "defense_equipment", "min_era": "III",
+      "equip_target_desc_zh": "青铜卫士", "durability": 120, "durability_tier": "normal", "durability_mode": "work_minutes",
+      "effect_code": "defense_score_flat", "effect_value": 8, "unit": "flat",
+      "effect_json": { "specs": [], "unmapped_zh": ["国防值 flat(+8):ModifierTarget 尚无 defense_score_flat 这一 target,消费点由 W4-B(D5 国防联动)登记后再提升为 spec"] },
+      "craft_cost": { "wood": 3, "bronze": 10, "money": 20 },
+      "crafting_source_desc_zh": "青铜作坊", "crafting_building_id": "P03", "crafting_unmapped_zh": null,
+      "trade_value": 40, "note": "简单装备数值"
+    },
+    {
+      "item_id": "IT009", "name_key": "item.IT009.name", "category": "mining_tool", "min_era": "IV",
+      "equip_target_desc_zh": "矿工", "durability": 160, "durability_tier": "normal", "durability_mode": "work_minutes",
+      "effect_code": "mining_output_pct", "effect_value": 18, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.18, "scope_key": "copper" },
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.18, "scope_key": "tin" },
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.18, "scope_key": "iron" },
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.18, "scope_key": "coal" },
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.18, "scope_key": "oil" },
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.18, "scope_key": "rare_metals" }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "wood": 4, "stone": 2, "iron": 8, "money": 25 },
+      "crafting_source_desc_zh": "铁匠铺", "crafting_building_id": "P05", "crafting_unmapped_zh": null,
+      "trade_value": 55, "note": "铁器工具"
+    },
+    {
+      "item_id": "IT010", "name_key": "item.IT010.name", "category": "processing_tool", "min_era": "IV",
+      "equip_target_desc_zh": "铁匠", "durability": 150, "durability_tier": "normal", "durability_mode": "work_minutes",
+      "effect_code": "iron_processing_efficiency_pct", "effect_value": 15, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.15, "scope_key": "iron_tools" }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "wood": 4, "stone": 4, "iron": 12, "money": 30 },
+      "crafting_source_desc_zh": "铁匠铺", "crafting_building_id": "P05", "crafting_unmapped_zh": null,
+      "trade_value": 65, "note": "核心铁匠工具"
+    },
+    {
+      "item_id": "IT011", "name_key": "item.IT011.name", "category": "agriculture_tool", "min_era": "V",
+      "equip_target_desc_zh": "农夫", "durability": 180, "durability_tier": "normal", "durability_mode": "work_minutes",
+      "effect_code": "agriculture_output_pct", "effect_value": 16, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "tool", "scope": "building_category", "op": "pct", "value": 0.16, "scope_key": "food_production" }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "wood": 8, "stone": 2, "iron": 10, "money": 35 },
+      "crafting_source_desc_zh": "铁匠铺", "crafting_building_id": "P05", "crafting_unmapped_zh": null,
+      "trade_value": 70, "note": "大型农庄适用"
+    },
+    {
+      "item_id": "IT012", "name_key": "item.IT012.name", "category": "medical_item", "min_era": "V",
+      "equip_target_desc_zh": "医师", "durability": 20, "durability_tier": "normal", "durability_mode": "uses",
+      "effect_code": "disease_recovery_pct", "effect_value": 15, "unit": "percent",
+      "effect_json": { "specs": [], "unmapped_zh": ["疾病恢复(+15%):ModifierTarget 尚无医疗类消费点(§6.1 的 SKILL_MEDICINE 同样留空),等医疗系统波次登记"] },
+      "craft_cost": { "wood": 2, "stone": 1, "iron": 2, "money": 30 },
+      "crafting_source_desc_zh": "医馆", "crafting_building_id": "M01", "crafting_unmapped_zh": null,
+      "trade_value": 45, "note": "消耗型道具"
+    },
+    {
+      "item_id": "IT013", "name_key": "item.IT013.name", "category": "construction_tool", "min_era": "VI",
+      "equip_target_desc_zh": "建筑工", "durability": 200, "durability_tier": "normal", "durability_mode": "work_minutes",
+      "effect_code": "construction_speed_pct", "effect_value": 15, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "construction_speed_pct", "scope": "city", "op": "pct", "value": 0.15 }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "wood": 8, "stone": 4, "iron": 10, "money": 45 },
+      "crafting_source_desc_zh": "工坊", "crafting_building_id": null, "crafting_unmapped_zh": "工坊",
+      "trade_value": 85, "note": "中世纪大型建筑"
+    },
+    {
+      "item_id": "IT014", "name_key": "item.IT014.name", "category": "academic_item", "min_era": "VI",
+      "equip_target_desc_zh": "学者/教授", "durability": 80, "durability_tier": "normal", "durability_mode": "work_minutes",
+      "effect_code": "knowledge_output_pct", "effect_value": 10, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.10, "scope_key": "knowledge" }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "wood": 4, "money": 60 },
+      "crafting_source_desc_zh": "大学", "crafting_building_id": "K03", "crafting_unmapped_zh": null,
+      "trade_value": 90, "note": "可作为贸易品"
+    },
+    {
+      "item_id": "IT015", "name_key": "item.IT015.name", "category": "commerce_item", "min_era": "VII",
+      "equip_target_desc_zh": "银行家", "durability": 120, "durability_tier": "normal", "durability_mode": "work_minutes",
+      "effect_code": "money_efficiency_pct", "effect_value": 8, "unit": "percent",
+      "effect_json": { "specs": [], "unmapped_zh": ["资金效率(+8%):没有任何建筑把 money 当 output 产出,也没有登记「资金效率」消费点;市场手续费走 market_fee_pct 属另一件事,不擅自改挂"] },
+      "craft_cost": { "wood": 2, "money": 80 },
+      "crafting_source_desc_zh": "银行", "crafting_building_id": "C03", "crafting_unmapped_zh": null,
+      "trade_value": 120, "note": "金融职业道具"
+    },
+    {
+      "item_id": "IT016", "name_key": "item.IT016.name", "category": "engineering_tool", "min_era": "VII",
+      "equip_target_desc_zh": "机械师", "durability": 180, "durability_tier": "industrial", "durability_mode": "work_minutes",
+      "effect_code": "maintenance_cost_reduction_pct", "effect_value": 8, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "maintenance_cost_pct", "scope": "city", "op": "pct", "value": -0.08 }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "wood": 2, "stone": 2, "iron": 8, "money": 90 },
+      "crafting_source_desc_zh": "研究院", "crafting_building_id": null, "crafting_unmapped_zh": "研究院",
+      "trade_value": 140, "note": "提高机械维护效率"
+    },
+    {
+      "item_id": "IT017", "name_key": "item.IT017.name", "category": "industrial_tool", "min_era": "VIII",
+      "equip_target_desc_zh": "工业工程师", "durability": 260, "durability_tier": "industrial", "durability_mode": "work_minutes",
+      "effect_code": "industry_output_pct", "effect_value": 18, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "tool", "scope": "building_category", "op": "pct", "value": 0.18, "scope_key": "processing" }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "iron": 8, "steel": 20, "money": 140 },
+      "crafting_source_desc_zh": "机械厂", "crafting_building_id": "P08", "crafting_unmapped_zh": null,
+      "trade_value": 220, "note": "工业核心工具"
+    },
+    {
+      "item_id": "IT018", "name_key": "item.IT018.name", "category": "logistics_tool", "min_era": "VIII",
+      "equip_target_desc_zh": "铁路调度员", "durability": 220, "durability_tier": "industrial", "durability_mode": "work_minutes",
+      "effect_code": "transport_capacity_pct", "effect_value": 15, "unit": "percent",
+      "effect_json": { "specs": [], "unmapped_zh": ["运输容量(+15%):ModifierTarget 尚无运输容量消费点(§6.1 的 SKILL_LOGISTICS 同样留空),等物流波次登记"] },
+      "craft_cost": { "wood": 2, "steel": 15, "money": 160 },
+      "crafting_source_desc_zh": "机械厂", "crafting_building_id": "P08", "crafting_unmapped_zh": null,
+      "trade_value": 240, "note": "铁路效率"
+    },
+    {
+      "item_id": "IT019", "name_key": "item.IT019.name", "category": "engineering_tool", "min_era": "IX",
+      "equip_target_desc_zh": "自动化工程师", "durability": 300, "durability_tier": "industrial", "durability_mode": "work_minutes",
+      "effect_code": "downtime_reduction_pct", "effect_value": 20, "unit": "percent",
+      "effect_json": { "specs": [], "unmapped_zh": ["停机时间减少(-20%):项目里没有「停机」这个状态量(半停工由 §10.5 的欠费率决定),没有可挂的消费点"] },
+      "craft_cost": { "steel": 15, "electronic_components": 8, "money": 260 },
+      "crafting_source_desc_zh": "现代工厂", "crafting_building_id": null, "crafting_unmapped_zh": "现代工厂",
+      "trade_value": 420, "note": "现代维护工具"
+    },
+    {
+      "item_id": "IT020", "name_key": "item.IT020.name", "category": "medical_item", "min_era": "IX",
+      "equip_target_desc_zh": "外科医生", "durability": 30, "durability_tier": "normal", "durability_mode": "uses",
+      "effect_code": "medical_efficiency_pct", "effect_value": 20, "unit": "percent",
+      "effect_json": { "specs": [], "unmapped_zh": ["医疗效率(+20%):同 IT012,医疗类消费点尚未登记"] },
+      "craft_cost": { "steel": 2, "electronic_components": 5, "money": 180 },
+      "crafting_source_desc_zh": "医院", "crafting_building_id": "M02", "crafting_unmapped_zh": null,
+      "trade_value": 260, "note": "消耗型"
+    },
+    {
+      "item_id": "IT021", "name_key": "item.IT021.name", "category": "research_tool", "min_era": "IX",
+      "equip_target_desc_zh": "研究科学家", "durability": 250, "durability_tier": "industrial", "durability_mode": "work_minutes",
+      "effect_code": "knowledge_output_pct", "effect_value": 22, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.22, "scope_key": "knowledge" }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "steel": 20, "electronic_components": 12, "money": 350 },
+      "crafting_source_desc_zh": "科研中心", "crafting_building_id": "K04", "crafting_unmapped_zh": null,
+      "trade_value": 500, "note": "现代科研设备"
+    },
+    {
+      "item_id": "IT022", "name_key": "item.IT022.name", "category": "planning_tool", "min_era": "IX",
+      "equip_target_desc_zh": "城市规划师", "durability": 300, "durability_tier": "industrial", "durability_mode": "work_minutes",
+      "effect_code": "governance_efficiency_pct", "effect_value": 10, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "governance_capacity_pct", "scope": "city", "op": "pct", "value": 0.10 }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "steel": 12, "electronic_components": 15, "money": 420 },
+      "crafting_source_desc_zh": "科研中心", "crafting_building_id": "K04", "crafting_unmapped_zh": null,
+      "trade_value": 600, "note": "降低城市管理压力"
+    },
+    {
+      "item_id": "IT023", "name_key": "item.IT023.name", "category": "research_tool", "min_era": "X",
+      "equip_target_desc_zh": "首席科学家", "durability": 400, "durability_tier": "industrial", "durability_mode": "work_minutes",
+      "effect_code": "knowledge_output_pct", "effect_value": 35, "unit": "percent",
+      "effect_json": { "specs": [
+        { "target": "tool", "scope": "resource", "op": "pct", "value": 0.35, "scope_key": "knowledge" }
+      ], "unmapped_zh": [] },
+      "craft_cost": { "steel": 30, "electronic_components": 35, "money": 800 },
+      "crafting_source_desc_zh": "超级科研中心", "crafting_building_id": "K05", "crafting_unmapped_zh": null,
+      "trade_value": 1200, "note": "终局科研道具"
+    },
+    {
+      "item_id": "IT024", "name_key": "item.IT024.name", "category": "engineering_tool", "min_era": "X",
+      "equip_target_desc_zh": "超级工程总监", "durability": 450, "durability_tier": "industrial", "durability_mode": "work_minutes",
+      "effect_code": "megaproject_speed_pct", "effect_value": 25, "unit": "percent",
+      "effect_json": { "specs": [], "unmapped_zh": ["巨型工程速度(+25%):项目里没有「巨型工程」这一类建造流程,construction_speed_pct 是通用工期不是巨型工程专属,不擅自合并"] },
+      "craft_cost": { "steel": 40, "electronic_components": 40, "money": 1000 },
+      "crafting_source_desc_zh": "先进材料厂", "crafting_building_id": "P11", "crafting_unmapped_zh": null,
+      "trade_value": 1500, "note": "终局专属"
+    }
+  ]
+}

@@ -192,6 +192,41 @@
         </form>
       </section>
 
+      <!-- 随机事件定义(M3-D4,权限 edit_definition):用户拍板「所有事件必须在管理员后台可设定」。
+           30 条逐行可改:开关 / 权重 / 冷却 / 持续时间 / 效果强度倍率。
+           全局参数(触发概率、并发上限、离线补算上限、权重三修正系数)在下面的「规则开关」面板里 -->
+      <section id="event-def-panel" class="panel hidden">
+        <div class="panel-header">
+          <h2>随机事件定义</h2>
+          <div class="panel-actions">
+            <input id="event-def-reason" type="text" placeholder="修改原因(必填,2-80 字)" maxlength="80">
+            <button id="event-def-refresh" type="button" class="btn btn-ghost">刷新</button>
+          </div>
+        </div>
+        <div id="event-def-status" class="status muted"></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>event_id</th>
+                <th>名称 / 类别</th>
+                <th>时代</th>
+                <th>启用</th>
+                <th>权重</th>
+                <th>冷却(分)</th>
+                <th>持续(分)</th>
+                <th>效果强度</th>
+                <th>效果落地</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="event-def-table"></tbody>
+          </table>
+        </div>
+        <div id="event-def-error" class="auth-error hidden"></div>
+        <div id="event-def-result" class="def-result hidden"></div>
+      </section>
+
       <!-- 玩家补偿(权限 adjust_resource:game_master 及以上;无权限时整块隐藏) -->
       <section id="comp-panel" class="panel hidden">
         <div class="panel-header">

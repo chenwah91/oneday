@@ -35,14 +35,14 @@ class MarketAdminTest extends TestCase
         return User::create(['username' => 'mktplayer', 'name' => 'mktplayer', 'email' => 'mp@example.com', 'password' => 'password123']);
     }
 
-    // ---- 读:26 行全量 ----
+    // ---- 读:28 行全量(§8 的 26 行 + RS027 水泥 / RS028 药品)----
 
     public function test_admin_can_list_all_market_definitions(): void
     {
         $res = $this->actingAs($this->admin())->getJson('/api/admin/definitions/market');
 
         $res->assertOk();
-        $this->assertCount(26, $res->json('data.market'));
+        $this->assertCount(28, $res->json('data.market'));
 
         $iron = collect($res->json('data.market'))->firstWhere('resource_id', 'iron');
         $this->assertSame('RS012', $iron['rs_code']);

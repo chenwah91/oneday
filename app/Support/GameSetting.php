@@ -131,6 +131,86 @@ final class GameSetting
     // A6 工作 XP 速率
     public const NPC_XP_PER_MIN = 'npc_xp_per_min';
 
+    // ---------- M3-D2 工具 / 道具规则参数(backlog §9 B 区批准的建议默认值)----------
+    //
+    // 同 NPC 的分工:**逐工具**的数值(耐久点数 / 效果值 / 拆解基数)在 item_definition 定义表里,
+    // 后台按行改并 bump game_data_version;这里登记的是**全局**规则参数 ——
+    // 「一改就影响全服工具」的那一档(槽位数 / 每档几分钟扣 1 点 / 预警阈值 / 两个总开关)。
+    // 两者刻意不重叠:同一个数不允许有两个来源。
+    //
+    // 不在这里的两类数:
+    //   ① §7 的耐久档位(normal / industrial)是**定义数据**(由 category 决定,见 B1)→ item_definition;
+    //   ② §13 的乘区总帽仍然只在 SimulationService::multiplierProduct(),工具侧不设第二道帽。
+
+    // 制作总开关:关掉后 craft 一律 ITEM_CRAFT_DISABLED(与 market_enabled 同款的一键停机)
+    public const ITEM_CRAFT_ENABLED = 'item_craft_enabled';
+
+    // 耐久总开关:关掉后耐久不再随工作分钟递减(运营救急:耐久算错时先止血再修)
+    public const ITEM_DURABILITY_ENABLED = 'item_durability_enabled';
+
+    // B2 单栋建筑装备槽位数
+    public const ITEM_SLOTS_PER_BUILDING = 'item_slots_per_building';
+
+    // §7 + B1 两个耐久档「多少分钟工作扣 1 点」
+    public const ITEM_DURABILITY_MINUTES_NORMAL = 'item_durability_minutes_normal';
+    public const ITEM_DURABILITY_MINUTES_INDUSTRIAL = 'item_durability_minutes_industrial';
+
+    // B4 耐久预警阈值(剩余耐久比例低于本值即在快照里打标)
+    public const ITEM_DURABILITY_WARNING_PCT = 'item_durability_warning_pct';
+
+    // ---------- M3-D4 随机事件全局参数(backlog §9 D 区批准的建议默认值)----------
+    //
+    // 分工与市场 / NPC / 工具完全一致,只是这次用户点名加了一条硬约束(2026-08-10 拍板③):
+    // **所有事件必须在管理员后台可设定**。落地成两条互不重叠的路径:
+    //   ① **逐事件**的开关 / 权重 / 持续时间 / 冷却 / 效果强度 → event_definition 表,后台按行改(bump 数值版本);
+    //   ② **全局**的触发频率 / 并发上限 / 离线补算上限 / 权重三修正系数 → 这里,一改影响全服。
+    // 同一个数不允许有两个来源:基础权重在定义表,乘在它上面的三个修正系数在这里。
+
+    // 全事件总开关:关掉后不再触发新事件(已生效的实例照常到期,不强制清场)
+    public const EVENT_ENABLED = 'event_enabled';
+
+    // 资格窗口秒数(§9.1「60 秒资格窗口」)。与市场共用同一个 EPOCH 原点(Unix 0),窗长各自定义(9.D5 批准)
+    public const EVENT_WINDOW_SECONDS = 'event_window_seconds';
+
+    // 单窗基础触发概率(§9.1 建议 8%)
+    public const EVENT_TRIGGER_CHANCE = 'event_trigger_chance';
+
+    // 并发上限(§9.1「同一时间最多 3 个,其中灾害/国防类最多 1 个」)
+    public const EVENT_MAX_ACTIVE = 'event_max_active';
+    public const EVENT_MAX_ACTIVE_DISASTER = 'event_max_active_disaster';
+
+    // 离线补算上限(9.D3 批准:离线期间最多补 3 次)
+    public const EVENT_OFFLINE_MAX_TRIGGERS = 'event_offline_max_triggers';
+
+    // 难度修正(§9.1 权重公式的第三个系数;9.D2 批准 M3 恒 1.0,留位给将来的难度选择)
+    public const EVENT_DIFFICULTY_MULTIPLIER = 'event_difficulty_multiplier';
+
+    // 城市状态修正(§9.1 权重公式的第二个系数,9.D2 批准的七条)
+    public const EVENT_WEIGHT_FOOD_DEFICIT = 'event_weight_food_deficit';
+    public const EVENT_WEIGHT_FISCAL_DEFICIT = 'event_weight_fiscal_deficit';
+    public const EVENT_WEIGHT_GOVERNANCE_OVERLOAD = 'event_weight_governance_overload';
+    public const EVENT_WEIGHT_LOW_SECURITY = 'event_weight_low_security';
+    public const EVENT_WEIGHT_HIGH_HAPPINESS = 'event_weight_high_happiness';
+    public const EVENT_WEIGHT_HIGH_HEALTH = 'event_weight_high_health';
+    public const EVENT_WEIGHT_DEFENSE_OK = 'event_weight_defense_ok';
+
+    // 上面七条修正各自的判定阈值(9.D2 原文里的「治安<65 / happiness ≥75 / health ≥80」)
+    public const EVENT_LOW_SECURITY_THRESHOLD = 'event_low_security_threshold';
+    public const EVENT_HIGH_HAPPINESS_THRESHOLD = 'event_high_happiness_threshold';
+    public const EVENT_HIGH_HEALTH_THRESHOLD = 'event_high_health_threshold';
+    public const EVENT_DEFENSE_OK_SECURITY_MIN = 'event_defense_ok_security_min';
+    public const EVENT_GOVERNANCE_OVERLOAD_LOAD = 'event_governance_overload_load';
+
+    // 瞬时治安冲击的持续时长:security 是 §10.8 的派生值,没有「当前值」可改,
+    // 只能走 security_flat 通道,而 flat 必须有起止 → duration=0 的事件用这个时长
+    public const EVENT_INSTANT_SECURITY_MINUTES = 'event_instant_security_minutes';
+
+    // duration=0 且带选项的事件,留给玩家做选择的时长(过了自动作废)
+    public const EVENT_CHOICE_WINDOW_MINUTES = 'event_choice_window_minutes';
+
+    // 「高技能 NPC」的等级门槛(§6 未定义,EVT_BRAIN_DRAIN 的条件要用)
+    public const EVENT_NPC_HIGH_SKILL_LEVEL = 'event_npc_high_skill_level';
+
     // ---------- 设定类型 ----------
 
     // 布尔开关(true / false 二选一)
@@ -504,6 +584,201 @@ final class GameSetting
             'min'         => 0,
             'max'         => 100000,
             'description' => '已派驻 NPC 的工作 XP 速率(每分钟,A6 = 10 XP / 60 秒)。未派驻的 NPC 不涨 XP;升级曲线见 npc_skill_level_curve',
+        ],
+
+        // ---- M3-D2 工具规则参数(默认值 = backlog §9 B 区已批准口径,逐条对照见交付汇报)----
+
+        self::ITEM_CRAFT_ENABLED => [
+            'default'     => true,
+            'type'        => self::TYPE_BOOL,
+            'description' => '工具制作总开关:关闭后所有 craft 立即返回 ITEM_CRAFT_DISABLED(经济出事时一键停产),已制作的工具不受影响',
+        ],
+        self::ITEM_DURABILITY_ENABLED => [
+            'default'     => true,
+            'type'        => self::TYPE_BOOL,
+            'description' => '工具耐久总开关:关闭后耐久不再随工作分钟递减(运营救急用),已损毁的工具不会因此复活',
+        ],
+        self::ITEM_SLOTS_PER_BUILDING => [
+            'default'     => 2,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 20,
+            'description' => '单栋建筑的工具装备槽位数(B2 = 2):装满了返回 ITEM_SLOT_FULL。同 category 只有效果最高的那件生效,第二件不报错也不生效(§7)',
+        ],
+        self::ITEM_DURABILITY_MINUTES_NORMAL => [
+            'default'     => 10,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 1,
+            'max'         => 100000,
+            'description' => '普通档工具「多少分钟工作扣 1 点耐久」(§7 = 10)。只算建筑真正在工作的分钟:停产 / 缺料 / 欠费半停工都不扣',
+        ],
+        self::ITEM_DURABILITY_MINUTES_INDUSTRIAL => [
+            'default'     => 20,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 1,
+            'max'         => 100000,
+            'description' => '工业/电子档工具「多少分钟工作扣 1 点耐久」(§7 = 20)。档位划分见 B1,写在 item_definition.durability_tier 上',
+        ],
+        self::ITEM_DURABILITY_WARNING_PCT => [
+            'default'     => 0.2,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 1,
+            'description' => '耐久预警阈值(B4 = 0.2 即剩余 20%):快照里给低于本值的已装备工具打 durability_warning 标记,供前端提示玩家提前补件',
+        ],
+
+        // ---- M3-D4 随机事件全局参数(默认值 = 9.D 区已批准口径,逐条对照见交付汇报)----
+        self::EVENT_ENABLED => [
+            'default'     => true,
+            'type'        => self::TYPE_BOOL,
+            'description' => '随机事件总开关:关闭后不再触发任何新事件(已生效的实例照常到期消退,不强制清场)。事件出问题时的一键止血',
+        ],
+        self::EVENT_WINDOW_SECONDS => [
+            'default'     => 60,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 10,
+            'max'         => 3600,
+            'description' => '资格窗口秒数(§9.1 = 60):每经过一个整窗掷一次触发点。与市场共用 EPOCH 原点(Unix 0),窗长各自定义(9.D5)',
+        ],
+        self::EVENT_TRIGGER_CHANCE => [
+            'default'     => 0.08,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 1,
+            'description' => '单个资格窗口的基础触发概率(§9.1 = 0.08 即 8%)。调到 0 等于停掉触发,但不影响已生效实例',
+        ],
+        self::EVENT_MAX_ACTIVE => [
+            'default'     => 3,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 20,
+            'description' => '单城同时生效的事件上限(§9.1 = 3):已满时该窗掷中也不触发,不排队、不补发',
+        ],
+        self::EVENT_MAX_ACTIVE_DISASTER => [
+            'default'     => 1,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 20,
+            'description' => '灾害 / 国防类事件的同时生效上限(§9.1 = 1),在总上限之内再收一道',
+        ],
+        self::EVENT_OFFLINE_MAX_TRIGGERS => [
+            'default'     => 3,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '单次结算最多补算几次触发(9.D3 = 3):挂机 12 小时上线时的防雪崩上限,超出的窗口仍逐窗推进冷却但不再生成事件',
+        ],
+        self::EVENT_DIFFICULTY_MULTIPLIER => [
+            'default'     => 1,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 10,
+            'description' => '权重公式的难度修正(§9.1 第三个系数,9.D2 批准 M3 恒 1.0):乘在每个候选事件的权重上,不改变触发概率本身',
+        ],
+        self::EVENT_WEIGHT_FOOD_DEFICIT => [
+            'default'     => 1.5,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '城市状态修正:粮食赤字时,food / agriculture 类事件的权重 ×本值(9.D2 = 1.5)',
+        ],
+        self::EVENT_WEIGHT_FISCAL_DEFICIT => [
+            'default'     => 1.5,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '城市状态修正:财政赤字(fiscal_warning 非 none)时,governance / economy 类事件的权重 ×本值(9.D2 = 1.5)',
+        ],
+        self::EVENT_WEIGHT_GOVERNANCE_OVERLOAD => [
+            'default'     => 2,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '城市状态修正:治理超载时,governance 类事件的权重 ×本值(9.D2 = 2.0)',
+        ],
+        self::EVENT_WEIGHT_LOW_SECURITY => [
+            'default'     => 2,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '城市状态修正:治安低于阈值时,security 类事件的权重 ×本值(9.D2 = 2.0)',
+        ],
+        self::EVENT_WEIGHT_HIGH_HAPPINESS => [
+            'default'     => 0.7,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '城市状态修正:幸福达标时,**全部负面事件**的权重 ×本值(9.D2 = 0.7)。这是「把城市经营好就少挨打」的唯一通道',
+        ],
+        self::EVENT_WEIGHT_HIGH_HEALTH => [
+            'default'     => 0.6,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '城市状态修正:健康达标时,civil 类事件的权重 ×本值(9.D2 = 0.6)',
+        ],
+        self::EVENT_WEIGHT_DEFENSE_OK => [
+            'default'     => 0.5,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '城市状态修正:国防达标时,defense 类事件的权重 ×本值(9.D2 = 0.5)。D5 威胁等级落地前用治安值作代理指标(见下一项)',
+        ],
+        self::EVENT_LOW_SECURITY_THRESHOLD => [
+            'default'     => 65,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '「治安偏低」的判定阈值(9.D2 原文 = 65):低于本值时 security 类事件权重被放大',
+        ],
+        self::EVENT_HIGH_HAPPINESS_THRESHOLD => [
+            'default'     => 75,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '「幸福达标」的判定阈值(9.D2 原文 = 75):达到本值时全部负面事件权重被压低',
+        ],
+        self::EVENT_HIGH_HEALTH_THRESHOLD => [
+            'default'     => 80,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '「健康达标」的判定阈值(9.D2 原文 = 80):达到本值时 civil 类事件权重被压低',
+        ],
+        self::EVENT_DEFENSE_OK_SECURITY_MIN => [
+            'default'     => 65,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '「国防达标」的代理阈值:D5 的 threat_level 尚未落地(W4-B),暂用 §10.8 的治安覆盖值 ≥ 本值近似。D5 上线后改读 threat_level',
+        ],
+        self::EVENT_GOVERNANCE_OVERLOAD_LOAD => [
+            'default'     => 1,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 0,
+            'max'         => 100,
+            'description' => '「治理超载」的判定阈值:治理负载(人口/治理容量)超过本值即视为超载(§10.6 的 1.00 档)',
+        ],
+        self::EVENT_INSTANT_SECURITY_MINUTES => [
+            'default'     => 15,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 1,
+            'max'         => 1440,
+            'description' => '瞬时治安冲击的持续时长:治安是 §10.8 的派生值,没有「当前值」可改,只能走 security_flat 通道,而 flat 必须有起止 → duration=0 的事件按本值给一个时长',
+        ],
+        self::EVENT_CHOICE_WINDOW_MINUTES => [
+            'default'     => 60,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 1,
+            'max'         => 10080,
+            'description' => 'duration=0 且带选项的事件,留给玩家做选择的时长(分钟):过期自动作废,选项不再可领(§70)',
+        ],
+        self::EVENT_NPC_HIGH_SKILL_LEVEL => [
+            'default'     => 6,
+            'type'        => self::TYPE_NUMBER,
+            'min'         => 1,
+            'max'         => 10,
+            'description' => '「高技能 NPC」的等级门槛(§6 未定义,EVT_BRAIN_DRAIN 的触发条件要用):技能等级 ≥ 本值的在编 NPC 计入',
         ],
     ];
 

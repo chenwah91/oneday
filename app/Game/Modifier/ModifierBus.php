@@ -131,14 +131,42 @@ final class ModifierBus
     }
 
     // flat 通道取值(D0.2)。$fromOffset / $toOffset 是「相对结算窗口起点的分钟偏移」
-    // (与 applyLocked 里 foodZeroOffset 等同一套口径),留给 D4 的持续型 modifier
-    // 按段与 starts_at / ends_at 求交用 —— 先把参数留在签名里,免得 D4 回头改内核。
-    // M3 W1 无投稿者,任何区间都返回 0.0 = 接入前的历史行为
+    // (与 applyLocked 里 foodZeroOffset 等同一套口径)。
+    //
+    // 两类投稿在这里汇合(M3-D4 接入后签名不变,内核一个字都没改):
+    //   ① flatSpecs()      整段窗口都成立的投稿(NPC 工资 / 口粮)—— 与区间无关,恒计入;
+    //   ② timedFlatSpecs() 带生效区间的投稿(事件对幸福 / 治安的持续型冲击)——
+    //      由 Provider 自己按 [from, to] 与 starts_at/ends_at 求交后返回。
+    // 区间为 null(调用方不关心时间)时只取 ①:没有区间就无从求交,
+    // 硬按「全额」计入会让一条早就到期的事件在这种调用里复活。
     public function flat(string $target, ?float $fromOffset = null, ?float $toOffset = null): float
     {
         $this->assertPrepared();
 
-        return (float) ($this->flatTotals[$target] ?? 0.0);
+        $total = (float) ($this->flatTotals[$target] ?? 0.0);
+
+        if ($fromOffset === null || $toOffset === null) {
+            return $total;
+        }
+
+        foreach ($this->providers as $provider) {
+            // 契约上 timedFlatSpecs() 是 MultiplierProvider 的默认实现,不在 ProviderInterface 里 ——
+            // 直接实现接口(不继承基类)的 Provider 仍然合法,这里对它们静默跳过而不是炸掉
+            if (! method_exists($provider, 'timedFlatSpecs')) {
+                continue;
+            }
+
+            foreach ($provider->timedFlatSpecs($fromOffset, $toOffset) as $spec) {
+                if (! $spec instanceof ModifierSpec || $spec->op !== ModifierSpec::OP_FLAT) {
+                    throw new LogicException('timedFlatSpecs() 只接受 op=flat 的 ModifierSpec');
+                }
+                if ($spec->target === $target) {
+                    $total += $spec->value;
+                }
+            }
+        }
+
+        return $total;
     }
 
     // 已注册的槽名(结构性测试用)

@@ -80,4 +80,44 @@ final class ErrorCode
     // 时代不满足:候选原型的 min_era 高于城市当前时代。
     // 与建造的 ERA_REQUIRED 分开一个码,是为了让前端能给出「先升时代才招得到这一档人」的专门文案
     public const NPC_ERA_REQUIRED = 'NPC_ERA_REQUIRED';
+
+    // ---- M3-D2 工具 / 道具(backlog §4.2 点名三个,另加两个与 NPC 对称的)----
+
+    // 目标建筑的装备槽位已满(槽位数是后台可调的 item_slots_per_building)。
+    // 注意:**同 category 装第二件不是错误**(B2 明文「第二件同类不报错,只是不生效」),
+    // 只有槽位真的占满了才是这个码
+    public const ITEM_SLOT_FULL = 'ITEM_SLOT_FULL';
+
+    // 工具已损毁(耐久归零,B4 已批的「损毁消失」):不能再装备,只能重新制作
+    public const ITEM_BROKEN = 'ITEM_BROKEN';
+
+    // 制作前置建筑缺失:§7 的 crafting_source 指向的建筑在本城没有 active 实例。
+    // 只有 crafting_building_id 非空的工具才可能返回它(手工制作与未映射来源不设建筑门槛)
+    public const CRAFTING_BUILDING_MISSING = 'CRAFTING_BUILDING_MISSING';
+
+    // 该工具已经装备在某栋建筑上(与 NPC_ALREADY_ASSIGNED 对称,409)。
+    // 换楼必须先 unequip 再 equip —— 两步语义在审计里才留得下完整轨迹
+    public const ITEM_ALREADY_EQUIPPED = 'ITEM_ALREADY_EQUIPPED';
+
+    // 全服停产(后台开关 item_craft_enabled = false)。装备 / 卸下不受影响,只挡新制作
+    public const ITEM_CRAFT_DISABLED = 'ITEM_CRAFT_DISABLED';
+
+    // ---- M3-D4 随机事件(CLAUDE §32 已列 EVENT_EXPIRED,其余三个由 backlog §6.3 追加)----
+
+    // 事件已过期:expires_at 已到点(懒结算会把它翻成 status=expired)。
+    // 过期后选项一律不可领 —— 「过了期还能领」是 §70 五道校验里最容易漏的一道
+    public const EVENT_EXPIRED = 'EVENT_EXPIRED';
+
+    // 该实例已经结算过(status 不是 active)。
+    // 判定靠**条件更新的影响行数**(UPDATE … WHERE status='active'),不是「先查后写」——
+    // 先查后写会在并发下双领(backlog §11.3 点名)
+    public const EVENT_ALREADY_RESOLVED = 'EVENT_ALREADY_RESOLVED';
+
+    // 选项不合法:不是 a/b/c、或该事件根本没有这个选项(§9.2 里很多事件只有 A/B)。
+    // 也用于「事件有选项却没传 choice」——服务器不替玩家挑
+    public const EVENT_OPTION_INVALID = 'EVENT_OPTION_INVALID';
+
+    // 事件系统已停用(后台开关 event_enabled = false)。
+    // 只挡新事件的触发与结算,不影响已生效实例的到期消退
+    public const EVENT_DISABLED = 'EVENT_DISABLED';
 }

@@ -20,11 +20,15 @@ class MarketMigrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    // 26 行定义随建表迁移落库,不依赖 db:seed
+    // 28 行定义随建表迁移落库,不依赖 db:seed
+    // (§8 的 26 行由 500001 灌入,RS027 水泥 / RS028 药品由 600004 追加上市)
     public function test_migration_alone_populates_market_definition(): void
     {
-        $this->assertSame(26, DB::table('market_definition')->count(), '只跑迁移的库必须已经有 §8 的 26 行');
+        $this->assertSame(28, DB::table('market_definition')->count(), '只跑迁移的库必须已经有 §8 的 26 行 + 草案 §7 的 2 行');
         $this->assertTrue(MarketDefinition::isTradeable(MarketDefinition::find('iron')));
+        // 上市迁移同样要在「只跑迁移」的库上生效,否则线上升级完水泥/药品还是买不到
+        $this->assertTrue(MarketDefinition::isTradeable(MarketDefinition::find('cement')));
+        $this->assertTrue(MarketDefinition::isTradeable(MarketDefinition::find('medicine')));
     }
 
     // 12 条市场设定随迁移落库,否则后台设置页看不到市场参数,出事时无从调起

@@ -412,3 +412,18 @@ html, body {
     margin-top: 4px;
     font-size: 11px;
 }
+
+/* 随机事件定义表(M3-D4):30 行逐条可改,列窄且多,输入框统一收窄 */
+.event-input {
+    width: 88px;
+    padding: 4px 6px;
+    background: #151a22;
+    border: 1px solid #2a3140;
+    border-radius: 4px;
+    color: #e7ecf3;
+}
+
+/* 已停用的事件整行压暗:运营扫一眼就知道哪些当前不会触发 */
+.row-disabled {
+    opacity: 0.55;
+}

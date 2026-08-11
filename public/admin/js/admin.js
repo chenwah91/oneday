@@ -113,6 +113,15 @@ const npcDefResult = el('npc-def-result');
 const npcDefViewBtn = el('npc-def-view-btn');
 const npcDefSubmit = el('npc-def-submit');
 
+// 随机事件定义(权限 edit_definition,M3-D4)
+const eventDefPanel = el('event-def-panel');
+const eventDefReason = el('event-def-reason');
+const eventDefRefresh = el('event-def-refresh');
+const eventDefStatus = el('event-def-status');
+const eventDefTable = el('event-def-table');
+const eventDefError = el('event-def-error');
+const eventDefResult = el('event-def-result');
+
 // 玩家补偿(权限 adjust_resource)
 const compPanel = el('comp-panel');
 const compForm = el('comp-form');
@@ -182,6 +191,7 @@ function applyPermissionVisibility() {
     compPanel.classList.toggle('hidden', !hasPermission('adjust_resource'));
     settingPanel.classList.toggle('hidden', !hasPermission('edit_definition'));
     npcDefPanel.classList.toggle('hidden', !hasPermission('edit_definition'));
+    eventDefPanel.classList.toggle('hidden', !hasPermission('edit_definition'));
 }
 
 // ---------- 玩家列表 ----------
@@ -384,6 +394,143 @@ npcDefForm.addEventListener('submit', async (e) => {
         npcDefSubmit.disabled = false;
     }
 });
+
+// ---------- 随机事件定义(M3-D4)----------
+//
+// 用户拍板③:「所有事件必须在管理员后台可设定(权重/效果/开关)」。
+// 这一块就是那条硬约束的界面落点 —— 30 行事件,每行五个可改项 + 一个保存按钮。
+// 前端只负责收集与显示,范围校验的权威始终在服务端(AdminDefinitionController 的 EVENT_FIELD_MAX)。
+//
+// 全局参数(触发概率 / 并发上限 / 离线补算上限 / 权重三修正系数)不在这里 ——
+// 它们是 game_settings 的数值型设定,由下面「规则开关」面板的通用数字控件自动渲染,
+// 后端每登记一条新参数,后台自动多出一行,不必再改这份 JS。
+
+const EVENT_TYPE_LABELS = { positive: '正向', negative: '负向' };
+
+function eventNumberCell(eventId, field, value, step) {
+    return `<input type="number" step="${step}" min="0" class="event-input"
+                   value="${escapeHtml(String(value))}"
+                   data-event-field="${escapeHtml(field)}" data-event-row="${escapeHtml(eventId)}">`;
+}
+
+async function loadEventDefinitions() {
+    eventDefStatus.textContent = '加载中…';
+    eventDefError.classList.add('hidden');
+    try {
+        const data = await api.get('/api/admin/definitions/events');
+        const rows = data.events || [];
+
+        eventDefTable.innerHTML = rows.map((e) => {
+            const enabled = Number(e.enabled) === 1;
+            // 效果落地情况:mapped=0 意味着「开了也不会有任何后果」,必须一眼看得出来
+            const mapped = Number(e.mapped_effect_count || 0);
+            const unmapped = Number(e.unmapped_effect_count || 0);
+            const reason = e.disabled_reason
+                ? `<div class="muted" title="${escapeHtml(e.disabled_reason)}">停用原因:${escapeHtml(e.disabled_reason.slice(0, 40))}…</div>`
+                : '';
+
+            return `
+                <tr class="${enabled ? '' : 'row-disabled'}">
+                    <td>${escapeHtml(e.event_id)}</td>
+                    <td>${escapeHtml(e.name_zh)}<div class="muted">${escapeHtml(e.category)} · ${escapeHtml(EVENT_TYPE_LABELS[e.event_type] || e.event_type)}</div></td>
+                    <td>${escapeHtml(e.min_era)}</td>
+                    <td>
+                        <button type="button" class="btn btn-ghost"
+                                data-event-toggle="${escapeHtml(e.event_id)}"
+                                data-event-next="${enabled ? 0 : 1}">${enabled ? '已启用' : '已停用'}</button>
+                    </td>
+                    <td>${eventNumberCell(e.event_id, 'base_weight', e.base_weight, 'any')}</td>
+                    <td>${eventNumberCell(e.event_id, 'cooldown_minutes', e.cooldown_minutes, '1')}</td>
+                    <td>${eventNumberCell(e.event_id, 'duration_minutes', e.duration_minutes, '1')}</td>
+                    <td>${eventNumberCell(e.event_id, 'effect_multiplier', e.effect_multiplier, 'any')}</td>
+                    <td>生效 ${mapped} / 未映射 ${unmapped}${reason}</td>
+                    <td><button type="button" class="btn btn-ghost" data-event-save="${escapeHtml(e.event_id)}">保存</button></td>
+                </tr>
+            `;
+        }).join('');
+
+        const enabledCount = rows.filter((e) => Number(e.enabled) === 1).length;
+        eventDefStatus.textContent = `共 ${rows.length} 条事件,启用 ${enabledCount} 条`;
+    } catch (err) {
+        if (err.status === 403) throw err;
+        eventDefTable.innerHTML = '';
+        eventDefStatus.textContent = errorMessage(err);
+        throw err;
+    }
+}
+
+// 修改原因是所有定义调整的必填项(与 Definition 调整 / 规则开关同口径)
+function eventReasonOrNull() {
+    const reason = eventDefReason.value.trim();
+    if (reason.length < 2) {
+        eventDefError.textContent = '请先填写修改原因(至少 2 字)';
+        eventDefError.classList.remove('hidden');
+        return null;
+    }
+    return reason;
+}
+
+async function submitEventField(btn, eventId, field, value, reason) {
+    btn.disabled = true;
+    try {
+        const data = await api.post('/api/admin/definitions/event', {
+            event_id: eventId, field, value, reason,
+        });
+        eventDefResult.textContent = `已修改 ${eventId} 的 ${field}:${data.before} → ${data.after}(新版本号 ${data.version})`
+            + (data.warning ? ` ⚠ ${data.warning}` : '');
+        eventDefResult.classList.remove('hidden');
+        eventDefReason.value = '';
+        await loadEventDefinitions().catch(() => {});
+        // 刷新审计,让新的 ADMIN.CONFIG_CHANGE 立刻可见
+        auditActionInput.value = '';
+        await loadAudit().catch(() => {});
+    } catch (err) {
+        eventDefError.textContent = errorMessage(err);
+        eventDefError.classList.remove('hidden');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+// 事件委托:表格内容每次刷新都会重建,不能给每行按钮单独绑事件
+eventDefTable.addEventListener('click', async (e) => {
+    const toggleBtn = e.target.closest('[data-event-toggle]');
+    const saveBtn = e.target.closest('[data-event-save]');
+    if (!toggleBtn && !saveBtn) return;
+
+    eventDefError.classList.add('hidden');
+    eventDefResult.classList.add('hidden');
+
+    const reason = eventReasonOrNull();
+    if (reason === null) return;
+
+    if (toggleBtn) {
+        await submitEventField(toggleBtn, toggleBtn.dataset.eventToggle, 'enabled', Number(toggleBtn.dataset.eventNext), reason);
+        return;
+    }
+
+    // 保存:逐字段提交(每个字段一条审计 + 一次版本递增)。
+    // 不做「一次提交整行」——审计要能回答「是谁把干旱的权重从 8 改成 40 的」,
+    // 合并成一条会让 before/after 变成一个大对象,查起来反而困难
+    const eventId = saveBtn.dataset.eventSave;
+    const inputs = eventDefTable.querySelectorAll(`[data-event-row="${eventId}"]`);
+    for (const input of inputs) {
+        const value = Number(input.value);
+        if (input.value.trim() === '' || !Number.isFinite(value) || value < 0) {
+            eventDefError.textContent = '每一项都要填写有效的非负数值';
+            eventDefError.classList.remove('hidden');
+            return;
+        }
+        if (Number(input.defaultValue) === value) continue; // 没改的字段不提交,免得刷出一堆空审计
+        await submitEventField(saveBtn, eventId, input.dataset.eventField, value, reason);
+        return; // 一次保存只提交一个改动:上面的 submit 已经刷新了整张表,继续遍历的是旧 DOM
+    }
+
+    eventDefError.textContent = '这一行没有改动';
+    eventDefError.classList.remove('hidden');
+});
+
+eventDefRefresh.addEventListener('click', () => { loadEventDefinitions().catch(() => {}); });
 
 // ---------- 玩家补偿(CLAUDE §80)----------
 
@@ -783,6 +930,7 @@ async function loadDashboard() {
     if (hasPermission('edit_definition')) {
         loadSettings().catch(() => {});
         loadNpcDefinitions().catch(() => {});
+        loadEventDefinitions().catch(() => {});
     }
 }
 

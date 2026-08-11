@@ -270,11 +270,11 @@ class MarketPricingTest extends TestCase
         $this->assertNull(PriceEngine::price('unobtanium'));
     }
 
-    // 全表价目一次算完,26 行都在 §8 的夹取区间内
+    // 全表价目一次算完,28 行都在夹取区间内(§8 的 26 行 + RS027 / RS028)
     public function test_price_table_covers_all_rows_within_bounds(): void
     {
         $table = PriceEngine::priceTable();
-        $this->assertCount(26, $table);
+        $this->assertCount(28, $table);
 
         foreach (MarketDefinition::all() as $resourceId => $def) {
             [$low, $high] = MarketDefinition::priceBounds($def);

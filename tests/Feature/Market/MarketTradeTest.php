@@ -355,8 +355,9 @@ class MarketTradeTest extends TestCase
     {
         [$user] = $this->makeCity('unlisted');
 
-        // iron_tools 是真实存在的库存资源,但 §8 没给它市场价 → 不在市场上
-        foreach (['iron_tools', 'cement', 'unobtanium', ''] as $code) {
+        // iron_tools / processed_food 是真实存在的库存资源,但 §8 没给它们市场价 → 不在市场上。
+        // (cement 曾经也在这份名单里,V3.4.0 起它按草案 §7 上市成 RS027,已移出)
+        foreach (['iron_tools', 'processed_food', 'unobtanium', ''] as $code) {
             $this->actingAs($user)->postJson('/api/market/buy', ['resource_code' => $code, 'quantity' => 1])
                 ->assertStatus(422);
         }
@@ -565,7 +566,7 @@ class MarketTradeTest extends TestCase
         $res->assertOk();
         $this->assertSame(PriceEngine::currentEpoch(), $res->json('data.window_index'));
         $this->assertSame(60, $res->json('data.window_seconds'));
-        $this->assertCount(26, $res->json('data.prices'));
+        $this->assertCount(28, $res->json('data.prices'));
 
         // 下一窗时刻 = 本窗起点 + 窗口秒数
         $this->assertSame(

@@ -60,6 +60,29 @@ final class AuditAction
     public const NPC_LEAVE = 'NPC.LEAVE';
     public const NPC_NATURAL_GROWTH = 'NPC.NATURAL_GROWTH';
 
+    // 工具 / 道具(M3-D2,§55 的命名风格「域.动作」):
+    // CRAFT    制作,delta 记扣掉的材料与资金;metadata 记耐久上限与制作建筑
+    // EQUIP    装备到建筑实例,delta 记该工具给这栋楼带来的百分比加成
+    // UNEQUIP  卸下,delta 同上取负(耐久保留)
+    // BROKEN   耐久归零损毁(由懒结算写,不是玩家操作,actor 是 system;B4 已批「损毁消失」)
+    public const ITEM_CRAFT = 'ITEM.CRAFT';
+    public const ITEM_EQUIP = 'ITEM.EQUIP';
+    public const ITEM_UNEQUIP = 'ITEM.UNEQUIP';
+    public const ITEM_BROKEN = 'ITEM.BROKEN';
+
+    // 随机事件(M3-D4,CLAUDE §55 已列 EVENT.TRIGGER / RESOLVE / REWARD 三个码):
+    // TRIGGER  触发。**actor 是 system**(不是玩家操作):由懒结算的资格窗口掷点产生。
+    //          metadata 记 window_index / 权重与三个修正系数 / 掷点结果(rolled),
+    //          delta 记自动效果当场造成的资源变化 —— 「我离线回来粮食怎么少了」要靠它回答
+    // RESOLVE  玩家选择并结算(delta 记该选项造成的资源变化,metadata 记未生效的 unmapped 清单)
+    // REWARD   正向事件的资源发放(§13 修正方向:正向事件直接发资源而不是加乘区)。
+    //          与 TRIGGER / RESOLVE 分开一条,是因为「发了多少」必须能单独查、单独统计
+    // EXPIRE   过期作废(actor 也是 system,由懒结算翻;没有资源变化,只留状态轨迹)
+    public const EVENT_TRIGGER = 'EVENT.TRIGGER';
+    public const EVENT_RESOLVE = 'EVENT.RESOLVE';
+    public const EVENT_REWARD = 'EVENT.REWARD';
+    public const EVENT_EXPIRE = 'EVENT.EXPIRE';
+
     // 安全:越权操作被拒
     public const SECURITY_AUTHORIZATION_FAILED = 'SECURITY.AUTHORIZATION_FAILED';
 

@@ -86,5 +86,32 @@ class GameDataVersionSeeder extends Seeder
                 'notes'       => 'M3-D3 市场定义层:market_definition 26 行(v3.2 §8 全表)+ base_liquidity 模型(9.C1)',
             ]
         );
+
+        // M3-D2 工具定义层落地(新增 item_definition 24 行,进 checksum 表清单)
+        // + RS027 水泥 / RS028 药品上市(market_definition 26 → 28 行,既有定义表的行集变了 → 吃次版本位)。
+        // 已有数据的库由 2026_08_11_600005 迁移递增到同一版本。
+        // ⚠️ 版本号必须严格升序追加在末尾:current() 取 id 最大的一行,插反了「当前版本」会回退。
+        DB::table('game_data_versions')->updateOrInsert(
+            ['version' => 'V3.4.0'],
+            [
+                'deployed_at' => now(),
+                'deployed_by' => 'seed',
+                'notes'       => 'M3-D2 工具定义层:item_definition 24 行(v3.2 §7)+ RS027 水泥 / RS028 药品上市(资源来源映射草案 §7)',
+            ]
+        );
+
+        // M3-D4 事件定义层落地(新增 event_definition 30 行,进 checksum 表清单)。
+        // 已有数据的库由 2026_08_11_700003 迁移递增到同一版本。
+        // 为什么是**补丁位**:既有定义表一行一列都没动,所有城市的产出 / 成本 / 升级链完全不变;
+        // 但 checksum 表清单多了一张表,指纹随之改变,所以仍要留一个版本号。
+        // ⚠️ 版本号必须严格升序追加在末尾:current() 取 id 最大的一行,插反了「当前版本」会回退。
+        DB::table('game_data_versions')->updateOrInsert(
+            ['version' => 'V3.4.1'],
+            [
+                'deployed_at' => now(),
+                'deployed_by' => 'seed',
+                'notes'       => 'M3-D4 事件定义层:event_definition 30 行(v3.2 §9.2 全表)+ 条件/效果 DSL 结构化(9.D1)',
+            ]
+        );
     }
 }

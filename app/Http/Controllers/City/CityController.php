@@ -38,6 +38,13 @@ class CityController extends Controller
         // 位置在结算之后:士气要用结算后的幸福与欠费状态,自然增长要用结算后的人口与人口容量
         NpcRuntimeService::settle($city, $sim);
 
+        // 随机事件懒结算(M3-D4:到期作废 + 资格窗口掷点 + 自动效果)。
+        // 同一条懒结算路径,位置刻意排在最后:事件的触发条件要读**结算后**的
+        // 人口 / 幸福 / 治安 / 财政预警,正向事件的「直接发资源」也要按结算后的产能折算。
+        // 触发写的持续型 modifier 从**下一次**结算开始生效 —— 这是懒结算的固有语义,
+        // 不是漏账:本次窗口早已按当时不存在的事件算完了
+        \App\Game\Event\EventRuntimeService::settle($city, $sim);
+
         $city = $city->fresh();
 
         $resources = $city->resources()->pluck('amount', 'resource_id')
@@ -144,6 +151,14 @@ class CityController extends Controller
                 // ---- /M3-NPC ----
 
                 // ---- M3-ITEM ----(W3-A:建筑装备摘要 / 耐久预警)
+                // 已持有工具清单 + 装备关系(building_instance_id => [city_item_id…])。
+                // 为什么放进快照而不是独立端点:与 NPC 同一条理由 —— 工具数量是个位到几十的量级
+                // (每件都要材料 + 建筑前置),体积可控;而建筑详情面板要画「装备」区块时必须和
+                // 建筑列表同一帧,拆成两个端点反而会出现「楼已经在了、工具还没到」的闪烁。
+                // 定义数据(名称 / 效果 / 成本)不在这里,前端另取一次即可。
+                // ItemService::snapshot 内部会先跑一次耐久懒结算(理由见该方法的注释:
+                // CityController 只允许在锚点内插行,而耐久必须在读 city_items 之前结清)
+                'items'               => \App\Game\Item\ItemService::snapshot($city, $sim),
                 // ---- /M3-ITEM ----
 
                 // ---- M3-MARKET ----
@@ -153,6 +168,9 @@ class CityController extends Controller
                 // ---- /M3-MARKET ----
 
                 // ---- M3-EVENT ----(W3-B:active 事件实例数 / 最近一条通知,详情走 GET /api/city/events)
+                // 只给「有几个事件生效中 + 它们的名字与到期时刻」——足够 HUD 打红点与做倒计时。
+                // 选项文案、掷点结果、未生效的 unmapped 清单都在独立端点里,不塞进快照(§15 体积可控)
+                'events'              => \App\Game\Event\EventService::summary((int) $city->id),
                 // ---- /M3-EVENT ----
 
                 // ---- M3-POWER ----(W4-A:发电 / 耗电 / powerFactor)

@@ -16,14 +16,47 @@ class MarketDefinitionTest extends TestCase
 
     protected function setUp(): void { parent::setUp(); $this->seed(); }
 
-    public function test_seeds_exactly_the_26_rows_of_section_8(): void
+    // §8 原文是 26 行;RS027 水泥 / RS028 药品由资源来源映射草案 §7 追加(V3.4.0 上市),
+    // 所以定稿后的行集是 28 行。改这个数之前一定要先回文档核对
+    public function test_seeds_exactly_the_28_rows_of_section_8_plus_rs027_rs028(): void
     {
-        $this->assertSame(26, DB::table('market_definition')->count(), '§8 是 26 行,多一行少一行都要先回文档核对');
+        $this->assertSame(28, DB::table('market_definition')->count(), '§8 的 26 行 + 草案 §7 的 2 行,多一行少一行都要先回文档核对');
 
-        // rs_code 必须是 RS001~RS026 的完整连续集合(缺号 = 抄漏了某一行)
+        // rs_code 必须是 RS001~RS028 的完整连续集合(缺号 = 抄漏了某一行)
         $codes = DB::table('market_definition')->orderBy('rs_code')->pluck('rs_code')->all();
-        $expected = array_map(fn ($i) => sprintf('RS%03d', $i), range(1, 26));
+        $expected = array_map(fn ($i) => sprintf('RS%03d', $i), range(1, 28));
         $this->assertSame($expected, $codes);
+    }
+
+    // RS027 / RS028:资源来源映射草案 §7 的建议价 + 推荐的收敛选项①(药品 8.0 而不是 20.0)。
+    // 定位是 §16.1 的③「补充缺口」—— 两者都已有产线(水泥 ← P06、药品 ← M01),
+    // 市场只是让产能不匹配的城市能买到缺口,不是唯一来源
+    public function test_cement_and_medicine_are_listed_with_draft_values(): void
+    {
+        $rows = DB::table('market_definition')->get()->keyBy('resource_id');
+
+        $cases = [
+            // resource_id => [rs_code, category, first_era, base, min, max, volatility, elasticity, fee, liquidity]
+            'cement'   => ['RS027', 'construction_material', 'VII', 14.0, 7.7, 33.6, 0.05, 0.55, 0.03, 2143],
+            'medicine' => ['RS028', 'processed_food', 'V', 8.0, 4.4, 19.2, 0.05, 0.55, 0.03, 3750],
+        ];
+
+        foreach ($cases as $resourceId => [$rsCode, $category, $era, $base, $min, $max, $vol, $elasticity, $fee, $liquidity]) {
+            $row = $rows[$resourceId];
+            $this->assertSame($rsCode, $row->rs_code, $resourceId);
+            $this->assertSame($category, $row->market_category, $resourceId . ' market_category');
+            $this->assertSame($era, $row->first_era, $resourceId . ' first_era');
+            $this->assertEqualsWithDelta($base, (float) $row->base_price, 0.0001, $resourceId . ' base_price');
+            $this->assertEqualsWithDelta($min, (float) $row->min_price, 0.0001, $resourceId . ' min_price');
+            $this->assertEqualsWithDelta($max, (float) $row->max_price, 0.0001, $resourceId . ' max_price');
+            $this->assertEqualsWithDelta($vol, (float) $row->volatility, 0.0001, $resourceId . ' volatility');
+            $this->assertEqualsWithDelta($elasticity, (float) $row->elasticity, 0.0001, $resourceId . ' elasticity');
+            $this->assertEqualsWithDelta($fee, (float) $row->fee_rate, 0.0001, $resourceId . ' fee_rate');
+            // 9.C1 模型:round(20000 / base_price × 时代系数),IV~VII 系数 1.5
+            $this->assertEqualsWithDelta($liquidity, (float) $row->base_liquidity, 0.0001, $resourceId . ' base_liquidity');
+
+            $this->assertTrue(MarketDefinition::isTradeable(MarketDefinition::find($resourceId)), $resourceId . ' 必须可交易');
+        }
     }
 
     // 逐行抽查 §8 原文的关键数值(挑的是四个档位的代表:最便宜 / 中位 / 电子 / 终局)
@@ -60,9 +93,9 @@ class MarketDefinitionTest extends TestCase
         $this->assertSame(MarketDefinition::TRADE_MODE_NON_TRADEABLE, $modes['money']);
         $this->assertSame(MarketDefinition::TRADE_MODE_CAPACITY_CONTRACT, $modes['electricity']);
 
-        // 其余 23 行全部是现货
+        // 其余 25 行全部是现货(§8 的 23 行 + RS027 水泥 / RS028 药品)
         $spot = $modes->filter(fn ($m) => $m === MarketDefinition::TRADE_MODE_SPOT);
-        $this->assertCount(23, $spot);
+        $this->assertCount(25, $spot);
     }
 
     // B1 裁决③ + M.2 残留①:电子元件全服 0 产出,市场是时代 X 唯一来源。

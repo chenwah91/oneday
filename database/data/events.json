@@ -1,0 +1,1465 @@
+{
+  "_source": "docs/templates/v3.2.md §9 随机事件系统(§9.1 触发规则 / §9.2 事件 Seed 30 行)。数值逐行照抄,不得在这里改数;改数值走后台 AdminDefinitionController 并 bump game_data_version。",
+
+  "_dsl_condition": "condition_json = { all: [条件…], unmapped_zh: [原文里当前系统承接不了的条件] }。metric 取值见 App\\Game\\Event\\EventCode::CONDITION_METRICS,Seeder 逐条 allowlist 校验,写错即 seed 失败(不静默变成「永远成立」)。",
+
+  "_dsl_effect": "auto_effect_json / options_json.{a,b,c} = { effects: [效果…], unmapped_zh: [原文里当前系统承接不了的效果] }。kind 取值见 EventCode::EFFECT_KINDS。§13 帽修正方向(用户 2026-08-10 拍板)在这里落地:**正向事件的产量类效果一律 grant_production_pct(直接发资源),负向事件才走 event 乘区**(惩罚 <1.0,不占 §13 的加成帽)。Seeder 会强制这条:正向事件出现 value>0 的 event 乘区 spec 即 seed 失败。",
+
+  "_dsl_unmapped": "unmapped_zh 是「原样保留、明确未生效」的清单,不是备注:①它随 API 下发给玩家/后台,谁都看得见这一段没生效;②resolve 的审计 metadata 里也带一份。**不发明语义、不静默丢**——当某个通道(电力 / 威胁等级 / 税率 / 容量类 / 市场价格)在后续波次落地后,把对应条目从 unmapped_zh 提升成 effects 即可,不必改代码。",
+
+  "_disabled": "enabled=false 的事件 = 条件或自动效果**整条**当前无法承接(依赖电力 W4-A / 威胁等级 W4-B / 市场价格乘数 D3 / 税率政策 / 容量类通道 / 资源节点 M.6)。禁用而不是「只跑能跑的一半」是刻意的 Fail Closed:半个负面事件只会让玩家看到一条没有后果的通知。后台可逐条开关,依赖落地后把 enabled 改回 true 即可。",
+
+  "events": [
+    {
+      "event_id": "EVT_HARVEST",
+      "name_zh": "丰收季",
+      "name_key": "event.EVT_HARVEST.name",
+      "category": "agriculture",
+      "event_type": "positive",
+      "min_era": "II",
+      "base_weight": 12,
+      "cooldown_minutes": 30,
+      "duration_minutes": 15,
+      "enabled": true,
+      "disabled_reason": null,
+      "condition_desc_zh": "农业建筑≥3",
+      "auto_effect_desc_zh": "农业产量+20%",
+      "option_a_desc_zh": "举办丰收节:资金-300,幸福+6",
+      "option_b_desc_zh": "扩大储备:粮食仓储效率+15%",
+      "option_c_desc_zh": "无",
+      "condition_json": {
+        "all": [
+          { "metric": "building_count", "scope": "category", "keys": ["food_production"], "op": ">=", "value": 3 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [
+          { "kind": "grant_production_pct", "resources": ["food", "berries", "high_quality_food"], "value": 0.20 }
+        ],
+        "unmapped_zh": []
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "举办丰收节",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -300 },
+            { "kind": "happiness", "value": 6 }
+          ],
+          "unmapped_zh": []
+        },
+        "b": {
+          "label_zh": "扩大储备",
+          "effects": [],
+          "unmapped_zh": ["粮食仓储效率+15%:仓储上限是容量类产出,内核在乘区之前提取,D0 未登记 storage_capacity target"]
+        },
+        "c": null
+      }
+    },
+    {
+      "event_id": "EVT_DROUGHT",
+      "name_zh": "干旱",
+      "name_key": "event.EVT_DROUGHT.name",
+      "category": "disaster",
+      "event_type": "negative",
+      "min_era": "II",
+      "base_weight": 8,
+      "cooldown_minutes": 45,
+      "duration_minutes": 20,
+      "enabled": true,
+      "disabled_reason": null,
+      "condition_desc_zh": "农业建筑≥2",
+      "auto_effect_desc_zh": "农业产量-35%",
+      "option_a_desc_zh": "紧急灌溉:资金-500,减益降为-15%",
+      "option_b_desc_zh": "进口粮食:按市场价自动买入500粮食",
+      "option_c_desc_zh": "配给:粮食消耗-15%,幸福-8",
+      "condition_json": {
+        "all": [
+          { "metric": "building_count", "scope": "category", "keys": ["food_production"], "op": ">=", "value": 2 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [
+          { "kind": "modifier", "target": "event", "scope": "building_category", "scope_key": "food_production", "value": -0.35 }
+        ],
+        "unmapped_zh": []
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "紧急灌溉",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -500 },
+            { "kind": "modifier_set_value", "value": -0.15 }
+          ],
+          "unmapped_zh": []
+        },
+        "b": {
+          "label_zh": "进口粮食",
+          "effects": [],
+          "unmapped_zh": ["按市场价自动买入 500 粮食:成交要走 D3 的 TradeService(app/Game/Market,本波次不碰的目录),留待合并波次接线"]
+        },
+        "c": {
+          "label_zh": "配给",
+          "effects": [
+            { "kind": "happiness", "value": -8 }
+          ],
+          "unmapped_zh": ["粮食消耗-15%:人口粮耗在结算内核的 segmentRates 里,D0 未登记 food_consumption target"]
+        }
+      }
+    },
+    {
+      "event_id": "EVT_FLOOD",
+      "name_zh": "洪水",
+      "name_key": "event.EVT_FLOOD.name",
+      "category": "disaster",
+      "event_type": "negative",
+      "min_era": "II",
+      "base_weight": 6,
+      "cooldown_minutes": 60,
+      "duration_minutes": 12,
+      "enabled": true,
+      "disabled_reason": null,
+      "condition_desc_zh": "城市人口≥200",
+      "auto_effect_desc_zh": "随机道路/农田效率-30%",
+      "option_a_desc_zh": "抢修:资金-600,持续时间-50%",
+      "option_b_desc_zh": "疏散:生产-10%,人口死亡风险归零",
+      "option_c_desc_zh": "不处理:10%概率建筑耐久下降",
+      "condition_json": {
+        "all": [
+          { "metric": "population", "op": ">=", "value": 200 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [
+          { "kind": "modifier", "target": "event", "scope": "building_category", "scope_keys": ["transport", "food_production"], "value": -0.30 }
+        ],
+        "unmapped_zh": []
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "抢修",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -600 },
+            { "kind": "duration_scale", "value": 0.5 }
+          ],
+          "unmapped_zh": []
+        },
+        "b": {
+          "label_zh": "疏散",
+          "effects": [
+            { "kind": "modifier", "target": "event", "scope": "city", "value": -0.10 }
+          ],
+          "unmapped_zh": ["人口死亡风险归零:本事件的自动效果里没有人口死亡项,无可归零的对象"]
+        },
+        "c": {
+          "label_zh": "不处理",
+          "effects": [],
+          "unmapped_zh": ["10%概率建筑耐久下降:建筑耐久系统尚未存在(§7 的耐久只覆盖工具)"]
+        }
+      }
+    },
+    {
+      "event_id": "EVT_GRANARY_PEST",
+      "name_zh": "粮仓虫害",
+      "name_key": "event.EVT_GRANARY_PEST.name",
+      "category": "food",
+      "event_type": "negative",
+      "min_era": "II",
+      "base_weight": 9,
+      "cooldown_minutes": 35,
+      "duration_minutes": 0,
+      "enabled": true,
+      "disabled_reason": null,
+      "condition_desc_zh": "粮食库存>2000",
+      "auto_effect_desc_zh": "损失粮食库存8%~15%",
+      "option_a_desc_zh": "熏蒸处理:资金-250,损失降至3%",
+      "option_b_desc_zh": "快速分发:幸福+2,损失8%",
+      "option_c_desc_zh": "无",
+      "condition_json": {
+        "all": [
+          { "metric": "resource_stock", "resource": "food", "op": ">", "value": 2000 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [
+          { "kind": "resource_pct_of_stock", "resource": "food", "min": -0.15, "max": -0.08 }
+        ],
+        "unmapped_zh": []
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "熏蒸处理",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -250 },
+            { "kind": "loss_set_pct", "value": 0.03 }
+          ],
+          "unmapped_zh": []
+        },
+        "b": {
+          "label_zh": "快速分发",
+          "effects": [
+            { "kind": "happiness", "value": 2 },
+            { "kind": "loss_set_pct", "value": 0.08 }
+          ],
+          "unmapped_zh": []
+        },
+        "c": null
+      }
+    },
+    {
+      "event_id": "EVT_FOREST_FIRE",
+      "name_zh": "森林火灾",
+      "name_key": "event.EVT_FOREST_FIRE.name",
+      "category": "disaster",
+      "event_type": "negative",
+      "min_era": "I",
+      "base_weight": 5,
+      "cooldown_minutes": 60,
+      "duration_minutes": 10,
+      "enabled": true,
+      "disabled_reason": null,
+      "condition_desc_zh": "伐木/木材建筑≥2",
+      "auto_effect_desc_zh": "木材产量-30%,木材库存-5%",
+      "option_a_desc_zh": "组织灭火:工人暂时占用20人",
+      "option_b_desc_zh": "隔离火区:损失减半,伐木停工10分钟",
+      "option_c_desc_zh": "无",
+      "condition_json": {
+        "all": [
+          { "metric": "building_count", "scope": "series", "keys": ["wood"], "op": ">=", "value": 2 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [
+          { "kind": "modifier", "target": "event", "scope": "resource", "scope_key": "wood", "value": -0.30 },
+          { "kind": "resource_pct_of_stock", "resource": "wood", "value": -0.05 }
+        ],
+        "unmapped_zh": []
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "组织灭火",
+          "effects": [],
+          "unmapped_zh": ["工人暂时占用20人:工人分配是玩家显式操作(§10.4),没有「临时占用」通道"]
+        },
+        "b": {
+          "label_zh": "隔离火区",
+          "effects": [
+            { "kind": "loss_scale", "value": 0.5 },
+            { "kind": "modifier", "target": "event", "scope": "resource", "scope_key": "wood", "value": -1.0, "minutes": 10 }
+          ],
+          "unmapped_zh": []
+        },
+        "c": null
+      }
+    },
+    {
+      "event_id": "EVT_MINE_COLLAPSE",
+      "name_zh": "矿难塌方",
+      "name_key": "event.EVT_MINE_COLLAPSE.name",
+      "category": "industry",
+      "event_type": "negative",
+      "min_era": "III",
+      "base_weight": 6,
+      "cooldown_minutes": 50,
+      "duration_minutes": 8,
+      "enabled": true,
+      "disabled_reason": null,
+      "condition_desc_zh": "矿场≥1",
+      "auto_effect_desc_zh": "随机矿场停工",
+      "option_a_desc_zh": "救援:资金-400,健康-1",
+      "option_b_desc_zh": "封矿检修:停工15分钟,未来30分钟事故权重-80%",
+      "option_c_desc_zh": "强行复工:立即恢复,5%人口伤亡风险",
+      "condition_json": {
+        "all": [
+          { "metric": "building_count", "scope": "series", "keys": ["copper_mine", "tin_mine", "iron_mine", "coal_mine", "rare_metals"], "op": ">=", "value": 1 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [
+          { "kind": "modifier", "target": "event", "scope": "building_instance", "pick": { "scope": "series", "keys": ["copper_mine", "tin_mine", "iron_mine", "coal_mine", "rare_metals"] }, "value": -1.0 }
+        ],
+        "unmapped_zh": []
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "救援",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -400 }
+          ],
+          "unmapped_zh": ["健康-1:health 是 §10.8 的派生覆盖率(医疗容量/人口),没有可直接加减的存量"]
+        },
+        "b": {
+          "label_zh": "封矿检修",
+          "effects": [
+            { "kind": "duration_set_minutes", "value": 15 }
+          ],
+          "unmapped_zh": ["未来30分钟事故权重-80%:权重修正只读城市状态(D2 批准口径),没有「按城市临时压低某类事件权重」的存量"]
+        },
+        "c": {
+          "label_zh": "强行复工",
+          "effects": [
+            { "kind": "end_now" }
+          ],
+          "unmapped_zh": ["5%人口伤亡风险:§9.2 未给伤亡规模,§16.5 明令不擅自补数值"]
+        }
+      }
+    },
+    {
+      "event_id": "EVT_EPIDEMIC",
+      "name_zh": "疫病流行",
+      "name_key": "event.EVT_EPIDEMIC.name",
+      "category": "civil",
+      "event_type": "negative",
+      "min_era": "V",
+      "base_weight": 5,
+      "cooldown_minutes": 90,
+      "duration_minutes": 25,
+      "enabled": false,
+      "disabled_reason": "健康与人口增长率都没有 modifier 通道:health 是 §10.8 的派生覆盖率、人口增长率在结算内核的 stepPopulation 里,D0 均未登记 target。自动效果整条无法承接 → Fail Closed 停用",
+      "condition_desc_zh": "人口≥1500",
+      "auto_effect_desc_zh": "健康-12;人口增长-60%",
+      "option_a_desc_zh": "医疗投入:资金-1500,医疗容量需求+50%",
+      "option_b_desc_zh": "隔离:生产-15%,事件持续-40%",
+      "option_c_desc_zh": "放任:资金无支出,人口死亡风险提升",
+      "condition_json": {
+        "all": [
+          { "metric": "population", "op": ">=", "value": 1500 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [],
+        "unmapped_zh": [
+          "健康-12:health 是派生覆盖率,没有存量可改(D0 未登记 health_flat)",
+          "人口增长-60%:人口增长率在 SimulationService::stepPopulation,D0 未登记 population_growth_pct"
+        ]
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "医疗投入",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -1500 }
+          ],
+          "unmapped_zh": ["医疗容量需求+50%:医疗容量是容量类产出,内核在乘区之前提取"]
+        },
+        "b": {
+          "label_zh": "隔离",
+          "effects": [
+            { "kind": "modifier", "target": "event", "scope": "city", "value": -0.15 },
+            { "kind": "duration_scale", "value": 0.6 }
+          ],
+          "unmapped_zh": []
+        },
+        "c": {
+          "label_zh": "放任",
+          "effects": [],
+          "unmapped_zh": ["人口死亡风险提升:§9.2 未给死亡规模,§16.5 明令不擅自补数值"]
+        }
+      }
+    },
+    {
+      "event_id": "EVT_TRADE_BOOM",
+      "name_zh": "贸易繁荣",
+      "name_key": "event.EVT_TRADE_BOOM.name",
+      "category": "economy",
+      "event_type": "positive",
+      "min_era": "II",
+      "base_weight": 10,
+      "cooldown_minutes": 30,
+      "duration_minutes": 15,
+      "enabled": true,
+      "disabled_reason": null,
+      "condition_desc_zh": "市场/贸易建筑≥1",
+      "auto_effect_desc_zh": "贸易收入+25%",
+      "option_a_desc_zh": "降低关税:成交量+25%,税率-5%",
+      "option_b_desc_zh": "提高关税:单笔收益+15%,成交量-10%",
+      "option_c_desc_zh": "无",
+      "condition_json": {
+        "all": [
+          { "metric": "building_count", "scope": "category", "keys": ["commerce"], "op": ">=", "value": 1 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [
+          { "kind": "grant_production_pct", "resources": ["money"], "value": 0.25 }
+        ],
+        "unmapped_zh": []
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "降低关税",
+          "effects": [],
+          "unmapped_zh": ["成交量+25%:成交量上限在 D3 的 city_market_quota(本波次不碰的目录)", "税率-5%:M2 税率固定不可调(§10.5 明文)"]
+        },
+        "b": {
+          "label_zh": "提高关税",
+          "effects": [],
+          "unmapped_zh": ["单笔收益+15% / 成交量-10%:同上,落点都在 D3 市场"]
+        },
+        "c": null
+      }
+    },
+    {
+      "event_id": "EVT_ROUTE_BREAK",
+      "name_zh": "路线中断",
+      "name_key": "event.EVT_ROUTE_BREAK.name",
+      "category": "logistics",
+      "event_type": "negative",
+      "min_era": "III",
+      "base_weight": 8,
+      "cooldown_minutes": 40,
+      "duration_minutes": 12,
+      "enabled": false,
+      "disabled_reason": "运输容量是容量类产出,结算内核在填七乘区**之前**就把它提取成全城值,乘区改不到它;D0 也未登记 transport_capacity target。自动效果整条无法承接 → Fail Closed 停用",
+      "condition_desc_zh": "运输容量>300",
+      "auto_effect_desc_zh": "运输容量-30%",
+      "option_a_desc_zh": "紧急维护:资金-500,立即恢复一半",
+      "option_b_desc_zh": "绕行:燃料消耗+20%,运输减益仅-10%",
+      "option_c_desc_zh": "等待修复",
+      "condition_json": {
+        "all": [
+          { "metric": "transport_capacity", "op": ">", "value": 300 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [],
+        "unmapped_zh": ["运输容量-30%:容量类产出不经乘区(见 disabled_reason)"]
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "紧急维护",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -500 }
+          ],
+          "unmapped_zh": ["立即恢复一半:依赖上面那条无法承接的运输容量减益"]
+        },
+        "b": {
+          "label_zh": "绕行",
+          "effects": [],
+          "unmapped_zh": ["燃料消耗+20% / 运输减益仅-10%:同上"]
+        },
+        "c": {
+          "label_zh": "等待修复",
+          "effects": [],
+          "unmapped_zh": []
+        }
+      }
+    },
+    {
+      "event_id": "EVT_SPECULATION",
+      "name_zh": "市场投机",
+      "name_key": "event.EVT_SPECULATION.name",
+      "category": "market",
+      "event_type": "negative",
+      "min_era": "VII",
+      "base_weight": 5,
+      "cooldown_minutes": 50,
+      "duration_minutes": 10,
+      "enabled": false,
+      "disabled_reason": "市场价格的事件乘数接线点是 PriceEngine::EVENT_MULTIPLIER_DEFAULT(app/Game/Market,本波次不碰的目录)。自动效果整条无法承接 → Fail Closed 停用,留待与 D3 合并波次接线",
+      "condition_desc_zh": "银行≥1",
+      "auto_effect_desc_zh": "随机战略资源价格+25%~50%",
+      "option_a_desc_zh": "市场干预:资金-1000,波动减半",
+      "option_b_desc_zh": "顺势交易:获得一次高风险套利机会",
+      "option_c_desc_zh": "无",
+      "condition_json": {
+        "all": [
+          { "metric": "building_count", "scope": "series", "keys": ["finance"], "op": ">=", "value": 1 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [],
+        "unmapped_zh": ["随机战略资源价格+25%~50%:价格乘数在 PriceEngine(D3 目录)"]
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "市场干预",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -1000 }
+          ],
+          "unmapped_zh": ["波动减半:同上,落点在 PriceEngine"]
+        },
+        "b": {
+          "label_zh": "顺势交易",
+          "effects": [],
+          "unmapped_zh": ["一次高风险套利机会:需要 D3 的限时特价成交口"]
+        },
+        "c": null
+      }
+    },
+    {
+      "event_id": "EVT_REFUGEES",
+      "name_zh": "难民潮",
+      "name_key": "event.EVT_REFUGEES.name",
+      "category": "population",
+      "event_type": "positive",
+      "min_era": "IV",
+      "base_weight": 6,
+      "cooldown_minutes": 60,
+      "duration_minutes": 0,
+      "enabled": true,
+      "disabled_reason": null,
+      "condition_desc_zh": "住房空余≥100",
+      "auto_effect_desc_zh": "触发移民请求",
+      "option_a_desc_zh": "接纳:人口+5%~10%,粮食-800,幸福+2",
+      "option_b_desc_zh": "限量接纳:人口+3%,无幸福变化",
+      "option_c_desc_zh": "拒绝:治安+2,外交/幸福-2",
+      "condition_json": {
+        "all": [
+          { "metric": "housing_free", "op": ">=", "value": 100 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [],
+        "unmapped_zh": []
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "接纳",
+          "effects": [
+            { "kind": "population_pct", "min": 0.05, "max": 0.10 },
+            { "kind": "resource_delta", "resource": "food", "value": -800 },
+            { "kind": "happiness", "value": 2 }
+          ],
+          "unmapped_zh": []
+        },
+        "b": {
+          "label_zh": "限量接纳",
+          "effects": [
+            { "kind": "population_pct", "value": 0.03 }
+          ],
+          "unmapped_zh": []
+        },
+        "c": {
+          "label_zh": "拒绝",
+          "effects": [
+            { "kind": "security", "value": 2 },
+            { "kind": "happiness", "value": -2 }
+          ],
+          "unmapped_zh": ["外交:项目里没有外交系统"]
+        }
+      }
+    },
+    {
+      "event_id": "EVT_MIGRATION",
+      "name_zh": "人口迁入",
+      "name_key": "event.EVT_MIGRATION.name",
+      "category": "population",
+      "event_type": "positive",
+      "min_era": "II",
+      "base_weight": 8,
+      "cooldown_minutes": 45,
+      "duration_minutes": 0,
+      "enabled": true,
+      "disabled_reason": null,
+      "condition_desc_zh": "幸福≥75且住房空余≥10%",
+      "auto_effect_desc_zh": "人口+2%~5%",
+      "option_a_desc_zh": "提供安家补贴:资金-400,人口增长取高值",
+      "option_b_desc_zh": "自然迁入",
+      "option_c_desc_zh": "无",
+      "condition_json": {
+        "all": [
+          { "metric": "happiness", "op": ">=", "value": 75 },
+          { "metric": "housing_free_rate", "op": ">=", "value": 0.10 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [
+          { "kind": "population_pct", "min": 0.02, "max": 0.05 }
+        ],
+        "unmapped_zh": []
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "提供安家补贴",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -400 },
+            { "kind": "roll_take_max" }
+          ],
+          "unmapped_zh": []
+        },
+        "b": {
+          "label_zh": "自然迁入",
+          "effects": [],
+          "unmapped_zh": []
+        },
+        "c": null
+      }
+    },
+    {
+      "event_id": "EVT_STRIKE",
+      "name_zh": "工人罢工",
+      "name_key": "event.EVT_STRIKE.name",
+      "category": "industry",
+      "event_type": "negative",
+      "min_era": "VIII",
+      "base_weight": 6,
+      "cooldown_minutes": 60,
+      "duration_minutes": 15,
+      "enabled": true,
+      "disabled_reason": null,
+      "condition_desc_zh": "工业工人≥100且幸福<65",
+      "auto_effect_desc_zh": "工业产量-35%",
+      "option_a_desc_zh": "加薪:工资+8%持续30分钟,立即结束",
+      "option_b_desc_zh": "改善福利:资金-1500,幸福+5",
+      "option_c_desc_zh": "强硬处理:治安-6,持续时间-20%",
+      "condition_json": {
+        "all": [
+          { "metric": "assigned_workers", "scope": "category", "keys": ["processing", "energy"], "op": ">=", "value": 100 },
+          { "metric": "happiness", "op": "<", "value": 65 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [
+          { "kind": "modifier", "target": "event", "scope": "building_category", "scope_key": "processing", "value": -0.35 }
+        ],
+        "unmapped_zh": []
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "加薪",
+          "effects": [
+            { "kind": "end_now" }
+          ],
+          "unmapped_zh": ["工资+8%持续30分钟:NPC 工资的落点在 npc_definition 与总线的支出通道(app/Game/NPC,本波次不碰的目录)"]
+        },
+        "b": {
+          "label_zh": "改善福利",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -1500 },
+            { "kind": "happiness", "value": 5 }
+          ],
+          "unmapped_zh": []
+        },
+        "c": {
+          "label_zh": "强硬处理",
+          "effects": [
+            { "kind": "security", "value": -6 },
+            { "kind": "duration_scale", "value": 0.8 }
+          ],
+          "unmapped_zh": []
+        }
+      }
+    },
+    {
+      "event_id": "EVT_CRIME",
+      "name_zh": "犯罪浪潮",
+      "name_key": "event.EVT_CRIME.name",
+      "category": "security",
+      "event_type": "negative",
+      "min_era": "III",
+      "base_weight": 8,
+      "cooldown_minutes": 35,
+      "duration_minutes": 15,
+      "enabled": false,
+      "disabled_reason": "自动效果两项都承接不了:税收在结算内核按 §10.5 公式现算(D0 未登记 tax_income_pct target);「随机库存损失」§9.2 未给任何数值,§16.5 明令不擅自补数。→ Fail Closed 停用",
+      "condition_desc_zh": "治安<65",
+      "auto_effect_desc_zh": "税收-10%,随机库存损失",
+      "option_a_desc_zh": "增加巡逻:国防维护+20%,治安+8",
+      "option_b_desc_zh": "社区投入:资金-700,幸福+2,治安+4",
+      "option_c_desc_zh": "无",
+      "condition_json": {
+        "all": [
+          { "metric": "security", "op": "<", "value": 65 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [],
+        "unmapped_zh": [
+          "税收-10%:税收在 SimulationService 按 §10.5 现算,D0 未登记 tax_income_pct",
+          "随机库存损失:§9.2 未给损失比例,不擅自补数值(§16.5)"
+        ]
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "增加巡逻",
+          "effects": [
+            { "kind": "security", "value": 8 }
+          ],
+          "unmapped_zh": ["国防维护+20%:维护成本的消费点(maintenance_cost_pct)排在 W3-A,本波次没有读取方"]
+        },
+        "b": {
+          "label_zh": "社区投入",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -700 },
+            { "kind": "happiness", "value": 2 },
+            { "kind": "security", "value": 4 }
+          ],
+          "unmapped_zh": []
+        },
+        "c": null
+      }
+    },
+    {
+      "event_id": "EVT_RAID",
+      "name_zh": "敌军劫掠",
+      "name_key": "event.EVT_RAID.name",
+      "category": "defense",
+      "event_type": "negative",
+      "min_era": "II",
+      "base_weight": 6,
+      "cooldown_minutes": 60,
+      "duration_minutes": 0,
+      "enabled": false,
+      "disabled_reason": "条件「威胁等级≥中」与损失公式都依赖 D5 国防联动(cities.threat_level + 威胁需求表,W4-B 才落地)。→ Fail Closed 停用",
+      "condition_desc_zh": "威胁等级≥中",
+      "auto_effect_desc_zh": "按威胁需求/国防值计算资源损失",
+      "option_a_desc_zh": "动员守军:粮食-300,临时国防+25%",
+      "option_b_desc_zh": "支付赎金:资金损失,建筑无损",
+      "option_c_desc_zh": "迎击:按国防值结算",
+      "condition_json": {
+        "all": [],
+        "unmapped_zh": ["威胁等级≥中:threat_level 由 D5(W4-B)落地"]
+      },
+      "auto_effect_json": {
+        "effects": [],
+        "unmapped_zh": ["按威胁需求/国防值计算资源损失:公式见 backlog 9.E2,依赖 D5 的威胁需求表"]
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "动员守军",
+          "effects": [
+            { "kind": "resource_delta", "resource": "food", "value": -300 }
+          ],
+          "unmapped_zh": ["临时国防+25%:国防值是容量类产出,不经乘区"]
+        },
+        "b": {
+          "label_zh": "支付赎金",
+          "effects": [],
+          "unmapped_zh": ["资金损失:金额取决于 D5 的损失公式"]
+        },
+        "c": {
+          "label_zh": "迎击",
+          "effects": [],
+          "unmapped_zh": ["按国防值结算:同上"]
+        }
+      }
+    },
+    {
+      "event_id": "EVT_BORDER_TENSION",
+      "name_zh": "边境紧张",
+      "name_key": "event.EVT_BORDER_TENSION.name",
+      "category": "defense",
+      "event_type": "negative",
+      "min_era": "V",
+      "base_weight": 5,
+      "cooldown_minutes": 75,
+      "duration_minutes": 20,
+      "enabled": false,
+      "disabled_reason": "「国防需求+30%」的落点是 D5 的威胁需求表(W4-B 才落地);国防值本身是容量类产出,不经乘区。→ Fail Closed 停用",
+      "condition_desc_zh": "人口≥3000",
+      "auto_effect_desc_zh": "国防需求+30%",
+      "option_a_desc_zh": "加强防务:维护+15%,国防+20%",
+      "option_b_desc_zh": "外交缓和:资金-1200,事件持续-50%",
+      "option_c_desc_zh": "无",
+      "condition_json": {
+        "all": [
+          { "metric": "population", "op": ">=", "value": 3000 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [],
+        "unmapped_zh": ["国防需求+30%:威胁需求表由 D5(W4-B)落地"]
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "加强防务",
+          "effects": [],
+          "unmapped_zh": ["维护+15%:消费点排在 W3-A", "国防+20%:国防值是容量类产出,不经乘区"]
+        },
+        "b": {
+          "label_zh": "外交缓和",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -1200 },
+            { "kind": "duration_scale", "value": 0.5 }
+          ],
+          "unmapped_zh": []
+        },
+        "c": null
+      }
+    },
+    {
+      "event_id": "EVT_ACADEMIC_BREAKTHROUGH",
+      "name_zh": "学术突破",
+      "name_key": "event.EVT_ACADEMIC_BREAKTHROUGH.name",
+      "category": "technology",
+      "event_type": "positive",
+      "min_era": "V",
+      "base_weight": 7,
+      "cooldown_minutes": 45,
+      "duration_minutes": 10,
+      "enabled": true,
+      "disabled_reason": null,
+      "condition_desc_zh": "学院/大学/科研中心≥1",
+      "auto_effect_desc_zh": "知识产量+25%",
+      "option_a_desc_zh": "追加资助:资金-1000,知识+额外15%",
+      "option_b_desc_zh": "公开成果:幸福+3,贸易+5%",
+      "option_c_desc_zh": "无",
+      "condition_json": {
+        "all": [
+          { "metric": "building_count", "scope": "category", "keys": ["research_education"], "op": ">=", "value": 1 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [
+          { "kind": "grant_production_pct", "resources": ["knowledge"], "value": 0.25 }
+        ],
+        "unmapped_zh": []
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "追加资助",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -1000 },
+            { "kind": "grant_production_pct", "resources": ["knowledge"], "value": 0.15 }
+          ],
+          "unmapped_zh": []
+        },
+        "b": {
+          "label_zh": "公开成果",
+          "effects": [
+            { "kind": "happiness", "value": 3 }
+          ],
+          "unmapped_zh": ["贸易+5%:贸易容量是容量类产出,不经乘区"]
+        },
+        "c": null
+      }
+    },
+    {
+      "event_id": "EVT_CRAFT_DISCOVERY",
+      "name_zh": "工艺发现",
+      "name_key": "event.EVT_CRAFT_DISCOVERY.name",
+      "category": "technology",
+      "event_type": "positive",
+      "min_era": "III",
+      "base_weight": 6,
+      "cooldown_minutes": 45,
+      "duration_minutes": 20,
+      "enabled": true,
+      "disabled_reason": null,
+      "condition_desc_zh": "加工建筑≥2",
+      "auto_effect_desc_zh": "随机加工链效率+15%",
+      "option_a_desc_zh": "推广工艺:知识-100,所有同类建筑生效",
+      "option_b_desc_zh": "保密生产:单厂+30%,贸易无加成",
+      "option_c_desc_zh": "无",
+      "condition_json": {
+        "all": [
+          { "metric": "building_count", "scope": "category", "keys": ["processing"], "op": ">=", "value": 2 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [
+          { "kind": "grant_production_pct", "resource_group": "processed_good", "pick": 1, "value": 0.15 }
+        ],
+        "unmapped_zh": []
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "推广工艺",
+          "effects": [
+            { "kind": "resource_delta", "resource": "knowledge", "value": -100 },
+            { "kind": "grant_production_pct", "resource_group": "processed_good", "pick": 0, "value": 0.15 }
+          ],
+          "unmapped_zh": []
+        },
+        "b": {
+          "label_zh": "保密生产",
+          "effects": [
+            { "kind": "grant_production_pct", "resource_group": "processed_good", "pick": 1, "value": 0.30 }
+          ],
+          "unmapped_zh": ["贸易无加成:本事件本来就没有贸易加成,无可取消的对象"]
+        },
+        "c": null
+      }
+    },
+    {
+      "event_id": "EVT_MACHINE_FAILURE",
+      "name_zh": "机械故障",
+      "name_key": "event.EVT_MACHINE_FAILURE.name",
+      "category": "industry",
+      "event_type": "negative",
+      "min_era": "VIII",
+      "base_weight": 7,
+      "cooldown_minutes": 35,
+      "duration_minutes": 10,
+      "enabled": true,
+      "disabled_reason": null,
+      "condition_desc_zh": "机械/电力建筑≥1",
+      "auto_effect_desc_zh": "随机工业建筑停工",
+      "option_a_desc_zh": "工程师抢修:资金-700,立即恢复",
+      "option_b_desc_zh": "计划维护:停工更久,未来30分钟维护-15%",
+      "option_c_desc_zh": "无",
+      "condition_json": {
+        "all": [
+          { "metric": "building_count", "scope": "series", "keys": ["machinery_manufacturing", "electricity"], "op": ">=", "value": 1 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [
+          { "kind": "modifier", "target": "event", "scope": "building_instance", "pick": { "scope": "category", "keys": ["processing", "energy"] }, "value": -1.0 }
+        ],
+        "unmapped_zh": []
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "工程师抢修",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -700 },
+            { "kind": "end_now" }
+          ],
+          "unmapped_zh": []
+        },
+        "b": {
+          "label_zh": "计划维护",
+          "effects": [],
+          "unmapped_zh": ["停工更久:§9.2 未给延长时长,不擅自补数值(§16.5)", "未来30分钟维护-15%:maintenance_cost_pct 的消费点排在 W3-A,本波次没有读取方"]
+        },
+        "c": null
+      }
+    },
+    {
+      "event_id": "EVT_BLACKOUT",
+      "name_zh": "大停电",
+      "name_key": "event.EVT_BLACKOUT.name",
+      "category": "energy",
+      "event_type": "negative",
+      "min_era": "VIII",
+      "base_weight": 5,
+      "cooldown_minutes": 50,
+      "duration_minutes": 8,
+      "enabled": false,
+      "disabled_reason": "整条依赖电力系统(M.1,W4-A):power 乘区至今恒 1.0,「电力使用率」也还没有口径。→ Fail Closed 停用,电力落地后开启即可",
+      "condition_desc_zh": "电力使用率>85%",
+      "auto_effect_desc_zh": "全城电力可用量-40%",
+      "option_a_desc_zh": "启用备用燃料:燃料-300,减益降为-10%",
+      "option_b_desc_zh": "工业限电:民生建筑保持运行,工业停机",
+      "option_c_desc_zh": "无",
+      "condition_json": {
+        "all": [],
+        "unmapped_zh": ["电力使用率>85%:电力系统(M.1 / W4-A)未落地"]
+      },
+      "auto_effect_json": {
+        "effects": [],
+        "unmapped_zh": ["全城电力可用量-40%:power 乘区由 W4-A 的 PowerService 认领"]
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "启用备用燃料",
+          "effects": [
+            { "kind": "resource_delta", "resource": "fuel", "value": -300 }
+          ],
+          "unmapped_zh": ["减益降为-10%:依赖上面那条电力减益"]
+        },
+        "b": {
+          "label_zh": "工业限电",
+          "effects": [],
+          "unmapped_zh": ["民生保供 / 工业停机:同上"]
+        },
+        "c": null
+      }
+    },
+    {
+      "event_id": "EVT_OIL_SHOCK",
+      "name_zh": "石油冲击",
+      "name_key": "event.EVT_OIL_SHOCK.name",
+      "category": "market",
+      "event_type": "negative",
+      "min_era": "IX",
+      "base_weight": 5,
+      "cooldown_minutes": 60,
+      "duration_minutes": 15,
+      "enabled": false,
+      "disabled_reason": "价格冲击的接线点是 PriceEngine::EVENT_MULTIPLIER_DEFAULT(app/Game/Market,本波次不碰的目录)。→ Fail Closed 停用",
+      "condition_desc_zh": "石油/燃料已解锁",
+      "auto_effect_desc_zh": "石油和燃料价格+40%",
+      "option_a_desc_zh": "释放储备:库存-20%,价格冲击减半",
+      "option_b_desc_zh": "节能政策:运输-10%,燃料消耗-20%",
+      "option_c_desc_zh": "无",
+      "condition_json": {
+        "all": [
+          { "metric": "building_count", "scope": "series", "keys": ["oil"], "op": ">=", "value": 1 }
+        ],
+        "unmapped_zh": ["原文「石油/燃料已解锁」按「已建成石油系列建筑≥1」落地,是一次口径折算;若 D3 之后要按科技解锁判定,改成 tech 条件即可"]
+      },
+      "auto_effect_json": {
+        "effects": [],
+        "unmapped_zh": ["石油和燃料价格+40%:价格乘数在 PriceEngine(D3 目录)"]
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "释放储备",
+          "effects": [
+            { "kind": "resource_pct_of_stock", "resource": "oil", "value": -0.20 }
+          ],
+          "unmapped_zh": ["价格冲击减半:依赖上面那条价格效果"]
+        },
+        "b": {
+          "label_zh": "节能政策",
+          "effects": [],
+          "unmapped_zh": ["运输-10%:运输容量是容量类产出", "燃料消耗-20%:配方投入没有 modifier 通道"]
+        },
+        "c": null
+      }
+    },
+    {
+      "event_id": "EVT_PORT_CONGESTION",
+      "name_zh": "港口拥堵",
+      "name_key": "event.EVT_PORT_CONGESTION.name",
+      "category": "logistics",
+      "event_type": "negative",
+      "min_era": "VII",
+      "base_weight": 6,
+      "cooldown_minutes": 45,
+      "duration_minutes": 12,
+      "enabled": false,
+      "disabled_reason": "贸易容量与运输容量都是容量类产出,内核在填七乘区之前就提取成全城值,乘区改不到。→ Fail Closed 停用",
+      "condition_desc_zh": "贸易容量>800",
+      "auto_effect_desc_zh": "贸易/运输容量-25%",
+      "option_a_desc_zh": "加班疏港:资金-600,维护+10%",
+      "option_b_desc_zh": "转铁路:铁路负载+20%,港口减益取消",
+      "option_c_desc_zh": "等待",
+      "condition_json": {
+        "all": [],
+        "unmapped_zh": ["贸易容量>800:trade_capacity 在 M2 内核里被显式跳过(§5.4),没有全城聚合值可读"]
+      },
+      "auto_effect_json": {
+        "effects": [],
+        "unmapped_zh": ["贸易/运输容量-25%:容量类产出不经乘区"]
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "加班疏港",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -600 }
+          ],
+          "unmapped_zh": ["维护+10%:消费点排在 W3-A"]
+        },
+        "b": {
+          "label_zh": "转铁路",
+          "effects": [],
+          "unmapped_zh": ["铁路负载 / 港口减益取消:依赖上面那条容量减益"]
+        },
+        "c": {
+          "label_zh": "等待",
+          "effects": [],
+          "unmapped_zh": []
+        }
+      }
+    },
+    {
+      "event_id": "EVT_BRAIN_DRAIN",
+      "name_zh": "人才流失",
+      "name_key": "event.EVT_BRAIN_DRAIN.name",
+      "category": "npc",
+      "event_type": "negative",
+      "min_era": "IX",
+      "base_weight": 4,
+      "cooldown_minutes": 90,
+      "duration_minutes": 0,
+      "enabled": false,
+      "disabled_reason": "「NPC 提出离职 / 加薪挽留」的写入点在 app/Game/NPC(本波次不碰的目录),事件系统不越界改别的系统的运行时状态。→ Fail Closed 停用,留待与 D1 合并波次接线",
+      "condition_desc_zh": "高技能NPC≥3且幸福<60",
+      "auto_effect_desc_zh": "随机高级NPC提出离职",
+      "option_a_desc_zh": "加薪挽留:该NPC工资+20%",
+      "option_b_desc_zh": "改善环境:资金-2000,幸福+4",
+      "option_c_desc_zh": "允许离开",
+      "condition_json": {
+        "all": [
+          { "metric": "npc_skill_count", "op": ">=", "value": 3 },
+          { "metric": "happiness", "op": "<", "value": 60 }
+        ],
+        "unmapped_zh": ["「高技能」的等级门槛 §6 未定义 → 走后台设定 event_npc_high_skill_level(默认 6 级)"]
+      },
+      "auto_effect_json": {
+        "effects": [],
+        "unmapped_zh": ["随机高级NPC提出离职:写 city_npcs 的状态属 D1 的职责边界"]
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "加薪挽留",
+          "effects": [],
+          "unmapped_zh": ["该NPC工资+20%:同上,落点在 D1"]
+        },
+        "b": {
+          "label_zh": "改善环境",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -2000 },
+            { "kind": "happiness", "value": 4 }
+          ],
+          "unmapped_zh": []
+        },
+        "c": {
+          "label_zh": "允许离开",
+          "effects": [],
+          "unmapped_zh": ["离职的实际执行落点在 D1"]
+        }
+      }
+    },
+    {
+      "event_id": "EVT_FESTIVAL",
+      "name_zh": "城市庆典",
+      "name_key": "event.EVT_FESTIVAL.name",
+      "category": "civil",
+      "event_type": "positive",
+      "min_era": "III",
+      "base_weight": 8,
+      "cooldown_minutes": 40,
+      "duration_minutes": 12,
+      "enabled": true,
+      "disabled_reason": null,
+      "condition_desc_zh": "资金>1000",
+      "auto_effect_desc_zh": "幸福+4",
+      "option_a_desc_zh": "大型庆典:资金-800,幸福+8,贸易+5%",
+      "option_b_desc_zh": "小型庆典:资金-300,幸福+5",
+      "option_c_desc_zh": "取消:无效果",
+      "condition_json": {
+        "all": [
+          { "metric": "resource_stock", "resource": "money", "op": ">", "value": 1000 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [
+          { "kind": "happiness", "value": 4 }
+        ],
+        "unmapped_zh": []
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "大型庆典",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -800 },
+            { "kind": "flat_set", "channel": "happiness", "value": 8 }
+          ],
+          "unmapped_zh": ["贸易+5%:贸易容量是容量类产出,不经乘区"]
+        },
+        "b": {
+          "label_zh": "小型庆典",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -300 },
+            { "kind": "flat_set", "channel": "happiness", "value": 5 }
+          ],
+          "unmapped_zh": []
+        },
+        "c": {
+          "label_zh": "取消",
+          "effects": [
+            { "kind": "end_now" }
+          ],
+          "unmapped_zh": []
+        }
+      }
+    },
+    {
+      "event_id": "EVT_CORRUPTION",
+      "name_zh": "贪腐案",
+      "name_key": "event.EVT_CORRUPTION.name",
+      "category": "governance",
+      "event_type": "negative",
+      "min_era": "IV",
+      "base_weight": 5,
+      "cooldown_minutes": 70,
+      "duration_minutes": 20,
+      "enabled": false,
+      "disabled_reason": "自动效果两项都承接不了:税收在结算内核按 §10.5 现算(无 target);维护成本的消费点(maintenance_cost_pct)排在 W3-A,本波次没有读取方。→ Fail Closed 停用",
+      "condition_desc_zh": "治理负载>80%",
+      "auto_effect_desc_zh": "税收-15%,维护+8%",
+      "option_a_desc_zh": "调查:资金-900,知识-50,50%立即解决",
+      "option_b_desc_zh": "行政改革:治理容量暂时-10%,事件结束后+5% 30分钟",
+      "option_c_desc_zh": "忽略",
+      "condition_json": {
+        "all": [
+          { "metric": "governance_load", "op": ">", "value": 0.80 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [],
+        "unmapped_zh": [
+          "税收-15%:税收在 SimulationService 按 §10.5 现算,D0 未登记 tax_income_pct",
+          "维护+8%:maintenance_cost_pct 的消费点排在 W3-A"
+        ]
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "调查",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -900 },
+            { "kind": "resource_delta", "resource": "knowledge", "value": -50 }
+          ],
+          "unmapped_zh": ["50%立即解决:依赖上面那两条无法承接的减益"]
+        },
+        "b": {
+          "label_zh": "行政改革",
+          "effects": [],
+          "unmapped_zh": ["治理容量暂时-10% / 结束后+5%:治理容量是容量类产出,不经乘区"]
+        },
+        "c": {
+          "label_zh": "忽略",
+          "effects": [],
+          "unmapped_zh": []
+        }
+      }
+    },
+    {
+      "event_id": "EVT_TAX_PROTEST",
+      "name_zh": "抗税风潮",
+      "name_key": "event.EVT_TAX_PROTEST.name",
+      "category": "governance",
+      "event_type": "negative",
+      "min_era": "IV",
+      "base_weight": 6,
+      "cooldown_minutes": 55,
+      "duration_minutes": 12,
+      "enabled": false,
+      "disabled_reason": "条件「税率偏高」在 M2/M3 永不成立:§10.5 明文「税率固定 / 玩家不可调」,项目里没有税率这个变量。→ Fail Closed 停用,开放税率政策后再启用",
+      "condition_desc_zh": "税率偏高且幸福<65",
+      "auto_effect_desc_zh": "幸福-6,税收-10%",
+      "option_a_desc_zh": "临时减税:税收-20%,幸福+5",
+      "option_b_desc_zh": "公共投资:资金-1200,幸福+6",
+      "option_c_desc_zh": "维持税率:治安-4",
+      "condition_json": {
+        "all": [
+          { "metric": "happiness", "op": "<", "value": 65 }
+        ],
+        "unmapped_zh": ["税率偏高:税率固定不可调(§10.5),没有可判定的变量"]
+      },
+      "auto_effect_json": {
+        "effects": [
+          { "kind": "happiness", "value": -6 }
+        ],
+        "unmapped_zh": ["税收-10%:税收在 SimulationService 按 §10.5 现算,D0 未登记 tax_income_pct"]
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "临时减税",
+          "effects": [
+            { "kind": "flat_set", "channel": "happiness", "value": 5 }
+          ],
+          "unmapped_zh": ["税收-20%:同上"]
+        },
+        "b": {
+          "label_zh": "公共投资",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -1200 },
+            { "kind": "flat_set", "channel": "happiness", "value": 6 }
+          ],
+          "unmapped_zh": []
+        },
+        "c": {
+          "label_zh": "维持税率",
+          "effects": [
+            { "kind": "security", "value": -4 }
+          ],
+          "unmapped_zh": []
+        }
+      }
+    },
+    {
+      "event_id": "EVT_BUILD_ACCIDENT",
+      "name_zh": "工地事故",
+      "name_key": "event.EVT_BUILD_ACCIDENT.name",
+      "category": "construction",
+      "event_type": "negative",
+      "min_era": "III",
+      "base_weight": 5,
+      "cooldown_minutes": 45,
+      "duration_minutes": 0,
+      "enabled": true,
+      "disabled_reason": null,
+      "condition_desc_zh": "正在建造/升级建筑≥2",
+      "auto_effect_desc_zh": "随机项目进度回退10%",
+      "option_a_desc_zh": "安全投入:资金-300,取消回退",
+      "option_b_desc_zh": "赶工:不回退,但5%工人受伤风险",
+      "option_c_desc_zh": "接受损失",
+      "condition_json": {
+        "all": [
+          { "metric": "constructing_count", "op": ">=", "value": 2 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [
+          { "kind": "construction_delay_pct", "value": 0.10 }
+        ],
+        "unmapped_zh": []
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "安全投入",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -300 },
+            { "kind": "construction_delay_revert" }
+          ],
+          "unmapped_zh": []
+        },
+        "b": {
+          "label_zh": "赶工",
+          "effects": [
+            { "kind": "construction_delay_revert" }
+          ],
+          "unmapped_zh": ["5%工人受伤风险:§9.2 未给伤亡规模,不擅自补数值(§16.5)"]
+        },
+        "c": {
+          "label_zh": "接受损失",
+          "effects": [],
+          "unmapped_zh": []
+        }
+      }
+    },
+    {
+      "event_id": "EVT_NEW_DEPOSIT",
+      "name_zh": "新矿藏",
+      "name_key": "event.EVT_NEW_DEPOSIT.name",
+      "category": "resource",
+      "event_type": "positive",
+      "min_era": "III",
+      "base_weight": 4,
+      "cooldown_minutes": 120,
+      "duration_minutes": 0,
+      "enabled": false,
+      "disabled_reason": "整条依赖资源节点系统(backlog M.6:city_resource_nodes 表 + 建城生成 + 勘探入口),该系统尚未落地。→ Fail Closed 停用",
+      "condition_desc_zh": "探索/科研达到要求",
+      "auto_effect_desc_zh": "地图生成一个随机矿产资源点",
+      "option_a_desc_zh": "立即勘探:资金-1000,提高高价值矿概率",
+      "option_b_desc_zh": "普通勘探",
+      "option_c_desc_zh": "无",
+      "condition_json": {
+        "all": [],
+        "unmapped_zh": ["探索/科研达到要求:勘探系统未落地,「要求」也没有数值口径"]
+      },
+      "auto_effect_json": {
+        "effects": [],
+        "unmapped_zh": ["地图生成一个随机矿产资源点:资源节点系统(M.6)未落地"]
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "立即勘探",
+          "effects": [
+            { "kind": "resource_delta", "resource": "money", "value": -1000 }
+          ],
+          "unmapped_zh": ["提高高价值矿概率:同上"]
+        },
+        "b": {
+          "label_zh": "普通勘探",
+          "effects": [],
+          "unmapped_zh": ["同上"]
+        },
+        "c": null
+      }
+    },
+    {
+      "event_id": "EVT_OVERSEAS_ORDER",
+      "name_zh": "海外订单",
+      "name_key": "event.EVT_OVERSEAS_ORDER.name",
+      "category": "trade",
+      "event_type": "positive",
+      "min_era": "VII",
+      "base_weight": 6,
+      "cooldown_minutes": 45,
+      "duration_minutes": 20,
+      "enabled": false,
+      "disabled_reason": "「按 1.4×/1.7× 市场价交付资源」要走 D3 的定价与成交(app/Game/Market,本波次不碰的目录)。→ Fail Closed 停用,留待与 D3 合并波次接线",
+      "condition_desc_zh": "贸易中心或银行≥1",
+      "auto_effect_desc_zh": "出现限时大宗订单",
+      "option_a_desc_zh": "接受:交付指定资源换取1.4×市场价",
+      "option_b_desc_zh": "议价:50%概率1.7×,失败订单取消",
+      "option_c_desc_zh": "拒绝",
+      "condition_json": {
+        "all": [
+          { "metric": "building_count", "scope": "series", "keys": ["global_trade", "finance"], "op": ">=", "value": 1 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [],
+        "unmapped_zh": ["出现限时大宗订单:订单标的与价格都要 D3 的定价内核"]
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "接受",
+          "effects": [],
+          "unmapped_zh": ["交付指定资源换取1.4×市场价:成交要走 TradeService(D3 目录)"]
+        },
+        "b": {
+          "label_zh": "议价",
+          "effects": [],
+          "unmapped_zh": ["50%概率1.7×:同上"]
+        },
+        "c": {
+          "label_zh": "拒绝",
+          "effects": [],
+          "unmapped_zh": []
+        }
+      }
+    },
+    {
+      "event_id": "EVT_GLOBAL_CRISIS",
+      "name_zh": "全球危机",
+      "name_key": "event.EVT_GLOBAL_CRISIS.name",
+      "category": "endgame",
+      "event_type": "negative",
+      "min_era": "X",
+      "base_weight": 3,
+      "cooldown_minutes": 180,
+      "duration_minutes": 30,
+      "enabled": false,
+      "disabled_reason": "三项自动效果分别落在贸易容量(容量类)、能源需求(电力 W4-A)、国防需求(D5 W4-B),当前一项都承接不了。→ Fail Closed 停用",
+      "condition_desc_zh": "人口≥200000",
+      "auto_effect_desc_zh": "贸易-20%,能源需求+15%,国防需求+20%",
+      "option_a_desc_zh": "全球协调:知识-5000,资金-20000,减益减半",
+      "option_b_desc_zh": "资源自保:贸易-35%,本地生产+10%",
+      "option_c_desc_zh": "联合防卫:国防维护+30%,损失风险下降",
+      "condition_json": {
+        "all": [
+          { "metric": "population", "op": ">=", "value": 200000 }
+        ],
+        "unmapped_zh": []
+      },
+      "auto_effect_json": {
+        "effects": [],
+        "unmapped_zh": [
+          "贸易-20%:贸易容量是容量类产出,不经乘区",
+          "能源需求+15%:电力系统(M.1 / W4-A)未落地",
+          "国防需求+20%:威胁需求表由 D5(W4-B)落地"
+        ]
+      },
+      "options_json": {
+        "a": {
+          "label_zh": "全球协调",
+          "effects": [
+            { "kind": "resource_delta", "resource": "knowledge", "value": -5000 },
+            { "kind": "resource_delta", "resource": "money", "value": -20000 }
+          ],
+          "unmapped_zh": ["减益减半:依赖上面三条无法承接的减益"]
+        },
+        "b": {
+          "label_zh": "资源自保",
+          "effects": [],
+          "unmapped_zh": ["贸易-35%:容量类产出", "本地生产+10%:正向产量效果按 §13 修正方向应走「直接发资源」,但本事件被停用,先不落地"]
+        },
+        "c": {
+          "label_zh": "联合防卫",
+          "effects": [],
+          "unmapped_zh": ["国防维护+30% / 损失风险下降:依赖 D5"]
+        }
+      }
+    }
+  ]
+}
