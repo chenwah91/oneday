@@ -11,7 +11,7 @@ import { render as renderBuildings } from '../renderer/buildings.js';
 import { updateHud } from './hud.js';
 import { fmt } from '../utils/format.js';
 import { resourceName, isCapacity } from '../modules/resources.js';
-import { categoryName } from '../core/enum-names.js';
+import { categoryName, npcSkillName } from '../core/enum-names.js';
 
 const MAX_LEVEL = 3; // 与后端 UpgradeService 一致:L1→L2→L3
 
@@ -47,10 +47,40 @@ let countdownTimer = null;
 let countdownDeadline = 0; // 完工时刻(毫秒)
 let lastConfirmAt = 0; // 上次"到点拉快照"的时刻,限流成最快 3 秒一次
 
+// NPC 面板入口(M3 前端波一):由 main.js 注入,建筑详情不直接依赖 npc-panel.js。
+// 单向依赖:建筑详情只负责「显示在驻的人 + 把玩家送去 NPC 面板派驻」,
+// 派驻/撤下/辞退的规则与请求全部留在 NPC 面板一处,不在这里复制第二份
+let npcPanelOpener = null;
+
+export function setNpcPanelOpener(fn) {
+    npcPanelOpener = typeof fn === 'function' ? fn : null;
+}
+
 function defsById() {
     const map = {};
     (state.definitions || []).forEach((d) => { map[d.building_id] = d; });
     return map;
+}
+
+// 快照的 NPC 区块(city.npcs);拿不到时退化成空,面板照常显示
+function cityNpcs() {
+    const n = (state.city && state.city.npcs) || {};
+    return {
+        total: Number(n.total) || 0,
+        slots: Number(n.slots_per_building) || 0,
+        slotsL3: Number(n.slots_per_building_l3) || 0,
+        list: Array.isArray(n.list) ? n.list : [],
+        // 没有任何派驻时后端给的是 JSON 数组 [],有派驻时是对象 —— 两种形状都要读得动
+        assignments: n.assignments || {},
+    };
+}
+
+// 派驻在这栋楼的 NPC 明细(按快照的 assignments 反查 list)
+function npcsOnDuty(instanceId) {
+    const n = cityNpcs();
+    const ids = n.assignments[instanceId] || n.assignments[String(instanceId)] || [];
+    if (!Array.isArray(ids) || !ids.length) return [];
+    return ids.map((id) => n.list.filter((x) => String(x.id) === String(id))[0]).filter(Boolean);
 }
 
 // 全城劳动力池(快照口径,服务器权威):free = 可用 − 已分配
@@ -130,9 +160,12 @@ function signature() {
     const b = currentBuilding();
     if (!b) return 'none';
     const pool = cityWorkerPool();
+    // 在驻 NPC 也进指纹:在 NPC 面板派驻/撤下后,这里的「派驻 NPC」区块要跟着变
+    const onDuty = npcsOnDuty(b.id).map((n) => n.id + ':' + n.skill_level).join(',');
     return [
         b.id, b.level, b.x, b.y, b.status, b.construction_finished_at,
         b.assigned_workers, b.worker_required, pool.available, pool.assigned,
+        onDuty, cityNpcs().total,
         state.definitions ? 1 : 0, busy ? 1 : 0, confirming ? 1 : 0,
     ].join('|');
 }
@@ -277,6 +310,69 @@ function makeWorkerSection(b, synced) {
     return box;
 }
 
+// 派驻 NPC 区块(M3-D1):显示这栋楼在驻的人 + 一个去 NPC 面板派驻的入口。
+// 槽位数由服务器下发(slots_per_building / _l3,后台可调),不在前端写死;
+// 这里的置灰只是显示层提示,真正能不能派由服务端在城市行锁内判(CLAUDE §66)
+function makeNpcSection(b, synced) {
+    const n = cityNpcs();
+    const cap = (Number(b.level) || 1) >= 3 ? n.slotsL3 : n.slots;
+    if (cap <= 0) return null; // 槽位规则还没随快照下来(老响应),整块不渲染
+
+    const onDuty = npcsOnDuty(b.id);
+    const active = b.status === 'active';
+
+    const box = document.createElement('div');
+    box.className = 'bldg-npcs';
+
+    const head = document.createElement('div');
+    head.className = 'bldg-workers-head';
+
+    const label = document.createElement('span');
+    label.className = 'bldg-workers-label';
+    label.textContent = '派驻 NPC';
+    head.appendChild(label);
+
+    const count = document.createElement('span');
+    count.className = 'bldg-workers-count ' + (onDuty.length >= cap ? 'is-full' : 'is-idle');
+    count.textContent = onDuty.length + ' / ' + cap + ' 槽';
+    head.appendChild(count);
+
+    box.appendChild(head);
+
+    onDuty.forEach((npc) => {
+        const row = document.createElement('div');
+        row.className = 'bldg-npc-row';
+        row.textContent = (npc.name_zh || npc.name_key || npc.npc_id)
+            + ' · Lv' + npc.skill_level + ' · ' + npcSkillName(npc.primary_skill_id);
+        box.appendChild(row);
+    });
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'bldg-worker-btn';
+    btn.textContent = onDuty.length >= cap ? '槽位已满' : '派驻 NPC';
+    btn.disabled = !synced || busy || !active || onDuty.length >= cap || !npcPanelOpener;
+    btn.addEventListener('click', () => {
+        if (npcPanelOpener) npcPanelOpener(b.id);
+    });
+    box.appendChild(btn);
+
+    const hint = document.createElement('div');
+    hint.className = 'bldg-workers-hint';
+    if (!active) {
+        hint.textContent = '建成后才能派驻 NPC';
+    } else if (n.total === 0) {
+        hint.textContent = '还没有 NPC,先去 NPC 面板招募';
+    } else if (onDuty.length >= cap) {
+        hint.textContent = '槽位已满,要换人先去 NPC 面板撤下';
+    } else {
+        hint.textContent = '派驻对口技能的 NPC 可以提高这栋楼的产出';
+    }
+    box.appendChild(hint);
+
+    return box;
+}
+
 // 全量重绘面板内容:状态很小,直接重建 DOM 比做差量更不容易出错
 function render() {
     if (!rootEl) return;
@@ -350,6 +446,10 @@ function render() {
     // 派工区:worker_required > 0 才出现
     const workers = makeWorkerSection(b, synced);
     if (workers) rootEl.appendChild(workers);
+
+    // 派驻 NPC 区:在驻名单 + 去 NPC 面板派驻的入口
+    const npcs = makeNpcSection(b, synced);
+    if (npcs) rootEl.appendChild(npcs);
 
     // 操作区
     const actions = document.createElement('div');

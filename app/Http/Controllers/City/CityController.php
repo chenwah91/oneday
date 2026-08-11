@@ -104,10 +104,20 @@ class CityController extends Controller
                 // 财政预警(§10.5)'none' | 'yellow' | 'red':资金可支撑维护 < 10 分钟转黄、< 3 分钟转红。
                 // 服务端派生而不是让前端自己拿资金除维护 —— 阈值属于数值规格,不能有第二份口径
                 'fiscal_warning'      => $sim['fiscalWarning'],
+                // 治理块与下面的 defense 块同构(W6 清偿之后):
+                //   capacity      **有效**治理容量 = max(0,(建筑口径 + 行政 NPC flat)×(1 + NPC/工具/事件 pct)),
+                //                 governanceLoad 用的就是它 —— 面板显示的容量必须与打折税收的那个数是同一个
+                //   capacity_base 建筑口径(内核从 output_json 聚合的容量值)。两者并列给出,
+                //                 玩家才分得清「常备行政力」与「靠官员 / 工具 / 事件撑起来的部分」;
+                //                 **时代门槛读的是 capacity_base**(era 块里那一行),不吃临时加成
+                //   flat / pct    两段来源分开给,用来回答「为什么今天治理容量变了」
                 'governance'          => [
-                    'load'       => $sim['governanceLoad'],
-                    'efficiency' => $sim['governanceEfficiency'],
-                    'capacity'   => $sim['governanceCapacity'],
+                    'load'          => $sim['governanceLoad'],
+                    'efficiency'    => $sim['governanceEfficiency'],
+                    'capacity'      => $sim['governanceCapacityEffective'],
+                    'capacity_base' => $sim['governanceCapacity'],
+                    'flat'          => $sim['governanceCapacityFlat'],
+                    'pct'           => $sim['governanceCapacityPct'],
                 ],
                 // 物流(§10.7 / §11 综合面板「运输使用率」):load 是 §11 的 transport_load_rate 口径(比值,不是百分数),
                 // factor 就是七乘区里 logistics 那一格的实际值,congestion 对应 §10.7 的拥堵警报

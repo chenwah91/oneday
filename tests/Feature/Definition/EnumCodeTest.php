@@ -267,7 +267,10 @@ class EnumCodeTest extends TestCase
         // v9:M2 收官 —— panels.css 的建筑详情操作行改 sticky 吸底(手机窄屏下升级/拆除会被顶到折叠线以下)、
         //     移动端面板高度上限 52%→62%;technology-panel.js 的时代条件清单改为原地更新数值。
         //     两处改动同属一次收尾,只 bump 一次(一次改动只 bump 一次,不要连着跳版本)
-        $this->assertStringContainsString("const CACHE = 'apg-v9'", $sw);
+        // v10:M3 前端面板一 —— 新增 npc-panel.js/market-panel.js 进预缓存清单,
+        //      三个 FAB 改横排底部导航(竖排会被面板遮挡),面板 bottom 12→68px 让位导航条,
+        //      enum-names.js 扩充 NPC 状态/稀有度/技能中文表。同属一波,只 bump 一次
+        $this->assertStringContainsString("const CACHE = 'apg-v10'", $sw);
         $this->assertStringContainsString("'/game/js/core/enum-names.js'", $sw);
     }
 

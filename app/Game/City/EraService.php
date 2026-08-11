@@ -253,7 +253,13 @@ class EraService
 
         // 治理容量:唯一来源是结算内核返回的 governanceCapacity(= output_json 里 governance_capacity 之和)。
         // 绝不在这里另算一遍,更不能去读 building_level_definition.governance_bonus 列 ——
-        // 两者数值并不相等,同时读就是双计(M2 backlog C4 点名的坑)
+        // 两者数值并不相等,同时读就是双计(M2 backlog C4 点名的坑)。
+        //
+        // ⚠️ W6 起内核另有一个 governanceCapacityEffective(= (建筑口径 + 行政 NPC flat) × (1 + NPC/工具/事件 pct)),
+        // 时代门槛**刻意继续读建筑口径**:一位随时可辞退的 NPC、一件会磨损的工具、一个 20 分钟的事件 buff
+        // 都不该把城市顶过升代门槛(过了线人一走城市就"倒退")。时代要的是常备行政力,
+        // 税收效率要的是此刻的行政效率 —— 与 DIM_DEFENSE 读 defenseScore(而非有效国防值)是同一条口径,
+        // 两条都由测试钉死(GovernanceCapacityTest / DefenseThreatTest 各一条)
         $rows[] = self::row(self::DIM_GOVERNANCE, $need['governance'], (float) ($sim['governanceCapacity'] ?? 0));
 
         $rows[] = self::row(self::DIM_HAPPINESS, $need['happiness'], (float) ($sim['happiness'] ?? 0));

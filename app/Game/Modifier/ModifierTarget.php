@@ -66,9 +66,33 @@ final class ModifierTarget
     public const CONSTRUCTION_SPEED_PCT = 'construction_speed_pct';
     public const MAINTENANCE_COST_PCT = 'maintenance_cost_pct';
     public const MARKET_FEE_PCT = 'market_fee_pct';
-    public const GOVERNANCE_CAPACITY_PCT = 'governance_capacity_pct';
     public const RESEARCH_SPEED_PCT = 'research_speed_pct';
     public const EVENT_LOSS_REDUCTION_PCT = 'event_loss_reduction_pct';
+
+    // ---- 治理容量两条(M3-W6 清偿,口径镜像国防 flat/pct)----
+    //
+    // 为什么必须是两条:v3.2 原文里治理效果同样有**两种写法**,与国防一字不差 ——
+    //   §6.3 N013「治理+30」/ N051「治理容量+20」/ N111「治理容量+22」→ governance_capacity_flat(op=flat)
+    //   §6.3 N001「治理+10%」等 15 位行政 NPC / §7 IT022「治理效率+10%」
+    //   / §9.2 EVT_CORRUPTION 选项 B「治理容量暂时-10%」                → governance_capacity_pct(op=pct)
+    //
+    // W1 登记时只开了 pct 一条,于是出现本项目最典型的一种「死 target」:
+    //   ① pct 通道登记了却**没有任何消费点**(W5 核对全仓确认),15 处 pct 投稿一律静默失效;
+    //   ② 3 处 flat 投稿为了有地方写,被塞进了 pct 这条 target(op=flat),
+    //      而 ConsumptionPoint 只认 op=pct —— 就算 pct 有了消费点也仍然读不到。
+    // 也就是说「登记了 ≠ 生效」,而且**投稿口径与 target 口径不符时是静默的**。
+    // 拆成两条 + 迁移把 3 处 flat 投稿挪到 flat target,两个毛病一次清干净。
+    //
+    // 两条的**唯一消费点都是 SimulationService**(D0.3 纪律:一个 target 一个消费点)。
+    // 合成顺序与国防逐字相同:
+    //     有效治理容量 = max(0, (建筑口径 + Σflat) × (1 + Σpct))
+    //
+    // 为什么消费点是内核而不是读取侧(与国防相反):治理容量是 §10.5/§10.6 的
+    // governanceLoad 的**分母**,内核当场就要用它算 governanceEfficiency → taxIncome。
+    // 放读取侧只能改显示值,税收仍按建筑口径算 —— 那就是「HUD 说治理 +30%、税收却没动」的两套真相
+    //(与 W5 运输容量必须在内核里乘、而不像国防那样在读取侧叠加,是同一条理由)。
+    public const GOVERNANCE_CAPACITY_FLAT = 'governance_capacity_flat';
+    public const GOVERNANCE_CAPACITY_PCT = 'governance_capacity_pct';
 
     // ---- 容量类三条 + 税收 + 市场价格(M3-W5 新增)----
     //
@@ -153,27 +177,53 @@ final class ModifierTarget
         self::MARKET_FEE_PCT => [
             'consumer' => 'App\Game\Market\MarketService',
             'wave'     => 'W2-B',
-            'desc'     => '市场成交手续费:商人类 NPC 与贸易工具降低 fee_rate',
+            // ⚠️ **仍是死 target**(W6 全仓核对):登记在册,但 app/Game/Market 里没有任何一处读它。
+            // 投稿方已经就位:§6.3 的 8 位商人类 NPC(N029/N086/N146 等「市场手续费 −10%」)与 §7 的 1 件贸易工具。
+            // 与 governance 清偿前一模一样的形态 —— 数据写好了、缺的只是一个消费点。
+            // 接线落点:TradeService 算 fee 的那一行(fee_rate × max(0, 1 + pct)),取数走 ConsumptionPoint::pct()。
+            // 本波次不接:市场代码归并行波次所有(backlog §10.2 文件所有权互斥)。**下一波请清这一条。**
+            'wired'    => false,
+            'desc'     => '市场成交手续费:商人类 NPC 与贸易工具降低 fee_rate(⚠️ 尚无消费点,登记未接线)',
+        ],
+        // 治理容量两条(W6 清偿):消费点都是**结算内核的容量提取之后那一处**,与容量类三条同一处。
+        // 两条共用同一次 ConsumptionPoint::sumsMany(三查一趟,分段循环之外),
+        // op / scope 的判定口径与容量类逐字一致(flat 通道只收 flat、pct 通道只收 pct,只认 scope=city)。
+        self::GOVERNANCE_CAPACITY_FLAT => [
+            'consumer' => 'App\Game\Simulation\SimulationService',
+            'wave'     => 'W6',
+            'wired'    => true,
+            'desc'     => '全城治理容量的绝对加成:§6.3 的 N013(+30)/ N051(+20)/ N111(+22)三位行政 NPC。'
+                . '口径 = max(0, (建筑口径 + Σflat) × (1 + Σpct)),消费点在结算内核的容量提取之后',
         ],
         self::GOVERNANCE_CAPACITY_PCT => [
             'consumer' => 'App\Game\Simulation\SimulationService',
-            'wave'     => 'W2-A',
-            // ⚠️ wired 仍为 false:登记在册,但内核里**没有任何一处读它**(W5 核对过全仓)。
-            // 也就是说 N001 / N026 / N029 等的「治理+X%」与 IT022 的「治理效率+10%」目前一律不生效。
-            // 本波次刻意不顺手接上,原因有二:①它不在本波次的三组 target 范围内(改内核要有明确授权);
-            // ②N013 / N046 等写的是 op=flat(治理+30),pct 通道读不到,要接就得连 flat 通道一起设计,
-            // 那是一个独立的小波次,不该夹带在容量/税收/价格这一波里。**下一波请先清这一条。**
-            'desc'     => '全城治理容量:N001 等行政 NPC 的「治理 +10%」类特性(⚠️ 尚无消费点,登记未接线)',
+            'wave'     => 'W6',
+            'wired'    => true,
+            'desc'     => '全城治理容量的百分比加成:§6.3 十五位行政 NPC 的「治理 +X%」(N001/N026/N029/N035/'
+                . 'N042/N058/N066/N077/N082/N086/N101/N118/N137/N142/N146)、§7 IT022「治理效率+10%」、'
+                . '§9.2 EVT_CORRUPTION 选项 B「治理容量暂时 −10%」。'
+                . '作用面 = governanceLoad → governanceEfficiency → taxIncome 与快照的 governance 块;'
+                . '**时代门槛不吃它**(EraService 继续读建筑口径,理由见 SimulationService 的消费点注释)',
         ],
         self::RESEARCH_SPEED_PCT => [
             'consumer' => 'App\Game\Technology\TechService',
             'wave'     => 'W2-A',
-            'desc'     => '研究时长:学者类 NPC 与研究工具缩短 research_minutes',
+            // ⚠️ **仍是死 target**(W6 全仓核对):TechService 算 finished_at 时没有读它。
+            // 投稿方已就位:§6.3 的 7 位学者类 NPC(「研究速度 +X%」)。
+            // 接线落点:TechService::research 计算 research_minutes 的那一行,
+            // 口径与建造加速逐字一致 —— **除以 (1 + pct)**(速度口径),不是乘 (1 − pct):
+            // 后者在 pct ≥ 1 时会把研究时长算成 0 或负数(建造那一处的注释里有同一条说明)。
+            // 下限同样要夹(如 0.1 倍时长),防止后台把加成填成天文数字后瞬间完成研究。
+            'wired'    => false,
+            'desc'     => '研究时长:学者类 NPC 与研究工具缩短 research_minutes(⚠️ 尚无消费点,登记未接线)',
         ],
         self::EVENT_LOSS_REDUCTION_PCT => [
             'consumer' => 'App\Game\Event\EventService',
             'wave'     => 'W3-B',
-            'desc'     => '负面事件的资源损失减免:防御工具与危机管理特性',
+            'wired'    => true,
+            'desc'     => '负面事件的资源损失减免:防御工具与危机管理特性(N001 等)。'
+                . '只减免**自动效果里的库存损失**,不减免选项里玩家自愿掏的钱;'
+                . '减免后的比例落进 rolled.loss.pct,「损失减半」类选项按减免后的值继续算,不会双重减免',
         ],
         // 下面两条的消费点是**内核里唯一一处**为「系统级常态开销」开的口子
         // (用户 2026-08-11 以内核所有者身份对 W2-A 一次性豁免):
@@ -183,11 +233,13 @@ final class ModifierTarget
         self::EXPENSE_MONEY_PER_MIN => [
             'consumer' => 'App\Game\Simulation\SimulationService',
             'wave'     => 'W2-A',
+            'wired'    => true,
             'desc'     => '系统级常态资金支出(资金/分钟):NPC 工资(§6.3 wage_per_min)是首个投稿者',
         ],
         self::EXPENSE_FOOD_PER_MIN => [
             'consumer' => 'App\Game\Simulation\SimulationService',
             'wave'     => 'W2-A',
+            'wired'    => true,
             'desc'     => '系统级常态口粮支出(粮食/分钟):NPC 口粮(§6.3 food_per_min)是首个投稿者',
         ],
         // 国防三条(W4-B):消费点全部是 DefenseService,**读取侧**聚合,内核容量提取不动。

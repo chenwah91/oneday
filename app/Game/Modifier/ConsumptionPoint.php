@@ -21,8 +21,13 @@ use Illuminate\Support\Facades\DB;
 //   ② 在编 NPC(idle + assigned)的 trait_json;
 //   ③ 已装备且耐久 > 0 的工具的 effect_json。
 //
-// 只认 **op=pct + scope=city**:这类 target 描述的都是全城性的规则修正(工期 / 维护费 / 手续费),
+// 只认 **scope=city**:这类 target 描述的都是全城性的规则修正(工期 / 维护费 / 手续费 / 治理容量),
 // 没有「只对某一栋楼的维护费打折」的语义。逐栋的效果一律走七乘区,不走这里。
+//
+// op 的口径:pct() / pctMany() 只收 op=pct(名字里的 pct 就是这个意思);
+// 需要同时拿 flat 与 pct 的消费点(治理容量 W6)走 sumsMany(),它按 op 分桶、两侧分开返回。
+// **两侧一律不混**:op 与 target 口径不符的行整条跳过,而不是猜一个语义 ——
+// governance 死 target 的病根就是「flat 投稿塞进 pct target」被静默吞掉。
 //
 // 缺表一律按「没有投稿」处理(Fail Safe):NPC / 工具 / 事件迁移没跑的库仍应照常结算。
 //
@@ -51,9 +56,30 @@ final class ConsumptionPoint
     // 纪律不变:仍然只认 op=pct + scope=city,仍然必须在**分段循环之外**调用。
     public static function pctMany(array $targets, int $cityId, ?Carbon $now = null): array
     {
+        // pct 侧就是 sumsMany 结果的一半:两个方法只写一份取数,免得口径分叉
+        return array_map(
+            static fn (array $sums): float => $sums[ModifierSpec::OP_PCT],
+            self::sumsMany($targets, $cityId, $now)
+        );
+    }
+
+    // 一次取回多条 target 的 **pct 与 flat 两侧**合计:返回 [target => ['pct' => …, 'flat' => …]],
+    // 入参里的 target 一个都不会缺(没投稿就是 0.0)。
+    //
+    // 为什么要有这一条而不是「pctMany + flatMany 各调一次」:治理容量(W6)与国防(W4-B)一样,
+    // 同一个消费点要在**同一次读取**里同时拿到 flat 与 pct 才能按固定顺序合成
+    //((建筑口径 + Σflat) × (1 + Σpct))。分两趟取等于把三张表各查两遍 ——
+    // 口径完全一样,多出来的纯粹是往返(与 pctMany 相对逐条 pct() 省的是同一种东西)。
+    //
+    // 与 DefenseService::bonuses() 的关系:那一处是**读取侧**的三条国防 target 专用聚合,
+    // 挂在每次快照上;本方法是通用入口,内核的消费点用它。两处的判定口径逐字一致 ——
+    // 只认 scope=city,flat 通道只收 op=flat、pct 通道只收 op=pct,**口径不符的行整条跳过**
+    //(不猜语义:猜错在运行时只表现为数值悄悄不对,那正是 governance 死 target 的病根)。
+    public static function sumsMany(array $targets, int $cityId, ?Carbon $now = null): array
+    {
         $now ??= now();
 
-        $totals = array_fill_keys($targets, 0.0);
+        $totals = array_fill_keys($targets, [ModifierSpec::OP_PCT => 0.0, ModifierSpec::OP_FLAT => 0.0]);
         if ($targets === []) {
             return $totals;
         }
@@ -63,23 +89,21 @@ final class ConsumptionPoint
             $rows = DB::table('city_active_modifiers')
                 ->where('city_id', $cityId)
                 ->whereIn('target', $targets)
-                ->where('op', ModifierSpec::OP_PCT)
+                ->whereIn('op', ModifierSpec::OPS)
                 ->where('scope', ModifierSpec::SCOPE_CITY)
                 ->where('starts_at', '<=', $now)
                 ->where('ends_at', '>', $now)
-                ->get(['target', 'value']);
+                ->get(['target', 'op', 'value']);
 
             foreach ($rows as $row) {
-                $totals[(string) $row->target] += (float) $row->value;
+                $totals[(string) $row->target][(string) $row->op] += (float) $row->value;
             }
         }
 
         // ② 在编 NPC 的特性 / ③ 已装备且耐久 > 0 的工具:两处的 specs 走同一条累加
         foreach (self::citySpecs($cityId) as $spec) {
-            if (array_key_exists($spec->target, $totals)
-                && $spec->op === ModifierSpec::OP_PCT
-                && $spec->scope === ModifierSpec::SCOPE_CITY) {
-                $totals[$spec->target] += $spec->value;
+            if (array_key_exists($spec->target, $totals) && $spec->scope === ModifierSpec::SCOPE_CITY) {
+                $totals[$spec->target][$spec->op] += $spec->value;
             }
         }
 

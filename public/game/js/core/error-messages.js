@@ -15,6 +15,22 @@ export const ERROR_MESSAGES = {
     // 人口 / 劳动力(v3.2 §10.4)
     WORKER_NOT_AVAILABLE: '可用工人不足,先从别的建筑撤回工人或增加人口',
 
+    // 仓储已满:本次增量会让资源超过当前仓储上限(市场买入、拆除返还、管理员补偿共用)
+    STORAGE_FULL: '仓储已满,先扩建仓库或先处理掉一些资源',
+
+    // NPC(M3-D1):四个码分工明确,别在面板里合并成一句「操作失败」
+    NPC_ALREADY_ASSIGNED: '这名 NPC 已在其它岗位,先撤下才能换岗',
+    NPC_SLOT_FULL: '这栋建筑的 NPC 槽位已满,先撤下一个或选别的建筑',
+    NPC_NOT_AVAILABLE: '这名 NPC 或目标建筑当前不可用',
+    NPC_ERA_REQUIRED: '当前时代还招不到这一档人才,先升级时代',
+
+    // 市场(M3-D3)
+    // MARKET_LIMIT_REACHED 的默认文案只说结论;两条口径(等下一窗 vs 贸易容量不足)
+    // 要读响应 details 才分得出来,由 ui/market-panel.js 现算现拼
+    MARKET_LIMIT_REACHED: '成交量已达上限,等下一窗再试',
+    RESOURCE_NOT_TRADEABLE: '这种资源不能在现货市场买卖',
+    MARKET_CLOSED: '市场已停市,暂时无法买卖',
+
     // 科技研究(M2-B1)
     TECH_NOT_UNLOCKED: '前置科技尚未解锁',
     RESEARCH_IN_PROGRESS: '已有科技在研究中,完成后才能开始下一项',

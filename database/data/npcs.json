@@ -146,7 +146,7 @@
       "wage_per_min": 8, "food_per_min": 1, "rarity": "uncommon",
       "recruit_source": "recruit", "recruit_desc_zh": "行政建筑招募", "trait_desc_zh": "税收+8%,治理+30",
       "trait_json": { "specs": [
-        { "target": "governance_capacity_pct", "scope": "city", "op": "flat", "value": 30 },
+        { "target": "governance_capacity_flat", "scope": "city", "op": "flat", "value": 30 },
         { "target": "tax_income_pct", "scope": "city", "op": "pct", "value": 0.08 }
       ], "unmapped_zh": [] }
     },
@@ -486,7 +486,7 @@
       "wage_per_min": 8, "food_per_min": 1, "rarity": "uncommon",
       "recruit_source": "recruit", "recruit_desc_zh": "行政建筑招募", "trait_desc_zh": "治理容量+20",
       "trait_json": { "specs": [
-        { "target": "governance_capacity_pct", "scope": "city", "op": "flat", "value": 20 }
+        { "target": "governance_capacity_flat", "scope": "city", "op": "flat", "value": 20 }
       ], "unmapped_zh": [] }
     },
     {
@@ -1022,7 +1022,7 @@
       "wage_per_min": 7, "food_per_min": 1, "rarity": "uncommon",
       "recruit_source": "recruit", "recruit_desc_zh": "行政建筑招募", "trait_desc_zh": "治理容量+22",
       "trait_json": { "specs": [
-        { "target": "governance_capacity_pct", "scope": "city", "op": "flat", "value": 22 }
+        { "target": "governance_capacity_flat", "scope": "city", "op": "flat", "value": 22 }
       ], "unmapped_zh": [] }
     },
     {

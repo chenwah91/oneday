@@ -345,47 +345,94 @@
 
 /* ---- 科技面板(M2-B1)---- */
 
-/* 入口按钮:停在舞台左下角(建筑详情面板在右上,互不遮挡);触控区 >= 44px(CLAUDE §22) */
-.tech-fab {
+/* 入口按钮:横排停在舞台底部(建筑详情面板在右上,互不遮挡);触控区 >= 44px(CLAUDE §22)。
+   .game-fab 是 M3 加进来的 NPC / 市场入口,与科技入口共用同一套外观,只有 left 不同。
+   为什么横排而不是竖排:三块面板都从左下角展开(z-index 30 盖住 z-index 18 的入口),
+   竖排会被打开的面板整条盖住,玩家没法从一个面板直接切到另一个 —— 横排 + 面板上抬 64px
+   让三个入口始终露在面板下方,等于 CLAUDE §21 的 Bottom Navigation。
+   宽度定死 96px:三个按钮的 left 是硬坐标,靠内容撑宽会在不同字体下互相压到 */
+.tech-fab,
+.game-fab {
     position: absolute;
     left: 12px;
     bottom: 12px;
     z-index: 18;
+    width: 96px;
     min-height: 44px;
-    padding: 0 16px;
+    padding: 0 8px;
+    overflow: hidden;
     border: 1px solid #2a3140;
     border-radius: 22px;
     background: #232a36;
     color: #e8eaed;
     font-size: 13px;
     font-weight: 600;
+    white-space: nowrap;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
-.tech-fab.active {
+.tech-fab.active,
+.game-fab.active {
     border-color: #5b8def;
     background: rgba(91, 141, 239, 0.22);
 }
 
+/* 三个入口从左到右排:科技 12 / NPC 116 / 市场 220(96px 宽 + 8px 间距) */
+.npc-fab {
+    left: 116px;
+}
+
+.market-fab {
+    left: 220px;
+}
+
+/* 未派驻 NPC 的红点(§11 的 npc_unassigned) */
+.fab-badge {
+    display: inline-block;
+    min-width: 18px;
+    margin-left: 6px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: #ff6b6b;
+    color: #fff;
+    font-size: 11px;
+    line-height: 18px;
+    text-align: center;
+}
+
+.fab-badge[hidden] {
+    display: none;
+}
+
 /* 面板:从左下角向上展开,绝对定位在地图舞台内,不占用底部建造面板的空间 */
-.tech-panel {
+.tech-panel,
+.npc-panel,
+.market-panel {
     position: absolute;
     left: 12px;
-    bottom: 12px;
+    /* 68 = 入口按钮 44 + 上下各 12 的留白:面板从入口上方展开,三个入口始终露在外面 */
+    bottom: 68px;
     z-index: 30;
     display: flex;
     flex-direction: column;
     width: 340px;
     max-width: calc(100% - 24px);
-    max-height: calc(100% - 24px);
+    max-height: calc(100% - 80px);
     background: #1b212b;
     border: 1px solid #2a3140;
     border-radius: 12px;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
 }
 
-.tech-panel[hidden] {
+.tech-panel[hidden],
+.npc-panel[hidden],
+.market-panel[hidden] {
     display: none;
+}
+
+/* 市场面板要在自身范围内盖停市遮罩,所以必须是定位上下文 */
+.market-panel {
+    overflow: hidden;
 }
 
 .tech-header {
@@ -650,18 +697,30 @@
 
 @media (max-width: 480px) {
     /* 手机:面板铺满宽度、限高 70%,上半屏地图仍可见;入口按钮贴左下 */
-    .tech-panel {
+    .tech-panel,
+    .npc-panel,
+    .market-panel {
         left: 8px;
         right: 8px;
-        bottom: 8px;
+        bottom: 60px;
         width: auto;
         max-width: none;
-        max-height: 70%;
+        max-height: calc(100% - 72px);
     }
 
-    .tech-fab {
+    .tech-fab,
+    .game-fab {
         left: 8px;
         bottom: 8px;
+        width: 92px;
+    }
+
+    .npc-fab {
+        left: 108px;
+    }
+
+    .market-fab {
+        left: 208px;
     }
 
     .tech-chip {
@@ -673,5 +732,635 @@
     .era-btn {
         min-height: 44px;
         font-size: 13px;
+    }
+}
+
+/* ---- 建筑详情里的「派驻 NPC」区块(M3-D1)---- */
+
+.bldg-npcs {
+    padding: 8px 12px 10px;
+    border-top: 1px solid #2a3140;
+}
+
+.bldg-npc-row {
+    margin-top: 6px;
+    color: #e8eaed;
+    font-size: 12px;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.bldg-npcs .bldg-worker-btn {
+    width: 100%;
+    margin-top: 8px;
+}
+
+/* ---- NPC 面板(M3-D1)---- */
+
+.npc-header,
+.market-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #2a3140;
+}
+
+.npc-title,
+.market-title {
+    flex: 0 0 auto;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.npc-counts,
+.market-countdown {
+    margin-left: auto;
+    color: #9aa4b2;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.npc-close,
+.market-close {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #9aa4b2;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.npc-upkeep,
+.market-money {
+    padding: 8px 12px;
+    border-bottom: 1px solid #2a3140;
+    background: #1e2530;
+    color: #9aa4b2;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 派驻模式横幅:从建筑详情进来时提示「在给哪栋楼选人」 */
+.npc-assign-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(91, 141, 239, 0.16);
+    border-bottom: 1px solid #2a3140;
+    color: #cfe0ff;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.npc-link-btn {
+    margin-left: auto;
+    flex: 0 0 auto;
+    min-height: 32px;
+    padding: 0 10px;
+    border: 1px solid #33415c;
+    border-radius: 8px;
+    background: transparent;
+    color: #9aa4b2;
+    font-size: 12px;
+}
+
+.npc-recruit {
+    padding: 8px 12px 10px;
+    border-bottom: 1px solid #2a3140;
+}
+
+.npc-recruit-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.npc-recruit-label {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.npc-recruit-head .npc-btn {
+    margin-left: auto;
+    flex: 0 0 auto;
+    min-width: 88px;
+}
+
+.npc-hint {
+    margin-top: 6px;
+    color: #6b7484;
+    font-size: 12px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+/* 二次确认条:招募花钱、辞退不可恢复,都要再点一次 */
+.npc-confirm {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 107, 107, 0.4);
+    border-radius: 8px;
+    background: rgba(255, 107, 107, 0.08);
+}
+
+.npc-confirm-text {
+    color: #ffa94d;
+    font-size: 12px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.npc-confirm-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.npc-filters {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px 0;
+}
+
+.npc-chip {
+    flex: 1 1 0;
+    min-height: 36px;
+    border: 1px solid #2a3140;
+    border-radius: 8px;
+    background: #232a36;
+    color: #9aa4b2;
+    font-size: 12px;
+}
+
+.npc-chip.active {
+    border-color: #5b8def;
+    background: rgba(91, 141, 239, 0.18);
+    color: #e8eaed;
+}
+
+.npc-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 12px 12px;
+}
+
+.npc-empty {
+    padding: 16px 0;
+    color: #6b7484;
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+.npc-item {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border: 1px solid #2a3140;
+    border-radius: 10px;
+    background: #232a36;
+}
+
+.npc-item.is-assigned {
+    border-color: #3a7d5c;
+}
+
+.npc-item-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.npc-item-name {
+    font-size: 13px;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+/* 稀有度徽章:只做视觉分层,不代表任何数值加成(§6.2) */
+.npc-rarity {
+    margin-left: auto;
+    flex: 0 0 auto;
+    padding: 1px 7px;
+    border-radius: 9px;
+    border: 1px solid #3a4354;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.npc-rarity.is-common {
+    border-color: #4a5364;
+    color: #9aa4b2;
+}
+
+.npc-rarity.is-uncommon {
+    border-color: #3a7d5c;
+    color: #57c46b;
+}
+
+.npc-rarity.is-rare {
+    border-color: #3f6ab5;
+    color: #6fa8ff;
+}
+
+.npc-rarity.is-epic {
+    border-color: #7a52c4;
+    color: #b18cff;
+}
+
+.npc-rarity.is-legendary {
+    border-color: #d99a3c;
+    color: #ffc061;
+}
+
+.npc-item-meta {
+    margin-top: 4px;
+    color: #9aa4b2;
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.npc-morale {
+    color: #57c46b;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 士气低于离职线:警示色(阈值是显示常量,权威判定在服务端) */
+.npc-morale.is-low {
+    color: #ff6b6b;
+    font-weight: 600;
+}
+
+.npc-morale-note {
+    color: #ff6b6b;
+}
+
+.npc-item-status {
+    margin-top: 4px;
+    color: #ffb84d;
+    font-size: 12px;
+    word-break: break-word;
+}
+
+.npc-item-status.is-on-duty {
+    color: #8bd17c;
+}
+
+.npc-item-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* 触控区固定 >= 44px(CLAUDE §22),桌面端同样适用,避免两套尺寸 */
+.npc-btn {
+    flex: 1 1 0;
+    min-height: 44px;
+    padding: 6px 8px;
+    border: 1px solid #2a3140;
+    border-radius: 8px;
+    background: #232a36;
+    color: #e8eaed;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.npc-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.npc-btn-primary {
+    border-color: #5b8def;
+    background: #5b8def;
+    color: #fff;
+}
+
+.npc-btn-danger {
+    border-color: #ff6b6b;
+    background: #ff6b6b;
+    color: #fff;
+}
+
+.npc-btn-outline-danger {
+    border-color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.12);
+    color: #ff6b6b;
+}
+
+.npc-btn-ghost {
+    border-color: #333c4a;
+    background: transparent;
+    color: #9aa4b2;
+}
+
+/* 选建筑:展开在 NPC 卡片里,槽位满的置灰 */
+.npc-picker {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #2a3140;
+}
+
+.npc-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 6px;
+    padding: 6px 10px;
+    border: 1px solid #2a3140;
+    border-radius: 8px;
+    background: #1e2530;
+    color: #e8eaed;
+    font-size: 12px;
+    text-align: left;
+}
+
+.npc-picker-item:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.npc-picker-slot {
+    margin-left: auto;
+    flex: 0 0 auto;
+    color: #9aa4b2;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* ---- 市场面板(M3-D3)---- */
+
+/* 事件价格冲击横幅(成交后才拿得到 event_price_pct,见 market-panel.js 顶部说明) */
+.market-banner {
+    padding: 8px 12px;
+    background: rgba(217, 154, 60, 0.16);
+    border-bottom: 1px solid #2a3140;
+    color: #ffc061;
+    font-size: 12px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.market-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 8px 8px;
+}
+
+.market-empty {
+    padding: 16px 0;
+    color: #6b7484;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* 一行价目:资源 / 现价 / 涨跌 / 波动。整行是按钮,触控区 >= 44px */
+.market-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 62px 68px 44px;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    min-height: 44px;
+    padding: 4px 6px;
+    border: none;
+    border-bottom: 1px solid #232a36;
+    border-radius: 6px;
+    background: transparent;
+    color: #e8eaed;
+    font-size: 12px;
+    text-align: left;
+}
+
+.market-row.is-head {
+    min-height: 28px;
+    color: #6b7484;
+    font-size: 11px;
+    background: transparent;
+}
+
+.market-row.is-selected {
+    background: rgba(91, 141, 239, 0.18);
+}
+
+.market-row.is-locked {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.market-cell {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.market-cell.c1,
+.market-cell.c2,
+.market-cell.c3 {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.market-cell.c3 {
+    color: #6b7484;
+}
+
+/* 涨红跌绿(中文行情惯例);对买方而言涨价本来就是坏消息,与 HUD 告警色系一致 */
+.market-cell.c2.is-up {
+    color: #ff6b6b;
+}
+
+.market-cell.c2.is-down {
+    color: #57c46b;
+}
+
+.market-tag {
+    margin-left: 6px;
+    padding: 0 5px;
+    border: 1px solid #3a4354;
+    border-radius: 8px;
+    color: #6b7484;
+    font-size: 10px;
+}
+
+/* 买卖表单:面板底部固定区(列表滚动,表单常驻可见) */
+.market-form {
+    flex: 0 0 auto;
+    padding: 8px 12px 12px;
+    border-top: 1px solid #2a3140;
+    background: #1e2530;
+}
+
+.market-form-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.market-form-name {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.market-form-held {
+    margin-left: auto;
+    color: #9aa4b2;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.market-sides {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.market-chip {
+    flex: 1 1 0;
+    min-height: 36px;
+    border: 1px solid #2a3140;
+    border-radius: 8px;
+    background: #232a36;
+    color: #9aa4b2;
+    font-size: 12px;
+}
+
+.market-chip.active {
+    border-color: #5b8def;
+    background: rgba(91, 141, 239, 0.18);
+    color: #e8eaed;
+}
+
+.market-qty {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.market-step {
+    flex: 0 0 44px;
+    min-width: 44px;
+    min-height: 44px;
+    border: 1px solid #2a3140;
+    border-radius: 8px;
+    background: #232a36;
+    color: #e8eaed;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.market-step-wide {
+    flex: 0 0 56px;
+    font-size: 13px;
+}
+
+.market-qty-input {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid #2a3140;
+    border-radius: 8px;
+    background: #12161c;
+    color: #e8eaed;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+
+.market-estimate {
+    margin-top: 8px;
+    color: #e8eaed;
+    font-size: 12px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.market-note {
+    margin-top: 4px;
+    color: #6b7484;
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.market-warn {
+    margin-top: 6px;
+    padding: 6px 8px;
+    border: 1px solid rgba(217, 154, 60, 0.4);
+    border-radius: 8px;
+    color: #ffc061;
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.market-btn {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 8px;
+    border: 1px solid #5b8def;
+    border-radius: 8px;
+    background: #5b8def;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.market-btn.is-sell {
+    border-color: #d99a3c;
+    background: #d99a3c;
+    color: #1b212b;
+}
+
+.market-btn:disabled {
+    border-color: #2a3140;
+    background: #232a36;
+    color: #6b7484;
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* 停市遮罩:盖住整个面板(行情仍在下面看得见轮廓),只挡买卖 */
+.market-mask {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(13, 17, 22, 0.86);
+    border-radius: 12px;
+}
+
+.market-mask-text {
+    color: #ffa94d;
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+@media (max-width: 480px) {
+    /* 手机:重要按钮触控区按 CLAUDE §22 的 44px 走 */
+    .npc-chip,
+    .market-chip {
+        min-height: 44px;
+        font-size: 13px;
+    }
+
+    /* 窄屏把「现价 / 涨跌 / 波动」三列压窄,给资源名留出空间,不出现横向滚动 */
+    .market-row {
+        grid-template-columns: minmax(0, 1fr) 56px 62px 40px;
     }
 }

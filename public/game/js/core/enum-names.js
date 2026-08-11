@@ -82,6 +82,42 @@ export const TECH_BRANCH_NAMES = {
     defense: '国防',
 };
 
+// ---- NPC(v3.2 §6)----
+// 这几张表的后端单一来源是 app/Game/NPC/NpcCode.php(不是 EnumCode.php),改动时两边同步。
+// 与上面的表同一条纪律:服务器只存英文 code,中文只用于展示,查不到一律回落 code。
+
+// city_npcs.status(3):left 不会出现在快照里(ACTIVE_STATUSES 已过滤),列出只为兜底
+export const NPC_STATUS_NAMES = {
+    idle: '闲置',
+    assigned: '派驻中',
+    left: '已离场',
+};
+
+// npc_definition.rarity(5)。§6.2:稀有度只决定初始技能值、特殊特性与招募难度,不进乘区
+export const NPC_RARITY_NAMES = {
+    common: '普通',
+    uncommon: '优秀',
+    rare: '稀有',
+    epic: '史诗',
+    legendary: '传说',
+};
+
+// npc_definition.primary_skill_id(§6.1 的 12 条)
+export const NPC_SKILL_NAMES = {
+    SKILL_GATHERING: '采集',
+    SKILL_AGRICULTURE: '农业',
+    SKILL_MINING: '采矿',
+    SKILL_PROCESSING: '加工',
+    SKILL_CONSTRUCTION: '建筑',
+    SKILL_COMMERCE: '商贸',
+    SKILL_ADMIN: '行政',
+    SKILL_RESEARCH: '科研',
+    SKILL_MEDICINE: '医疗',
+    SKILL_ENGINEERING: '工程',
+    SKILL_LOGISTICS: '物流',
+    SKILL_DEFENSE: '国防',
+};
+
 function lookup(table, code) {
     if (!code) return '';
     return table[code] || code;
@@ -105,4 +141,16 @@ export function resourceCategoryName(code) {
 
 export function techBranchName(code) {
     return lookup(TECH_BRANCH_NAMES, code);
+}
+
+export function npcStatusName(code) {
+    return lookup(NPC_STATUS_NAMES, code);
+}
+
+export function npcRarityName(code) {
+    return lookup(NPC_RARITY_NAMES, code);
+}
+
+export function npcSkillName(code) {
+    return code ? lookup(NPC_SKILL_NAMES, code) : '无主技能';
 }

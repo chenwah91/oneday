@@ -184,5 +184,23 @@ class GameDataVersionSeeder extends Seeder
                 'notes'       => 'M3-W5 容量/税收/价格三组 target 接线:六条事件复活(路线中断/港口拥堵/犯罪浪潮/贪腐案/市场投机/石油冲击)+ IT018 与 11 位 NPC 特性提升 + 贸易容量接市场成交量上限',
             ]
         );
+
+        // M3-W6 治理容量死 target 清偿(4 行定义数据的行内容变了,吃补丁位)。
+        // 已有数据的库由 2026_08_12_300002 迁移递增到同一版本。
+        // 为什么是补丁位:没有新表、没有新行、没有一栋建筑的产出 / 成本 / 升级链被改 ——
+        //   npc_definition 的 N013 / N051 / N111 由 governance_capacity_pct(op=flat)
+        //     改挂 governance_capacity_flat(数值 30 / 20 / 22 一个没动);
+        //   event_definition 的 EVT_CORRUPTION 选项 B「治理容量暂时-10%」由 unmapped 提升为 modifier。
+        // 但同一批定义数据在 V3.6.1 与 V3.6.2 下会算出不同结果:18 位行政 NPC 与 IT022 的治理加成
+        // 第一次真的进 governanceLoad → governanceEfficiency → 税收,所以仍要留一个版本号(§64 / §65)。
+        // ⚠️ 版本号必须严格升序追加在末尾:current() 取 id 最大的一行,插反了「当前版本」会回退。
+        DB::table('game_data_versions')->updateOrInsert(
+            ['version' => 'V3.6.2'],
+            [
+                'deployed_at' => now(),
+                'deployed_by' => 'seed',
+                'notes'       => 'M3-W6 治理容量 target 清偿:拆成 governance_capacity_flat + pct 两条并接进结算内核(18 位行政 NPC 与 IT022 的治理加成首次生效)+ EVT_CORRUPTION 选项 B 治理减益提升',
+            ]
+        );
     }
 }

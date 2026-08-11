@@ -6,6 +6,7 @@ use App\Game\Building\ConstructionService;
 use App\Game\Defense\DefenseService;
 use App\Game\Modifier\ModifierBus;
 use App\Game\Modifier\ModifierContext;
+use App\Game\Modifier\ModifierSpec;
 use App\Game\Modifier\ModifierTarget;
 use App\Game\Modifier\ConsumptionPoint;
 use App\Game\Modifier\Providers\LogisticsMultiplierProvider;
@@ -342,22 +343,31 @@ class SimulationService
 
         // ==== 非产量 target 的取数(D0.3):一趟查完,全部在分段循环之外 ====
         //
-        // 五条 target 一次捞回(pctMany = 三张表各查一次,不是每条 target 各查三次)。
+        // 七条 target 一次捞回(sumsMany = 三张表各查一次,不是每条 target 各查三次)。
         // 三个来源与逐条的 ConsumptionPoint::pct() 完全同口径:事件 modifier / 在编 NPC 特性 / 已装备工具,
-        // 只认 op=pct + scope=city。
+        // 只认 scope=city;pct 侧只收 op=pct、flat 侧只收 op=flat(口径不符的行整条跳过)。
+        // 用 sumsMany 而不是 pctMany,是因为治理容量(W6)要在**同一次读取**里同时拿 flat 与 pct。
         //
         // 位置固定在这里的理由与七乘区的准备段一字不差:
         //   ① 必须在容量提取**之后** —— 要乘的就是刚聚合出来的那三个全城容量;
         //   ② 必须在 $bus->prepare() **之前** —— 物流 Provider 拿走的运输容量必须是**乘过 pct 之后**的值,
         //      否则会出现「HUD 显示运输容量 −30%、物流乘区却按原值算」的两套真相;
         //   ③ 必须在分段循环之外 —— 循环内零查库(与七乘区、维护费减免同一条纪律)。
-        $consumptionPct = ConsumptionPoint::pctMany([
+        $consumption = ConsumptionPoint::sumsMany([
             ModifierTarget::TRANSPORT_CAPACITY_PCT,
             ModifierTarget::TRADE_CAPACITY_PCT,
             ModifierTarget::FINANCE_CAPACITY_PCT,
             ModifierTarget::TAX_INCOME_PCT,
             ModifierTarget::MAINTENANCE_COST_PCT,
+            ModifierTarget::GOVERNANCE_CAPACITY_FLAT,
+            ModifierTarget::GOVERNANCE_CAPACITY_PCT,
         ], (int) $lockedCity->id, $now);
+        // 下面各处仍按「一条 target 一个比例」读用,所以先把 pct 侧摊平成原来的形状 ——
+        // 只有治理容量需要 flat 侧,它自己去 $consumption 里取(见下)
+        $consumptionPct = array_map(
+            static fn (array $sums): float => $sums[ModifierSpec::OP_PCT],
+            $consumption
+        );
 
         // ---- 容量类 pct 的**唯一消费点**(W5)----
         //
@@ -371,6 +381,29 @@ class SimulationService
         $transportCapacity *= max(0.0, 1.0 + $consumptionPct[ModifierTarget::TRANSPORT_CAPACITY_PCT]);
         $tradeCapacity *= max(0.0, 1.0 + $consumptionPct[ModifierTarget::TRADE_CAPACITY_PCT]);
         $financeCapacity *= max(0.0, 1.0 + $consumptionPct[ModifierTarget::FINANCE_CAPACITY_PCT]);
+
+        // ---- 治理容量 flat + pct 的**唯一消费点**(W6 清偿)----
+        //
+        // 合成顺序固定(镜像国防 DefenseService::evaluate,唯一一处,别处不许再算一遍):
+        //     有效治理容量 = max(0, (建筑口径 + Σgovernance_capacity_flat) × (1 + Σgovernance_capacity_pct))
+        // 先加后乘:N013 的「治理 +30」是一位官员带来的绝对治理力,N001 的「治理 +10%」
+        // 是对**整套行政体系**的效率加成 —— 后者理应把前者也一起放大(与国防 flat/pct 同一条语义)。
+        // 下限夹 0:EVT_CORRUPTION 之类把 pct 填成大负数也不该出现负容量(负容量会让 governanceLoad 变负)。
+        //
+        // ══ 建筑口径与有效值刻意分成两个变量 ═══════════════════════════════════════
+        // $governanceCapacity(建筑口径)**保持不变**并原样返回 —— EraService 的时代门槛(DIM_GOVERNANCE)
+        // 读的就是它。理由与国防 W4-B 逐字相同:一个 20 分钟的事件 buff / 一位随时可辞退的 NPC
+        // 不该把城市顶过升代门槛(过了门槛人一走城市就"倒退")。时代要的是**常备治理力**,
+        // 税收效率要的是**此刻的行政效率**,两者刻意不同源。
+        // 这条由 GovernanceCapacityTest::test_era_gate_reads_building_capacity_not_effective 钉着。
+        //
+        // 作用面只有两处,都吃 $governanceCapacityEffective:
+        //   ① 下面分段循环里的 governanceLoad(→ governanceEfficiency → taxIncome);
+        //   ② 快照的 governance 块(capacity 给有效值、capacity_base 给建筑口径,与 defense 块同构)。
+        // 威胁 / 幸福 / 治安一概不涉及治理容量(§10.2 / §10.8 没有治理项),所以没有第三处。
+        $governanceFlat = $consumption[ModifierTarget::GOVERNANCE_CAPACITY_FLAT][ModifierSpec::OP_FLAT];
+        $governancePct = $consumptionPct[ModifierTarget::GOVERNANCE_CAPACITY_PCT];
+        $governanceCapacityEffective = max(0.0, ($governanceCapacity + $governanceFlat) * (1.0 + $governancePct));
 
         // ---- 国防读数统一(W4-B 留下的两处口径差,内核合并后在这里收口)----
         //
@@ -405,7 +438,9 @@ class SimulationService
                 ModifierContext::CAP_POPULATION => $populationCap,
                 ModifierContext::CAP_MEDICAL    => $medicalCapacity,
                 ModifierContext::CAP_DEFENSE    => $defenseScore,
-                ModifierContext::CAP_GOVERNANCE => $governanceCapacity,
+                // 治理容量给**有效值**(与 CAP_TRANSPORT 同口径:两者的 pct 都在内核里乘完了)。
+                // 目前没有任何 Provider 读这一格,给有效值是为了「将来第一个读它的人拿到的就是真实生效的容量」
+                ModifierContext::CAP_GOVERNANCE => $governanceCapacityEffective,
                 ModifierContext::CAP_TRANSPORT  => $transportCapacity,
                 ModifierContext::CAP_POWER      => $powerCapacityPerMin,
             ],
@@ -540,8 +575,9 @@ class SimulationService
 
             // ---- 本段财政(§10.5 / §10.6):必须先于 segmentRates,因为欠费会打折本段产出 ----
             //
-            // 治理效率与税收都按「段起人口」算 —— 与粮耗、幸福目标同一条「段内人口恒定」纪律
-            $governanceLoad = self::governanceLoad($population, $governanceCapacity);
+            // 治理效率与税收都按「段起人口」算 —— 与粮耗、幸福目标同一条「段内人口恒定」纪律。
+            // 分母用**有效治理容量**(建筑口径 + flat,再乘 pct):W6 起行政 NPC 与 IT022 真正生效
+            $governanceLoad = self::governanceLoad($population, $governanceCapacityEffective);
             $governanceEfficiency = self::governanceEfficiency($governanceLoad);
             // taxIncome = population × taxPerCapitaPerMin × governanceEfficiency × (1 + Σtax_income_pct)(§10.5)。
             // 税率仍然固定、玩家不可调(§10.5「M2:税率固定 / 玩家不可调」);
@@ -692,12 +728,19 @@ class SimulationService
             // 本次结算里 security 覆盖率与 §10.2 国防幸福加成用的就是它,回传只为让调用方看得见「用的是哪个数」
             'defenseScoreEffective'   => $effectiveDefenseScore,
             // 财政 / 治理(§10.5 / §10.6),全部是「最后一段口径」的派生值,一个都不落库:
-            //   governanceCapacity 全城治理容量(唯一来源 = output_json 的 governance_capacity)
+            //   governanceCapacity 全城治理容量的**建筑口径**(唯一来源 = output_json 的 governance_capacity)。
+            //     刻意不换成有效值:EraService 的时代门槛(DIM_GOVERNANCE)拿它当基数,
+            //     换成有效值会让「临时 buff / 随时可辞退的 NPC 顶过升代门槛」(与 defenseScore 同一条口径)
+            //   governanceCapacityEffective / Flat / Pct 有效治理容量与它的两段来源(W6):
+            //     有效值 = max(0, (建筑口径 + Σflat) × (1 + Σpct)),governanceLoad 用的就是它
             //   governanceLoad / governanceEfficiency 治理负载与四档效率
             //   taxIncomePerMin 本段税收速率(资金/分钟)
             //   maintenanceMoneyPerMin 全城维护资金速率(财政预警的分母,也是欠费判定的依据)
             //   maintenanceRate / maintenanceArrears 欠费半停工状态(§10.5 要求的 maintenanceArrears 等价状态)
             'governanceCapacity'      => $governanceCapacity,
+            'governanceCapacityEffective' => $governanceCapacityEffective,
+            'governanceCapacityFlat'  => $governanceFlat,
+            'governanceCapacityPct'   => $governancePct,
             'governanceLoad'          => $governanceLoad,
             'governanceEfficiency'    => $governanceEfficiency,
             'taxIncomePerMin'         => $taxIncomePerMin,

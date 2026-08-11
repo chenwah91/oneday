@@ -1253,8 +1253,10 @@
         },
         "b": {
           "label_zh": "行政改革",
-          "effects": [],
-          "unmapped_zh": ["治理容量暂时-10% / 结束后+5%:governance_capacity_pct 虽已在 ModifierTarget 登记,但内核里**至今没有任何消费点**(W5 核对过全仓,N001/N026/IT022 等的治理加成同样不生效)。接线要连 op=flat 的投稿(N013「治理+30」)一起设计,属独立小波次 —— 在那之前维持未生效"]
+          "effects": [
+            { "kind": "modifier", "target": "governance_capacity_pct", "scope": "city", "value": -0.10 }
+          ],
+          "unmapped_zh": ["结束后+5% 持续30分钟:事件系统没有「延迟到实例结束才起效」的 kind(modifier 一律从当下起算),本波次不为一条选项发明它。选 B 目前只承接事件期间的治理容量 -10%,事后补偿那一半待补 kind"]
         },
         "c": {
           "label_zh": "忽略",

@@ -76,9 +76,11 @@ function formatCost(cost) {
 }
 
 export class TechnologyPanel {
-    constructor({ api, state }) {
+    constructor({ api, state, onOpen }) {
         this.api = api;
         this.state = state;
+        // onOpen:打开时通知外部(main.js 用它做面板互斥),自己不知道别的面板是谁
+        this.onOpen = onOpen || null;
 
         this.rootEl = null;    // 面板根节点
         this.fabEl = null;     // 打开/关闭入口按钮
@@ -125,6 +127,8 @@ export class TechnologyPanel {
     }
 
     async open() {
+        if (this.onOpen) this.onOpen(this);
+
         this.opened = true;
         this.fabEl.classList.add('active');
         this.rootEl.hidden = false;

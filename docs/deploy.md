@@ -1,12 +1,15 @@
-# 部署指南(M2 v1.1.0)
+# 部署指南(M3 v1.2.0)
 
 ⚠️ **上传前先备份(数据库 + 现有代码)**——本次发布涉及数据库结构变更(迁移)与定义数据(seed),上传前必须先在 cPanel/phpMyAdmin 对生产数据库做一次完整导出备份,并保留一份现有线上代码的副本,确认可回退后再继续。
 
-⚠️ **v1.1.0 特别提醒**:M2 的迁移里有两支会**改写既有存档数据**(资源 ID 中文 → 英文、定义表枚举值中文 → 英文),不是纯加列。这类迁移一旦跑到一半失败,靠 `migrate:rollback` 未必回得干净 —— **备份是唯一可靠的回退手段**,务必先备份再跑。
+⚠️ **v1.2.0 特别提醒**:M3 的 39 支迁移里有 **10 支会改写既有存量数据**(见第 4 步的迁移表「是否动存量数据」列)—— 其中 **9 支动的是定义表**(资源产出补链 / 删三列 / NPC 池 30→150 / 事件复活与特性提升等),**1 支动的是玩家存档**:`2026_08_11_800002_settle_electricity_stock_to_flow` 会**清空玩家的电力库存并折算成资金**(9.F4「电力做流量不做库存」)。这类迁移一旦跑到一半失败,靠 `migrate:rollback` 未必回得干净 —— **备份是唯一可靠的回退手段**,务必先备份再跑。
+
+⚠️ **从 v1.0.x 直接升到 v1.2.0 的库**:M2 的两支中文 → 英文数据迁移(`2026_08_10_200002` / `200003`)也会在同一批里跑。它们同样改存量数据,同样只有备份能回退。
 
 > 本文档只讲「怎么把这份代码库正确地部署到生产环境」。发布前的检查项(自动 + 人工)见 `docs/ops/release-checklist.md`,先过完那份清单再执行本文档的步骤。
 >
-> 版本对应关系:代码 `v1.1.0` · 数值 `game_data_version = V3.1.3` · PWA 缓存 `apg-v9` · 迁移文件 35 支(M3 开发中,每新增一支迁移同步 +1;M3 期间的数值版本已递增到 `V3.2.1`,下次发版时把上面这行的版本坐标一并更新)。
+> 版本对应关系:代码 `v1.2.0` · 数值 `game_data_version = V3.6.2` · PWA 缓存 `apg-v10` · 迁移文件 **67 支** · 后台规则参数 **88 项** · 测试 **829 passed**。
+> (下一个里程碑开发期每新增一支迁移把这里的数字同步 +1;PWA 缓存版本以 `public/game/service-worker.js` 里的实际值为准。)
 
 ---
 
@@ -45,7 +48,7 @@ composer install --no-dev --optimize-autoloader
 - `--no-dev`:不装 `phpunit`/`pail`/`sail` 等开发依赖
 - `--optimize-autoloader`:生成优化过的 classmap,生产环境常规做法
 
-> v1.1.0 **没有新增任何 Composer / 前端第三方依赖**(CLAUDE §37)。`composer.lock` 与 M1 相比未变,后端依赖只有 Laravel 框架本身,前端第三方只有随仓库提交的 `pixi.min.js`。这一步本质上是「在生产机上把 Laravel 框架装回来」,不是拉新东西。
+> v1.2.0 **没有新增任何 Composer / 前端第三方依赖**(CLAUDE §37)。`composer.lock` 自 M1P1 起未变,后端依赖只有 Laravel 框架本身,前端第三方只有随仓库提交的 `pixi.min.js`。这一步本质上是「在生产机上把 Laravel 框架装回来」,不是拉新东西。
 
 ### 3. 配置 `.env`
 
@@ -64,8 +67,15 @@ composer install --no-dev --optimize-autoloader
 | `DB_COLLATION` | `utf8mb4_unicode_ci` | |
 | `SESSION_DRIVER` | `database` | 与开发一致 |
 | `SESSION_SECURE_COOKIE` | `true` | **必须**,生产是 HTTPS,Cookie 必须标记 Secure(`.env.example` 里有中文注释提示,开发环境默认 `false`) |
-| `AUDIT_HMAC_SECRET` | (生成强随机值) | **必须**,审计 Hash Chain 的 HMAC 密钥(`CLAUDE.md` §58/§75)。见下方生成命令 |
+| `AUDIT_HMAC_SECRET` | (生成强随机值) | **必须**,审计 Hash Chain 的 HMAC 密钥(`CLAUDE.md` §58/§75)。见下方生成命令。**一经设定不可更改** |
 | `MARKET_PRICE_SECRET` | (生成强随机值) | **必须**(M3 起),市场价格噪声的确定性随机密钥。缺失时价格恒不波动(保守降级);泄漏 = 玩家可预知未来价格。生成方式同 `AUDIT_HMAC_SECRET`,同级保密,但**可以轮换**(只影响未来窗口的噪声,不破坏任何历史数据) |
+| `EVENT_SECRET` | (生成强随机值) | **必须**(M3 起),随机事件掷点的确定性随机密钥(触发与否 / 抽中谁 / 损失几个百分点都由它派生)。缺失时退化成「从 `APP_KEY` 派生」并写 warning;泄漏 = 玩家可预知未来会触发什么事件、能刷到多轻的损失。**与 `MARKET_PRICE_SECRET` 刻意分成两把独立密钥**:一把泄露不会连带另一套系统全被预测。同样**可以轮换**(只影响未来窗口) |
+
+⚠️ 三把密钥**一把都不能少**。核对方法(生产机上跑,只看有没有值、不打印值):
+
+```bash
+php -r '$e=parse_ini_file(".env"); foreach(["AUDIT_HMAC_SECRET","MARKET_PRICE_SECRET","EVENT_SECRET"] as $k){ printf("%-22s %s\n",$k, empty($e[$k])?"✗ 缺失":"✓ 已配置"); }'
+```
 
 生成 `APP_KEY`:
 
@@ -132,20 +142,99 @@ Laravel 按**文件名排序**执行,不需要手工指定顺序;下表按实际
 >
 > ⚠️ 第 3、4 支是**数据迁移**(改内容,不只是改结构)。它们只处理「还是中文」的行,已经是英文 code 的行会跳过,所以对已升级过的库重复执行是安全的;但**中途失败仍可能留下改了一半的状态**,这是本文顶部强调「先备份」的直接原因。跑完后建议随手抽查:`SELECT resource_id FROM city_resources LIMIT 20;` 应全为英文 code。
 
-#### M3 开发期追加的迁移(按波次滚动登记)
+#### M3(v1.2.0)新增的 39 支迁移
 
-上表是 v1.1.0 的 11 支。M3 开发期每个波次把自己新增的迁移追加到下表**尾部**,不要重排、不要改别人的行。
+上表是 v1.1.0 的 11 支。下表按**波次分节**列出 M3 新增的 39 支,顺序即 Laravel 的文件名字典序执行顺序。
+`28(M2 末) + 39 = 67`,与 `release:check` 报的迁移文件数量对得上。
+
+**⚠️ 动存量数据的共 10 支**(9 支动定义表 + 1 支动玩家存档),已在表里逐支标出,跑之前必须已完成本文顶部要求的备份。
+
+##### 波次 1 — D0 乘数总线 / 审计链 / 映射落地(7 支)
 
 | 迁移文件 | 做什么 | 是否动存量数据 |
 |---|---|---|
+| `2026_08_10_900001_add_hash_chain_to_audit_logs` | `audit_logs` 补 `previous_hash` / `event_hash` 两列 + `idx_audit_chain (city_id, id)` 索引(CLAUDE §58)。历史行两列留 NULL,链从部署时刻开始 | 否(纯加列 + 加索引;MySQL 5.7 会重建整表,表大时选低峰期) |
 | `2026_08_11_050001_seed_initial_resources_setting` | `game_settings` 补一行 `initial_resources`(建城初始资源,对象型设定,含 `money` / `knowledge`)。已有该行的库直接跳过,**不覆盖运营改过的值** | 否(补配置行) |
-| `2026_08_11_150001_drop_double_source_columns_from_building_level_definition` | ⚠️ **表结构变更**:删 `building_level_definition` 的 `happiness_bonus` / `governance_bonus` / `defense_score` 三列(与 `output_json` 双口径且不参与结算,用户 2026-08-10 裁决删列)。单条 ALTER;`down()` 只重建列结构(允许 NULL)**不回填数值** | 是(删列,MySQL 5.7 会重建整表;282 行,代价可忽略) |
-| `2026_08_11_200001_bump_game_data_version_v321` | 删列后递增数值版本 → `V3.2.1`(带 exists 守卫,全新库由 seeder 直接写入时会跳过) | 否 |
+| `2026_08_11_100001_migrate_v320_resource_sources_and_upgrade_remap` | 两份已批准映射草案落地:零来源资源补链(5 种 → 1 种)+ 6 条跨代升级链重映射 + `M01 → M02` 升级链置 NULL | **是(改定义表)** |
+| `2026_08_11_100002_bump_game_data_version_v320` | 递增数值版本 → `V3.2.0` | 否 |
+| `2026_08_11_150001_drop_double_source_columns_from_building_level_definition` | ⚠️ **表结构变更**:删 `building_level_definition` 的 `happiness_bonus` / `governance_bonus` / `defense_score` 三列(与 `output_json` 双口径且不参与结算,用户裁决删列)。`down()` 只重建列结构**不回填数值** | **是(删列;MySQL 5.7 会重建整表,282 行代价可忽略)** |
+| `2026_08_11_200001_bump_game_data_version_v321` | 递增数值版本 → `V3.2.1` | 否 |
+| `2026_08_11_300001_create_audit_chain_heads_table` | 新建 `audit_chain_heads` 链头指针表(每域一行,主键 `global` / `city:<id>`)。**并发正确性所必需**:直接在 `audit_logs` 上取链尾会在多个新城同时写第一条审计时因 gap 锁与 insert intention 锁成环报 1213 Deadlock(已双进程实测)。**与 `2026_08_10_900001` 必须成对上线** | 否(建新表;会把已挂链域的链尾回填进新表,只读 `audit_logs`,不改任何审计行) |
 
-| `2026_08_10_900001_add_hash_chain_to_audit_logs` | `audit_logs` 补 `previous_hash` / `event_hash` 两列 + `idx_audit_chain (city_id, id)` 索引(审计 Hash Chain,CLAUDE §58)。历史行两列留 NULL,链从部署时刻开始 | 否(纯加列 + 加索引;MySQL 5.7 会重建整表,表大时选低峰期) |
-| `2026_08_11_300001_create_audit_chain_heads_table` | 新建 `audit_chain_heads` 链头指针表(每域一行,主键 `global` / `city:<id>`)。**并发正确性所必需**:直接在 `audit_logs` 上取链尾会在多个新城同时写第一条审计时,因 gap 锁与 insert intention 锁成环而报 1213 Deadlock(已双进程实测)。与上一支必须成对上线 | 否(建新表;会把已挂链域的链尾回填进新表,只读 `audit_logs`,不改任何审计行) |
+##### 波次 2 — D1 NPC / D3 市场(8 支)
 
-> ⚠️ 上表的删列迁移是**结构变更**:跑之前务必按本文顶部的要求**先备份数据库**。被删的三列在 `database/data/building_levels.json` 里也已同步删键,回滚后要恢复数值必须重新 seed。
+| 迁移文件 | 做什么 | 是否动存量数据 |
+|---|---|---|
+| `2026_08_11_400001_create_npc_definition_tables` | NPC 定义层三张表(原型 / 技能 / 等级曲线) | 否(新表) |
+| `2026_08_11_400002_create_city_npcs_table` | NPC 运行时表 + `cities.npc_settled_at` 结算时钟。「一 NPC 一岗」由表形状(唯一索引)保证 | 否(新表 + 加列) |
+| `2026_08_11_400003_seed_npc_rule_settings` | `game_settings` 补 31 项 NPC 规则参数 | 否(补配置行) |
+| `2026_08_11_400004_bump_game_data_version_v330` | 递增数值版本 → `V3.3.0` | 否 |
+| `2026_08_11_400005_backfill_npc_definition_data` | 补灌 NPC 定义数据(400001 早期版本只建表不灌数据,补一支保证两条路径一致) | 否(灌定义数据) |
+| `2026_08_11_500001_create_market_tables` | 市场三张表(定义 / 订单 / 窗口成交量) | 否(新表) |
+| `2026_08_11_500002_seed_market_settings` | `game_settings` 补 12 项市场参数(1 条开关 + 11 条数值) | 否(补配置行) |
+| `2026_08_11_500003_bump_game_data_version_v331` | 递增数值版本 → `V3.3.1` | 否 |
+
+##### 波次 3 — D2 工具 / D4 事件(8 支)
+
+| 迁移文件 | 做什么 | 是否动存量数据 |
+|---|---|---|
+| `2026_08_11_600001_create_item_definition_table` | 工具 / 道具定义表(24 行) | 否(新表) |
+| `2026_08_11_600002_create_city_items_table` | 工具运行时表 + `cities.item_settled_at` 耐久结算时钟 | 否(新表 + 加列) |
+| `2026_08_11_600003_seed_item_settings` | `game_settings` 补 6 项工具参数(2 条开关 + 4 条数值) | 否(补配置行) |
+| `2026_08_11_600004_list_cement_medicine_on_market` | RS027 水泥 / RS028 药品上市(已批草案 §7) | **是(改定义表)** |
+| `2026_08_11_600005_bump_game_data_version_v340` | 递增数值版本 → `V3.4.0` | 否 |
+| `2026_08_11_700001_create_event_tables` | 随机事件四张表 + `cities.event_settled_at` 事件结算时钟 | 否(新表 + 加列) |
+| `2026_08_11_700002_seed_event_rule_settings` | `game_settings` 补 22 项事件规则参数 | 否(补配置行) |
+| `2026_08_11_700003_bump_game_data_version_v341` | 递增数值版本 → `V3.4.1` | 否 |
+
+##### 波次 4 — M.1 电力 / D5 国防(7 支)
+
+| 迁移文件 | 做什么 | 是否动存量数据 |
+|---|---|---|
+| `2026_08_11_800001_seed_power_rule_settings` | `game_settings` 补电力规则参数 | 否(补配置行) |
+| `2026_08_11_800002_settle_electricity_stock_to_flow` | ⚠️ **本支会改玩家存量数据**:9.F4「电力做流量不做库存」—— `city_resources` 里的 electricity **存量按交易值折算成资金后清零**。折算走审计留痕 | **是(改玩家存档:清电力库存 + 补资金)** |
+| `2026_08_11_800003_enable_blackout_event` | 电力落地后复活 `EVT_BLACKOUT`(由 Fail Closed 停用转启用,效果 JSON 换成可执行 DSL) | **是(改定义表)** |
+| `2026_08_11_800004_bump_game_data_version_v350` | 递增数值版本 → `V3.5.0` | 否 |
+| `2026_08_11_900001_seed_defense_rule_settings` | `game_settings` 补国防规则参数(8 + 4 项) | 否(补配置行) |
+| `2026_08_11_900002_enable_defense_events` | 复活 `EVT_RAID` / `EVT_BORDER_TENSION`,并把 IT008 / N010 / N016 / N027 的国防特性由 `unmapped` 提升为 spec | **是(改定义表)** |
+| `2026_08_11_900003_bump_game_data_version_v351` | 递增数值版本 → `V3.5.1` | 否 |
+
+##### 波次 5 — NPC 池扩充 / 五条 target 清偿(7 支)
+
+| 迁移文件 | 做什么 | 是否动存量数据 |
+|---|---|---|
+| `2026_08_12_100001_add_name_zh_to_npc_definition` | `npc_definition` 加 `name_zh` 列(中文名) | 否(纯加列) |
+| `2026_08_12_100002_expand_npc_pool_to_150` | NPC 原型池 **30 → 150**(新增 N031~N150 + 回填 name_zh + 10 行军事 NPC 国防特性提升)。全新库由 Seeder 一次灌满,本支只对已有数据的库做 | **是(改定义表:新增 120 行 + 改 10 行)** |
+| `2026_08_12_100003_enable_brain_drain_event` | 复活 `EVT_BRAIN_DRAIN` 人才流失 | **是(改定义表)** |
+| `2026_08_12_100004_bump_game_data_version_v360` | 递增数值版本 → `V3.6.0` | 否 |
+| `2026_08_12_200001_seed_trade_capacity_quota_settings` | `game_settings` 补「贸易容量 → 成交量上限」两项参数 | 否(补配置行) |
+| `2026_08_12_200002_wire_capacity_tax_price_targets` | 容量 / 税收 / 价格三组 target 接线后提升 19 行定义数据:6 条事件复活 + `EVT_TRADE_BOOM` 选项提升 + IT018 + 11 位 NPC 特性 + `SKILL_LOGISTICS` 补 `effect_target`(`EVT_TAX_PROTEST` 只刷说明,**维持停用**) | **是(改定义表)** |
+| `2026_08_12_200003_bump_game_data_version_v361` | 递增数值版本 → `V3.6.1` | 否 |
+
+##### 波次 6 — 治理容量 target 清偿(2 支)
+
+| 迁移文件 | 做什么 | 是否动存量数据 |
+|---|---|---|
+| `2026_08_12_300001_wire_governance_capacity_targets` | 治理容量 target 拆成 `governance_capacity_flat` + `governance_capacity_pct` 后,把 4 行定义数据挪到正确的 target 上:N013 / N051 / N111 的 trait 由 pct target 改挂 flat target(数值 30 / 20 / 22 一个没动),`EVT_CORRUPTION` 选项 B 的治理容量 −10% 由 `unmapped` 提升为可执行 modifier。**不碰 `city_active_modifiers`**(历史上没有任何代码路径能写出需要搬家的行) | **是(改定义表)** |
+| `2026_08_12_300002_bump_game_data_version_v362` | 递增数值版本 → `V3.6.2` | 否 |
+
+> **动存量数据的 10 支汇总**(跑完逐类抽查一次):
+> **动玩家存档(1 支,风险最高)**:`2026_08_11_800002` —— 清电力库存 + 按交易值折算补资金。
+> **动定义表(9 支)**:`2026_08_11_100001`(资源产出补链 + 升级链重映射)· `2026_08_11_150001`(删三列)· `2026_08_11_600004`(水泥/药品上市)· `2026_08_11_800003`(EVT_BLACKOUT 复活)· `2026_08_11_900002`(两条国防事件复活 + 国防特性提升)· `2026_08_12_100002`(NPC 池 30→150)· `2026_08_12_100003`(EVT_BRAIN_DRAIN 复活)· `2026_08_12_200002`(19 行 target 提升)· `2026_08_12_300001`(4 行治理 target 提升)。
+> 定义表这 9 支都是**幂等的定点写**(updateOrInsert / 按主键 update),重复跑等于把这些行刷回 `database/data/*.json` 的样子;`800002` 只处理 `amount > 0` 的行 —— 跑第二次时它们已经是 0,一行都不匹配,完全 no-op,不会重复补偿。
+>
+> 抽查建议:
+> ```sql
+> SELECT COUNT(*) FROM npc_definition;                        -- 应为 150
+> SELECT COUNT(*) FROM item_definition;                       -- 应为 24
+> SELECT COUNT(*) FROM event_definition;                      -- 应为 30
+> SELECT COUNT(*) FROM event_definition WHERE enabled = 1;    -- 应为 25
+> SELECT COUNT(*) FROM city_resources WHERE resource_id='electricity'; -- 应为 0(电力不做库存)
+> SELECT COUNT(*) FROM game_settings;                         -- 应为 88
+> SELECT trait_json FROM npc_definition WHERE npc_id='N013';  -- 应含 governance_capacity_flat
+> ```
+>
+> 📌 审计 Hash Chain 的两支(`2026_08_10_900001` 补列 + `2026_08_11_300001` 建链头表)**必须成对上线、按序执行**:只跑前者会让「多个新城同时写第一条审计」触发 1213 死锁。历史审计行一律**不回填**(append-only,见第 3 步 `AUDIT_HMAC_SECRET` 说明)。
 
 ### 5. 灌入定义数据(seed)
 
@@ -153,25 +242,37 @@ Laravel 按**文件名排序**执行,不需要手工指定顺序;下表按实际
 php artisan db:seed --force
 ```
 
-会依次灌入(见 `database/seeders/DatabaseSeeder.php`):`EraSeeder` → `ResourceDefinitionSeeder` → `TechnologyDefinitionSeeder` → `BuildingDefinitionSeeder` → `BuildingLevelDefinitionSeeder` → `GameDataVersionSeeder`,对应 10 个时代 / 31 种资源 / 50 项科技 / 94 种建筑 / 282 条建筑等级定义,以及 `game_data_versions` 记录。
+会依次灌入(见 `database/seeders/DatabaseSeeder.php`):时代 / 资源 / 科技 / 建筑 / 建筑等级 / **NPC / 工具 / 市场 / 事件** 定义,以及 `game_data_versions` 记录。v1.2.0 的定义数据规模:
+
+| 定义表 | 行数 | 备注 |
+|---|---:|---|
+| `era` | 10 | 十个时代 |
+| `resource_definition` | 31 | 资源(含容量类) |
+| `technology_definition` | 50 | 科技 |
+| `building_definition` / `building_level_definition` | 94 / 282 | 建筑与三级等级 |
+| `npc_definition` / `npc_skill_definition` | **150** / 12 | M3 由 30 扩至 150 |
+| `item_definition` | **24** | M3 新增 |
+| `market_definition` | **28** | M3 新增 |
+| `event_definition` | **30** | M3 新增(25 启用 / 5 Fail Closed 停用) |
+| `game_settings` | **88** | 后台可调规则参数 |
 
 **seed 要不要重跑?按库的状态分两种情况:**
 
 | 场景 | 要不要跑 `db:seed` | 说明 |
 |---|---|---|
-| **全新库**(第一次部署 v1.1.0) | ✅ 跑,而且必须跑 | `database/data/*.json` 已经是英文 code 的最终形态,一次 seed 直接得到 `V3.1.3` 的定义数据,不需要再靠第 3/4 支迁移去转换 |
-| **已有 M1 数据的库**(从 v1.0.x 升级上来) | ❌ **不要重跑** | 定义 seeder 用的是裸 `insert`(**不幂等**),定义表已有数据时重跑会撞主键直接报错。这类库的定义数据由第 3、4 支迁移就地转换,`game_data_version` 由第 6 支 bump 到 `V3.1.3`,结果与全新库一致 |
+| **全新库**(第一次部署) | ✅ 跑,而且必须跑 | `database/data/*.json` 已经是最终形态,一次 seed 直接得到 `V3.6.2` 的定义数据,不需要再靠迁移去转换 |
+| **已有数据的库**(从 v1.0.x / v1.1.0 升级上来) | ❌ **不要重跑** | 定义 seeder 用的是裸 `insert`(**不幂等**),定义表已有数据时重跑会撞主键直接报错。这类库的定义数据由第 4 步的迁移就地转换与补灌,`game_data_version` 由各 bump 迁移递增到 `V3.6.2`,结果与全新库一致 |
 
 ⚠️ 判断方法:跑 `SELECT COUNT(*) FROM building_definition;`,返回 0 = 全新库(跑 seed),返回 94 = 已有数据(跳过 seed)。
-`GameDataVersionSeeder` 本身用的是 `updateOrInsert`(幂等),但它跟其余五个 seeder 绑在同一条 `db:seed` 里,不能单独靠它来判断整条命令的安全性。
+`GameDataVersionSeeder` 本身用的是 `updateOrInsert`(幂等),但它跟其余 seeder 绑在同一条 `db:seed` 里,不能单独靠它来判断整条命令的安全性。
 
 ### 5.1 前端 PWA 缓存版本
 
-`public/game/service-worker.js` 里的 `const CACHE = 'apg-v9';` 是本版的缓存版本号。它随代码一起部署,老客户端下次打开时会因为版本号变化清掉旧缓存、重新预缓存新的 HTML/CSS/JS。
+`public/game/service-worker.js` 里的 `const CACHE = 'apg-v10';` 是本版的缓存版本号。它随代码一起部署,老客户端下次打开时会因为版本号变化清掉旧缓存、重新预缓存新的 HTML/CSS/JS。
 
 **部署时不需要做任何额外操作**,但要确认两件事:
 
-1. 上传的 `service-worker.js` 里确实是 `apg-v9`(而不是被旧文件覆盖回 `apg-v8`);
+1. 上传的 `service-worker.js` 里确实是 `apg-v10`(而不是被旧文件覆盖回 `apg-v9`);
 2. Web 服务器**不要**给 `/game/service-worker.js` 设长缓存(`Cache-Control: max-age` 应为 0 或很小)—— SW 文件本身被 CDN/浏览器长缓存住的话,版本号改了客户端也拿不到新的。
 
 对照 `docs/ops/release-checklist.md` 的「PWA Cache Version 正确」一项。
@@ -218,7 +319,7 @@ php artisan route:cache
 2. **禁用窗口函数 / CTE**:MySQL 5.7 不支持 `ROW_NUMBER() OVER`、`WITH ... AS` 等语法;本项目代码里未使用,迁移到生产前如有新增原生 SQL,先自查一遍。
 3. **不依赖 `CHECK` 约束的强制执行**:MySQL 5.7 会解析 `CHECK` 但不强制执行,业务校验都在应用层(Laravel Validation / 模型逻辑),不依赖数据库层 CHECK,迁移后无需担心这点导致数据变松。
 4. **字符集/排序规则**:确认 MySQL 5.7 数据库、表、连接三处都是 `utf8mb4` / `utf8mb4_unicode_ci`,避免和本地默认值不同导致排序或比较行为差异。
-5. **`ALTER TABLE` 会重建整张表**:MySQL 5.7 没有 INSTANT ADD COLUMN。M2 的补列迁移已按「同一张表的新列一次 ALTER 加齐」写好,但线上表如果已经很大,第 5 / 9 / 10 / 11 支迁移仍可能耗时较久 —— **选低峰期执行,不要中途打断**。
+5. **`ALTER TABLE` 会重建整张表**:MySQL 5.7 没有 INSTANT ADD COLUMN。M2 的补列迁移已按「同一张表的新列一次 ALTER 加齐」写好,但线上表如果已经很大,M2 的第 5 / 9 / 10 / 11 支与 M3 的 `2026_08_10_900001`(audit_logs 补两列 + 加索引,**最可能是全库最大的表**)/ `2026_08_11_150001`(删三列)仍可能耗时较久 —— **选低峰期执行,不要中途打断**。
 6. **v1.1.0 的两支数据迁移在 5.7 上要重点看**:第 3 支(资源 ID 英文化)会逐行改写 `building_level_definition` 的三个 JSON 列;MariaDB 的 LONGTEXT 与 5.7 的原生 JSON 在写回时的转义/键序表现不同,跑完务必抽查 `SELECT building_id, level, cost_json FROM building_level_definition LIMIT 5;` 确认内容正常、能被应用正确解析。
 7. **审计 Hash Chain 在 5.7 上要单独验一次**:`audit_logs` 的 `before_json`/`after_json`/`delta_json`/`metadata_json` 在 5.7 是原生 JSON,**读回来的字节与写进去的不一样**(5.7 会重排 key、压掉空白)。链的 `canonical_payload` 已经按「先 decode 再规范化」实现来抵消这一点(`app/Support/AuditChain.php`),但本地 MariaDB(LONGTEXT 原样保存)验不出这条差异。上线跑完迁移后,**先在 5.7 上真实产生几条带 JSON 的审计**(建一栋楼 / 做一次补偿),再跑 `php artisan audit:verify-chain` 确认 0 断链,才算这条过。
 8. **别拿本地结构当线上结构**:动表的迁移执行前,先对目标表 `SHOW CREATE TABLE` 看一眼实际形态(列类型、collation、索引),确认与本地一致再跑;不一致的地方补记进 `docs/ops/db-mariadb-vs-mysql57.md` 的「具体差异记录」表。
@@ -234,16 +335,29 @@ php artisan route:cache
 php artisan release:check
 ```
 
-应全部 ✓(`.env` 未被跟踪、`.env.example` 无真实 `APP_KEY`、全部 `.php` git blob 纯 LF 无 BOM),并报告**迁移文件数量 = 35**(M3 开发期每新增一支迁移都要把这个数字同步 +1)、当前 `game_data_version = V3.2.1`。
+应全部 ✓(`.env` 未被跟踪、`.env.example` 无真实 `APP_KEY`、全部 `.php` git blob 纯 LF 无 BOM),并报告**迁移文件数量 = 67**(下一个里程碑开发期每新增一支迁移都要把这个数字同步 +1)、当前 `game_data_version = V3.6.2`。
 
 ### 2. 玩家端冒烟测试
 
 - 打开 `https://你的域名/game/`,完成一次注册 → 自动建城 → 进入地图。
+- ✅ **新号开局硬锁已解除**(V3.2.1):建城初始资源由 `game_settings.initial_resources` 控制,默认送 `knowledge: 100`(够研 3~4 条时代 I 科技),不再需要管理员补偿垫知识。**该默认值是测试期数值,正式开服前按运营口径另调。**
+- 主链(与 `artisan test` 之外的 API 级冒烟同一条):
+  研究 `TECH_I_SUST` → 建 `F01` 采集营地 → 派工 → 招募 NPC → 派驻 → 市场买卖一笔 → 等一个事件窗口 → 看 `era` 区块。
 - 打开科技面板,确认 50 个节点渲染正常、顶部「时代 I · 部落时代」区块列出逐维升级条件。
-- ⚠️ **新号目前建不了任何建筑**(时代 I 的建筑全部要前置科技,而新城没有知识、时代 I 也没有产知识的建筑 —— 见 `CHANGELOG.md` v1.1.0「已知边界」)。冒烟时用管理员补偿给该号发一笔 `knowledge`,再走「研究 `生存采集` → 建 `F01` 采集营地 → 派工人 → 看产出」这条链。
 - 建造后确认:资源正确扣除、地图上出现 ⏳ 施工中状态与倒计时、完工后转 `active`、派满工人后产出速率从 0 变成正数。
 - 刷新页面确认 Time Delta 结算正常(离开一段时间再回来,资源按时间正确增长/消耗,不会重复结算)。
 - 手机尺寸(≈400×800)打开一遍:HUD 两行不溢出、建筑详情面板的升级/拆除按钮可见可点、底部建造面板横向滚动正常。
+
+**M3 新增系统的快照读数**(`GET /api/city` 的 `data.city` 下,面板没上线时直接看响应即可):
+
+| 区块 | 关键字段 | 上线后该长什么样 |
+|---|---|---|
+| `governance` | `capacity` / `capacity_base` / `flat` / `pct` | 没招行政 NPC 时 `capacity === capacity_base`;招了之后 `capacity` 变大而 `capacity_base` 不动 |
+| `defense` | `defense_score` / `defense_score_base` / `threat_level` | 同上口径;新城没建 D01 时 `threat_level = high` 属正常 |
+| `power` | `capacity_per_min` / `demand_per_min` / `factor` | 没电站也没耗电建筑时 `factor = 1`(不缺电) |
+| `logistics` | `capacity` / `load` / `factor` | 时代 I 不计运输需求,`load = 0` |
+| `trade` / `finance` | `capacity` / `pct` | 没建 C 系列建筑时为 0 |
+| `npcs` / `items` / `events` | 摘要 | 数量级为个位到几十,体积可控 |
 
 ### 3. 管理后台冒烟测试
 
@@ -261,9 +375,9 @@ php artisan release:check
 | `APP_DEBUG=false` | 第 3 步 `.env` 表;`release:check` 不检查环境值,必须人工看 |
 | HTTPS 正常 / Secure Cookie 正常 | 第 8 步 + `.env` 的 `APP_URL` / `SESSION_SECURE_COOKIE=true` |
 | CSRF 正常 | 全部 POST 端点在 `web` 中间件组内(`M2SurfaceTest` 已结构性锁死);线上随手用无 token 的 POST 试一次应得 419 |
-| Auth / Authorization 测试通过 | `artisan test` 全绿(379);线上用 player 账号打 `/api/admin/*` 应 403 |
+| Auth / Authorization 测试通过 | `artisan test` 全绿(**829**);线上用 player 账号打 `/api/admin/*` 应 403 |
 | Rate Limit 测试通过 | `api/*` 每条路由都挂限流(`M2SurfaceTest::test_every_api_route_is_rate_limited`),唯一豁免是 `/api/health` |
-| Migration Review | 本文第 4 步的 11 支迁移表逐支过一遍 |
+| Migration Review | 本文第 4 步的迁移表逐支过一遍(M2 的 11 支 + M3 的 39 支,重点看标了「动存量数据」的 5 支)|
 | DB Backup 完成 / Restore Procedure 可用 | 本文顶部「先备份」,并**实际试一次恢复**(§79:有备份文件不等于能恢复) |
 | `.env` 未进入 Git | `release:check` 自动检查 |
 | 没有 Secret 写在 JS | `public/game/` 与 `public/admin/` 全是纯静态,不含任何密钥 |
@@ -272,7 +386,7 @@ php artisan release:check
 | Audit 正常写入 | 冒烟后查 `audit_logs` 应有 `AUTH.REGISTER` / `CITY.CREATE` / `BUILDING.BUILD` 等 |
 | Error Response 不泄露 Stack Trace | `APP_DEBUG=false` 前提下,故意打一个不存在的端点应只回 `{success,error,request_id}` |
 | 依赖漏洞检查 | `composer audit`(前端依赖只有随仓库提交的 `pixi.min.js`,版本固定) |
-| PWA Cache Version 正确 | 本文第 5.1 步:`apg-v9` |
+| PWA Cache Version 正确 | 本文第 5.1 步:`apg-v10` |
 
 **M3 追加的上线专项**(不属 §82,但同级重要):
 
