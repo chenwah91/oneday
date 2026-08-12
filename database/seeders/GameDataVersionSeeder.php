@@ -202,5 +202,23 @@ class GameDataVersionSeeder extends Seeder
                 'notes'       => 'M3-W6 治理容量 target 清偿:拆成 governance_capacity_flat + pct 两条并接进结算内核(18 位行政 NPC 与 IT022 的治理加成首次生效)+ EVT_CORRUPTION 选项 B 治理减益提升',
             ]
         );
+
+        // M3-W10 用户 2026-08-12 拍板的三组数据改动(39 行定义数据的行内容变了,吃**次版本位**)。
+        // 已有数据的库由 2026_08_12_400002 迁移递增到同一版本。
+        // 为什么不是补丁位:改的不只是数值,而是玩法条件 ——
+        //   · item_definition 6 行的 crafting_building_id 由 NULL 变成实际建筑,
+        //     ItemService::craft 的既有建筑闸门从此对这 6 件生效(同样的城市在 V3.6.2 能做、V3.7.0 会被挡);
+        //   · event_definition 3 行的选项效果集合变了(EVT_CORRUPTION 选项 A 由「只扣钱不办事」
+        //     变成确定性解除两条减益、选项 B 由 -10% 折算为 -5%,EVT_PORT_CONGESTION 选项 A 追加拥堵解除);
+        //   · npc_definition 30 行回填 name_zh(显示列,但进 checksum 的列集内容变了)。
+        // ⚠️ 版本号必须严格升序追加在末尾:current() 取 id 最大的一行,插反了「当前版本」会回退。
+        DB::table('game_data_versions')->updateOrInsert(
+            ['version' => 'V3.7.0'],
+            [
+                'deployed_at' => now(),
+                'deployed_by' => 'seed',
+                'notes'       => 'M3-W10 用户拍板三组数据改动:N001~N030 中文拟名回填(全表 150 名互异)+ EVT_CORRUPTION 选项 A 改为确定性解除、选项 B 净额折算为 -5%、EVT_PORT_CONGESTION 选项 A 追加拥堵解除 + 6 件工具改挂现有制作建筑(IT003/IT005→P02、IT004→P04、IT013→P05、IT016→K03、IT019→P08)',
+            ]
+        );
     }
 }

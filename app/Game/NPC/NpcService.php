@@ -480,8 +480,9 @@ final class NpcService
             'id'                   => (int) $r->id,
             'npc_id'               => $r->npc_id,
             'name_key'             => $r->name_key,
-            // 中文名(§6.3 的 150 条扩充带入)。N001~N030 暂为 null —— 前端遇到 null 回落 name_key,
-            // 不在服务端编一个占位名字(拟名待批,编出来的名字会被当成正式名传播出去)
+            // 中文名。N031~N150 由 §6.3 的 150 条扩充带入,N001~N030 由用户 2026-08-12 拍板回填
+            //(2026_08_12_400001)—— 150 行现已逐条有名且全表不重名。
+            // 列本身仍可空,前端遇到 null 一律回落 name_key,服务端绝不编占位名
             'name_zh'              => $r->name_zh,
             'category'             => $r->category,
             'rarity'               => $r->rarity,

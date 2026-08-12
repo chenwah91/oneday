@@ -115,6 +115,50 @@ class ItemApiTest extends TestCase
         $this->assertSame(1, DB::table('city_items')->count());
     }
 
+    // 用户 2026-08-12 拍板改挂建筑的那 6 件:闸门对它们同样生效。
+    // 拿 IT003(木犁,§7 原文「木工作坊」→ 400001 改挂 P02)当代表 ——
+    // 落地之前这 6 件是「不卡建筑只卡时代」,少了这条用例就看不出映射到底有没有真的接上
+    public function test_newly_mapped_tools_require_their_crafting_building(): void
+    {
+        [$u, $city] = $this->makePlayer('newmap', eraOrder: 2);
+        DB::table('city_building_instances')->where('city_id', $city->id)->delete();
+        $this->giveResources($city, ['wood' => 100, 'stone' => 100]);
+
+        // 时代够(IT003 是 II),但城里没有 P02
+        $this->actingAs($u)->postJson('/api/city/item/craft', ['item_id' => 'IT003'])
+            ->assertStatus(422)->assertJson(['error' => 'CRAFTING_BUILDING_MISSING']);
+        $this->assertSame(0, DB::table('city_items')->count());
+
+        $this->addBuilding($city, 'P02', 7);
+
+        $this->actingAs($u)->postJson('/api/city/item/craft', ['item_id' => 'IT003'])->assertOk();
+        $this->assertSame(1, DB::table('city_items')->count());
+    }
+
+    // 闸门只认 active:在建 / 升级中的楼不算。
+    // 这条不守住,玩家可以「点下建造 → 立刻做工具 → 拆掉」——建筑前置形同虚设
+    public function test_constructing_crafting_building_does_not_satisfy_the_gate(): void
+    {
+        [$u, $city] = $this->makePlayer('constructing', eraOrder: 2);
+        DB::table('city_building_instances')->where('city_id', $city->id)->delete();
+        $this->giveResources($city, ['wood' => 100, 'stone' => 100]);
+
+        $instanceId = $this->addBuilding($city, 'P02', 8);
+
+        foreach (['constructing', 'upgrading'] as $status) {
+            DB::table('city_building_instances')->where('id', $instanceId)->update(['status' => $status]);
+
+            $this->actingAs($u)->postJson('/api/city/item/craft', ['item_id' => 'IT003'])
+                ->assertStatus(422)->assertJson(['error' => 'CRAFTING_BUILDING_MISSING']);
+            $this->assertSame(0, DB::table('city_items')->count(), "status={$status} 不该放行");
+        }
+
+        // 同一栋楼建成之后立刻可以做
+        DB::table('city_building_instances')->where('id', $instanceId)->update(['status' => 'active']);
+        $this->actingAs($u)->postJson('/api/city/item/craft', ['item_id' => 'IT003'])->assertOk();
+        $this->assertSame(1, DB::table('city_items')->count());
+    }
+
     public function test_craft_is_idempotent(): void
     {
         [$u, $city] = $this->makePlayer('idem');

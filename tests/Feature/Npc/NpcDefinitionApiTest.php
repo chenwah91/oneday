@@ -51,9 +51,9 @@ class NpcDefinitionApiTest extends TestCase
 
         $byId = collect($npcs)->keyBy('npc_id');
 
-        // N001 初始领袖:name_zh 仍为 null(拟名待用户拍板)—— 服务端绝不编占位名
+        // N001 初始领袖:中文名由用户 2026-08-12 拍板回填(2026_08_12_400001),不再是 null
         $n001 = $byId['N001'];
-        $this->assertNull($n001['name_zh'], 'N001~N030 没有中文名时必须给 null,由前端回落 name_key');
+        $this->assertSame('伯衡', $n001['name_zh'], 'N001~N030 的拟名已回填,契约里必须真的下发');
         $this->assertSame('npc.N001.name', $n001['name_key']);
         $this->assertSame('leadership', $n001['category']);
         $this->assertSame('rare', $n001['rarity']);

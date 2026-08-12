@@ -37,29 +37,45 @@ class NpcDefinitionTest extends TestCase
         $this->assertSame($expected, $ids);
     }
 
-    // 中文名落地(150 条扩充):N031~N150 逐条有名且**不重名**;N001~N030 暂留 NULL
-    public function test_name_zh_is_filled_for_the_expansion_and_null_for_the_original_thirty(): void
+    // 中文名落地:150 行**逐条有名且全表不重名**。
+    //
+    // N031~N150 由 150 条扩充草案带入(2026_08_12_100002);
+    // N001~N030 原本留 NULL 等拟名,用户 2026-08-12 拍板后由 2026_08_12_400001 回填。
+    // 重名一条都不许:前端的 NPC 列表只显示中文名,两个「计然」在派驻面板上根本分不出是谁。
+    public function test_name_zh_is_filled_and_unique_across_all_one_hundred_fifty(): void
     {
         $rows = DB::table('npc_definition')->orderBy('npc_id')->get()->keyBy('npc_id');
 
         $names = [];
         foreach ($rows as $npcId => $row) {
-            $index = (int) substr($npcId, 1);
-
-            if ($index <= 30) {
-                // 拟名待项目负责人批准 → 服务端不编占位名,前端回落 name_key
-                $this->assertNull($row->name_zh, "{$npcId} 的中文名尚未批准,不该有值");
-
-                continue;
-            }
-
             $this->assertNotNull($row->name_zh, "{$npcId} 缺中文名");
-            $this->assertNotSame('', trim((string) $row->name_zh));
+            $this->assertNotSame('', trim((string) $row->name_zh), "{$npcId} 的中文名是空白");
             $names[] = $row->name_zh;
         }
 
-        $this->assertCount(120, $names);
-        $this->assertSame(count($names), count(array_unique($names)), '扩充版中文名不得重名');
+        $this->assertCount(150, $names);
+        $this->assertSame(count($names), count(array_unique($names)), '全表 150 个中文名不得重名');
+    }
+
+    // 用户 2026-08-12 拍板的 30 个拟名逐条落到正确的 npc_id 上 ——
+    // 名字错位不会让任何测试变红,但玩家会看到「伯衡」顶着采集工的技能
+    public function test_first_thirty_names_match_the_approved_list(): void
+    {
+        $approved = [
+            'N001' => '伯衡', 'N002' => '原朴', 'N003' => '猎风', 'N004' => '樵岭', 'N005' => '稷禾',
+            'N006' => '磨青', 'N007' => '商远', 'N008' => '匠成', 'N009' => '铜烁', 'N010' => '戍岩',
+            'N011' => '矿铁', 'N012' => '锻辰', 'N013' => '计然', 'N014' => '书阑', 'N015' => '杏林',
+            'N016' => '镇疆', 'N017' => '穗丰', 'N018' => '翰儒', 'N019' => '金衡', 'N020' => '械通',
+            'N021' => '铸轮', 'N022' => '轨行', 'N023' => '悬壶', 'N024' => '启澜', 'N025' => '枢机',
+            'N026' => '宇规', 'N027' => '御垒', 'N028' => '观星衡', 'N029' => '秉天钧', 'N030' => '天工阙',
+        ];
+
+        $actual = DB::table('npc_definition')
+            ->whereIn('npc_id', array_keys($approved))
+            ->orderBy('npc_id')
+            ->pluck('name_zh', 'npc_id')->all();
+
+        $this->assertSame($approved, $actual);
     }
 
     // 军事 NPC 的国防特性必须**全部**是可执行 spec:

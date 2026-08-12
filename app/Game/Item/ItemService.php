@@ -78,8 +78,11 @@ final class ItemService
             }
 
             // 制作建筑闸门(§7 的 crafting_source):只有映射到具体建筑的工具才校验。
-            // crafting_building_id 为空的两类(手工制作 / 来源建筑在 94 栋里不存在)不设建筑门槛 ——
-            // 详见 item_definition.crafting_unmapped_zh 的列注释与交付汇报的对照表
+            // crafting_building_id 为空 = §7 明文的「手工制作」(IT001 / IT002),不设建筑门槛。
+            // 原本还有第二类空值(来源建筑在 94 栋里不存在,按放行处理),
+            // 用户 2026-08-12 拍板把那 6 件改挂现有建筑后已清零(见 2026_08_12_400001 迁移)。
+            //
+            // 只认 active:在建 / 升级中的楼不生产,也不该能当制作前置 —— 与 equip 同一条口径
             if ($def['crafting_building_id'] !== null) {
                 $hasBuilding = DB::table('city_building_instances')
                     ->where('city_id', $city->id)

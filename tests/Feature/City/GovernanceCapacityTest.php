@@ -360,8 +360,12 @@ class GovernanceCapacityTest extends EventTestCase
     // ---------- 复活层:EVT_CORRUPTION 选项 B 的治理减益真的落地 ----------
 
     // W6 之前这一条写在 unmapped_zh 里(「治理容量暂时-10%」没有消费点,接线要连 flat 通道一起设计)。
-    // 现在它是一条可执行 modifier:选 B 之后写一行 governance_capacity_pct −10%,
+    // 现在它是一条可执行 modifier:选 B 之后写一行 governance_capacity_pct,
     // 下一次结算的有效治理容量与税收立刻跟着掉。整条链走真实事件引擎,不是夹具。
+    //
+    // W10(用户 2026-08-12 拍板):数值由 −10% 改为 **−5%** —— 原文是「事件期 −10% +
+    // 事后 +5% 持续 30 分钟」,事后补偿那一半没有延迟起效的 kind 可挂,净额折算为当期 −5%
+    // (照 EVT_PORT_CONGESTION 选项 B 的折算先例,好处与代价两侧一起落地)。
     public function test_corruption_option_b_writes_governance_modifier(): void
     {
         // 治理负载 > 0.80 是 EVT_CORRUPTION 的触发条件:不摆 A01,容量 0 → 负载 = 人口,必然成立
@@ -387,12 +391,12 @@ class GovernanceCapacityTest extends EventTestCase
         $this->assertNotNull($row, '选项 B 必须写下一行 governance_capacity_pct');
         $this->assertSame(ModifierSpec::OP_PCT, $row->op);
         $this->assertSame(ModifierSpec::SCOPE_CITY, $row->scope);
-        $this->assertEqualsWithDelta(-0.10, (float) $row->value, 1e-6);
+        $this->assertEqualsWithDelta(-0.05, (float) $row->value, 1e-6);
 
-        // 下一次结算立刻吃到:80 × 0.90 = 72
+        // 下一次结算立刻吃到:80 × 0.95 = 76
         $after = $this->runSettle($city, 2);
-        $this->assertEqualsWithDelta(-0.10, $after['governanceCapacityPct'], 1e-6);
-        $this->assertEqualsWithDelta(72.0, $after['governanceCapacityEffective'], 1e-6);
+        $this->assertEqualsWithDelta(-0.05, $after['governanceCapacityPct'], 1e-6);
+        $this->assertEqualsWithDelta(76.0, $after['governanceCapacityEffective'], 1e-6);
         // 建筑口径不动 —— 时代门槛照旧读 80
         $this->assertEqualsWithDelta(80.0, $after['governanceCapacity'], 1e-6);
     }

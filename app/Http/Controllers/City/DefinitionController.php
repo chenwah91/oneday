@@ -118,8 +118,8 @@ class DefinitionController extends Controller
             ->map(fn ($r) => [
                 'npc_id'   => $r->npc_id,
                 'name_key' => $r->name_key,
-                // 中文名:N001~N030 仍为 null(拟名待用户拍板),前端遇到 null 回落 name_key。
-                // 不在服务端编一个占位名 —— 编出来的名字会被当成正式名传播出去
+                // 中文名:150 行现已逐条有名(N001~N030 由用户 2026-08-12 拍板回填,见 400001 迁移)。
+                // 列仍可空,前端遇到 null 回落 name_key —— 不在服务端编占位名
                 'name_zh'             => $r->name_zh,
                 'category'            => $r->category,
                 'rarity'              => $r->rarity,
@@ -219,8 +219,9 @@ class DefinitionController extends Controller
             // 一律由 /api/definitions/resources 翻,不在这里重复一份显示名)
             'craft_cost' => $def['craft_cost'],
             // 制作来源:building_id 有值才是真闸门(ItemService::craft 只校验这一列);
-            // 为空的两类(手工制作 / §7 点名的建筑不在 94 栋内)不设建筑门槛,
-            // 前端照 desc 原文显示即可 —— 两者的区别对玩家没有意义,对玩家只有「要不要先建楼」
+            // 为空 = §7 明文的「手工制作」,不设建筑门槛。
+            //(用户 2026-08-12 拍板把 6 件「来源建筑不在 94 栋内」的工具改挂现有建筑后,
+            //  这一列为空的只剩 IT001 / IT002 两件;desc 原文仍照给,前端按 desc 显示「制作于:X」)
             'crafting_source_desc_zh' => $def['crafting_source_desc_zh'],
             'crafting_building_id'    => $def['crafting_building_id'],
             // §7 的 note_zh:一句中文补充说明(「消耗型道具」「终局专属」),仅供显示

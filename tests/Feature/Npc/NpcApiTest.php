@@ -377,7 +377,7 @@ class NpcApiTest extends TestCase
         $this->assertSame(3, $res->json('data.city.npcs.slots_per_building_l3'));
     }
 
-    // 中文名进快照契约:N031~N150 有名,N001~N030 下发 null(前端回落 name_key,服务端不编占位名)
+    // 中文名进快照契约:150 行逐条有名(N001~N030 的拟名由 2026_08_12_400001 回填)
     public function test_snapshot_and_recruit_response_carry_name_zh(): void
     {
         [$u, $city, $instanceId, $npcId] = $this->makePlayerWithNpcAndFarm('namezh');
@@ -386,7 +386,7 @@ class NpcApiTest extends TestCase
         $res = $this->actingAs($u)->getJson('/api/city');
 
         $res->assertOk();
-        $this->assertNull($res->json('data.city.npcs.list.0.name_zh'), 'N005 尚未拟名');
+        $this->assertSame('稷禾', $res->json('data.city.npcs.list.0.name_zh'), 'N005 的拟名已回填');
         $this->assertSame('N005', $res->json('data.city.npcs.list.0.npc_id'));
         $this->assertSame('武岚', $res->json('data.city.npcs.list.1.name_zh'));
 

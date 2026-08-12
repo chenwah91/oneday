@@ -105,7 +105,7 @@ class AdminDefinitionController extends Controller
 
     // 列表:150 行原型的可编辑数值 + 只读的结构列(中文名 / 稀有度 / 来源 / 技能),供后台先看后改。
     // 不分页:全表一屏拉下来才比较得出「这一档工资是不是偏了」;
-    // name_zh 一起给出来 —— 150 行里只靠 N087 这样的 code 认人太难(N001~N030 尚未拟名,值为 null)
+    // name_zh 一起给出来 —— 150 行里只靠 N087 这样的 code 认人太难(150 行现已逐条有名)
     public function npcs(): JsonResponse
     {
         $rows = DB::table('npc_definition')->orderBy('npc_id')->get(array_merge(

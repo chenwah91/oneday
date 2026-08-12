@@ -692,7 +692,7 @@
           { "kind": "modifier", "target": "tax_income_pct", "scope": "city", "value": -0.10 },
           { "kind": "resource_pct_of_stock", "min": -0.08, "max": -0.03 }
         ],
-        "unmapped_zh": ["补数说明:「随机库存损失」§9.2 未给比例(§16.5 明令不擅自补数),这里取 3%~8% 的**区间**并随机挑一种当前有库存的非资金资源。取值依据 = 同类「库存损失」事件 EVT_GRANARY_PEST 的 8%~15%(那是针对性的粮食虫害,犯罪偷窃理应更轻)。整体强度可由后台逐事件的 effect_multiplier 调,不必改定义"]
+        "unmapped_zh": ["补数说明:「随机库存损失」§9.2 未给比例(§16.5 明令不擅自补数),这里取 3%~8% 的**区间**并随机挑一种当前有库存的非资金资源。取值依据 = 同类「库存损失」事件 EVT_GRANARY_PEST 的 8%~15%(那是针对性的粮食虫害,犯罪偷窃理应更轻)。整体强度可由后台逐事件的 effect_multiplier 调,不必改定义。用户 2026-08-12 复核批准 3%~8%"]
       },
       "options_json": {
         "a": {
@@ -1067,7 +1067,7 @@
       "disabled_reason": null,
       "condition_desc_zh": "贸易容量>800",
       "auto_effect_desc_zh": "贸易/运输容量-25%",
-      "option_a_desc_zh": "加班疏港:资金-600,维护+10%",
+      "option_a_desc_zh": "加班疏港:资金-600,维护+10%,拥堵立即解除",
       "option_b_desc_zh": "转铁路:铁路负载+20%,港口减益取消",
       "option_c_desc_zh": "等待",
       "condition_json": {
@@ -1088,7 +1088,9 @@
           "label_zh": "加班疏港",
           "effects": [
             { "kind": "resource_delta", "resource": "money", "value": -600 },
-            { "kind": "modifier", "target": "maintenance_cost_pct", "scope": "city", "value": 0.10 }
+            { "kind": "modifier", "target": "maintenance_cost_pct", "scope": "city", "value": 0.10 },
+            { "kind": "modifier_scale", "target": "trade_capacity_pct", "value": 0 },
+            { "kind": "modifier_scale", "target": "transport_capacity_pct", "value": 0 }
           ],
           "unmapped_zh": []
         },
@@ -1226,8 +1228,8 @@
       "disabled_reason": null,
       "condition_desc_zh": "治理负载>80%",
       "auto_effect_desc_zh": "税收-15%,维护+8%",
-      "option_a_desc_zh": "调查:资金-900,知识-50,50%立即解决",
-      "option_b_desc_zh": "行政改革:治理容量暂时-10%,事件结束后+5% 30分钟",
+      "option_a_desc_zh": "调查:资金-900,知识-50,立即解决",
+      "option_b_desc_zh": "行政改革:治理容量暂时-5%(净额折算)",
       "option_c_desc_zh": "忽略",
       "condition_json": {
         "all": [
@@ -1247,16 +1249,18 @@
           "label_zh": "调查",
           "effects": [
             { "kind": "resource_delta", "resource": "money", "value": -900 },
-            { "kind": "resource_delta", "resource": "knowledge", "value": -50 }
+            { "kind": "resource_delta", "resource": "knowledge", "value": -50 },
+            { "kind": "modifier_scale", "target": "tax_income_pct", "value": 0 },
+            { "kind": "modifier_scale", "target": "maintenance_cost_pct", "value": 0 }
           ],
-          "unmapped_zh": ["50%立即解决:事件系统没有「按概率二选一」的效果 kind(掷点框架有,但要新增一条 kind + 一套「掷不中就什么都不发生」的审计口径),本波次不为一条选项发明它。付了钱却什么都没发生 → 目前选 A 只有成本,平衡上建议后续要么补 kind、要么改文案"]
+          "unmapped_zh": ["用户 2026-08-12 拍板:50% 概率解决改为 100% 确定性解决(不为一条选项新增概率 kind),代价不变"]
         },
         "b": {
           "label_zh": "行政改革",
           "effects": [
-            { "kind": "modifier", "target": "governance_capacity_pct", "scope": "city", "value": -0.10 }
+            { "kind": "modifier", "target": "governance_capacity_pct", "scope": "city", "value": -0.05 }
           ],
-          "unmapped_zh": ["结束后+5% 持续30分钟:事件系统没有「延迟到实例结束才起效」的 kind(modifier 一律从当下起算),本波次不为一条选项发明它。选 B 目前只承接事件期间的治理容量 -10%,事后补偿那一半待补 kind"]
+          "unmapped_zh": ["用户 2026-08-12 拍板:事件期 -10% 与事后 +5%×30min 净额折算为当期 -5%(照 EVT_PORT_CONGESTION 选项B 的折算先例,好处代价两侧一起落地)"]
         },
         "c": {
           "label_zh": "忽略",

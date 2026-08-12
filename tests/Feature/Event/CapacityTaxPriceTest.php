@@ -3,6 +3,7 @@
 namespace Tests\Feature\Event;
 
 use App\Game\Event\EventDefinition;
+use App\Game\Event\EventService;
 use App\Game\Item\ItemCode;
 use App\Game\Modifier\ModifierSpec;
 use App\Game\Modifier\ModifierTarget;
@@ -220,6 +221,45 @@ class CapacityTaxPriceTest extends EventTestCase
         $this->assertEqualsWithDelta($before['maintenanceMoneyPerMin'] * 1.08, $after['maintenanceMoneyPerMin'], 1e-6);
     }
 
+    // M3-W10:EVT_CORRUPTION 选项 A「调查」是**确定性**解决 ——
+    // 结算后税收与维护两条减益必须双双归零(原文的「50% 立即解决」没有概率 kind,
+    // 落地前这个选项只扣钱不办事)。这条验的是行为不是形状:形状在 EventDefinitionTest
+    public function test_corruption_investigate_option_clears_both_penalties(): void
+    {
+        [$city] = $this->makeCity('corrinv', ['era_order' => 5]);
+        $this->addBuilding($city, 'T02');
+        $this->onlyEnable('EVT_CORRUPTION');
+
+        $this->runSettle($city, 1);
+        $instance = $this->activeInstances($city)->first();
+        $this->assertNotNull($instance, 'EVT_CORRUPTION 必须能触发(条件:治理负载 > 0.80)');
+
+        $during = $this->runSettle($city, 2);
+        $this->assertEqualsWithDelta(-0.15, $during['taxIncomePct'], 1e-6);
+        $this->assertEqualsWithDelta(0.08, $during['maintenanceCostPct'], 1e-6);
+
+        EventService::resolve($city->fresh(), (int) $instance->id, 'a', null, null);
+
+        // 两条减益归零:modifier 行还在(实例没结束),但值被 scale 成 0
+        $rows = DB::table('city_active_modifiers')->where('city_id', $city->id)
+            ->where('source_type', 'event')->where('source_id', $instance->id)
+            ->pluck('value', 'target');
+        $this->assertEqualsWithDelta(0.0, (float) $rows[ModifierTarget::TAX_INCOME_PCT], 1e-9);
+        $this->assertEqualsWithDelta(0.0, (float) $rows[ModifierTarget::MAINTENANCE_COST_PCT], 1e-9);
+
+        $after = $this->runSettle($city, 3);
+        $this->assertEqualsWithDelta(0.0, $after['taxIncomePct'], 1e-6);
+        $this->assertEqualsWithDelta(0.0, $after['maintenanceCostPct'], 1e-6);
+
+        // 代价照收:资金 -900 / 知识 -50(「立即解决」不是免费的)。
+        // 读审计 delta 而不是比资金余额 —— resolve 内部会先跑一次结算,
+        // 税收与维护同时在动,拿余额相减断言只会验出「这段时间的净流水」
+        $delta = json_decode((string) DB::table('audit_logs')->where('action', 'EVENT.RESOLVE')
+            ->latest('id')->value('delta_json'), true);
+        $this->assertEqualsWithDelta(-900.0, (float) $delta['money'], 0.01);
+        $this->assertEqualsWithDelta(-50.0, (float) $delta['knowledge'], 0.01);
+    }
+
     // EVT_PORT_CONGESTION:条件读的是**全城贸易容量**(以前根本没有这个读数)
     public function test_port_congestion_condition_reads_trade_capacity(): void
     {
@@ -240,6 +280,36 @@ class CapacityTaxPriceTest extends EventTestCase
         $this->assertEqualsWithDelta(-0.25, $after['tradeCapacityPct'], 1e-6);
         $this->assertEqualsWithDelta(-0.25, $after['transportCapacityPct'], 1e-6);
         $this->assertEqualsWithDelta(self::C02_TRADE * 2 * 0.75, $after['tradeCapacity'], 1e-6);
+    }
+
+    // M3-W10:EVT_PORT_CONGESTION 选项 A「加班疏港」追加两条归零 = 拥堵立即解除。
+    // 与选项 B 的区别在代价:B 用运输容量打折换取贸易解除,A 用真金白银 + 维护 +10% 换两条全清
+    public function test_port_congestion_overtime_option_clears_the_congestion(): void
+    {
+        [$city] = $this->makeCity('capportovertime', ['era_order' => 7]);
+        $this->onlyEnable('EVT_PORT_CONGESTION');
+        $this->addBuilding($city, 'C02');
+        $this->addBuilding($city, 'C02');
+
+        $this->runSettle($city, 1);
+        $instance = $this->activeInstances($city)->first();
+        $this->assertNotNull($instance, '贸易容量 900 必须触发港口拥堵');
+
+        $during = $this->runSettle($city, 2);
+        $this->assertEqualsWithDelta(-0.25, $during['tradeCapacityPct'], 1e-6);
+        $this->assertEqualsWithDelta(-0.25, $during['transportCapacityPct'], 1e-6);
+
+        EventService::resolve($city->fresh(), (int) $instance->id, 'a', null, null);
+
+        $after = $this->runSettle($city, 3);
+        $this->assertEqualsWithDelta(0.0, $after['tradeCapacityPct'], 1e-6, '加班疏港后贸易减益必须清零');
+        $this->assertEqualsWithDelta(0.0, $after['transportCapacityPct'], 1e-6, '加班疏港后运输减益必须清零');
+        // 代价照收:资金 -600 + 维护 +10%(归零只作用于点名的两条 target)。
+        // 资金看审计 delta:resolve 内部会先结算一次,余额相减验的是净流水不是这次代价
+        $delta = json_decode((string) DB::table('audit_logs')->where('action', 'EVENT.RESOLVE')
+            ->latest('id')->value('delta_json'), true);
+        $this->assertEqualsWithDelta(-600.0, (float) $delta['money'], 0.01);
+        $this->assertEqualsWithDelta(0.10, $after['maintenanceCostPct'], 1e-6);
     }
 
     // EVT_SPECULATION:随机战略资源的价格冲击落成一行 resource 作用域的 market_price_pct

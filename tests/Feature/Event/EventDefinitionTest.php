@@ -168,6 +168,97 @@ class EventDefinitionTest extends TestCase
         $this->assertGreaterThan(20, $total, 'unmapped 清单不该是空的:承接不了的文案必须原样保留');
     }
 
+    // ---- 用户 2026-08-12 拍板的三条选项修正(M3-W10)----
+
+    // EVT_CORRUPTION 选项 A「调查」:原文「50% 立即解决」没有概率 kind 可挂,一直只扣钱不办事。
+    // 改为**确定性**解决 = 追加两条 modifier_scale 把自动效果那两条减益各归零,代价一分不变。
+    public function test_corruption_investigate_option_is_deterministic(): void
+    {
+        $option = EventDefinition::find('EVT_CORRUPTION')['options_json']['a'];
+
+        // 代价照旧:资金 -900 / 知识 -50
+        $this->assertSame(
+            [['money', -900.0], ['knowledge', -50.0]],
+            array_values(array_map(
+                fn ($e) => [$e['resource'], (float) $e['value']],
+                array_filter($option['effects'], fn ($e) => $e['kind'] === EventCode::EFFECT_RESOURCE_DELTA)
+            ))
+        );
+
+        // 追加的两条归零:target 必须**逐一对上**自动效果写下的那两条减益,
+        // 否则「立即解决」会漏掉一半(modifier_scale 只改点名的那条 target)
+        $scales = array_values(array_filter(
+            $option['effects'],
+            fn ($e) => $e['kind'] === EventCode::EFFECT_MODIFIER_SCALE
+        ));
+        $this->assertCount(2, $scales);
+        foreach ($scales as $scale) {
+            $this->assertEqualsWithDelta(0.0, (float) $scale['value'], 1e-9, '「立即解决」= 系数 0 = 减益取消');
+        }
+        $this->assertSame(
+            ['maintenance_cost_pct', 'tax_income_pct'],
+            collect($scales)->pluck('target')->sort()->values()->all()
+        );
+        $autoTargets = collect(EventDefinition::find('EVT_CORRUPTION')['auto_effect_json']['effects'])
+            ->where('kind', EventCode::EFFECT_MODIFIER)->pluck('target')->sort()->values()->all();
+        $this->assertSame($autoTargets, collect($scales)->pluck('target')->sort()->values()->all());
+
+        $this->assertStringContainsString('立即解决', EventDefinition::find('EVT_CORRUPTION')['option_a_desc_zh']);
+        $this->assertStringNotContainsString('50%', EventDefinition::find('EVT_CORRUPTION')['option_a_desc_zh']);
+    }
+
+    // EVT_CORRUPTION 选项 B「行政改革」:原文「事件期 -10% + 事后 +5% 持续 30 分钟」,
+    // 事后补偿那一半没有延迟起效的 kind 可挂 → 净额折算为当期 -5%(好处与代价两侧一起落地)
+    public function test_corruption_reform_option_is_net_folded_to_five_percent(): void
+    {
+        $definition = EventDefinition::find('EVT_CORRUPTION');
+        $effects = $definition['options_json']['b']['effects'];
+
+        $this->assertCount(1, $effects);
+        $this->assertSame(EventCode::EFFECT_MODIFIER, $effects[0]['kind']);
+        $this->assertSame('governance_capacity_pct', $effects[0]['target']);
+        $this->assertSame(ModifierSpec::SCOPE_CITY, $effects[0]['scope']);
+        $this->assertEqualsWithDelta(-0.05, (float) $effects[0]['value'], 1e-9);
+        $this->assertStringContainsString('-5%', $definition['option_b_desc_zh']);
+    }
+
+    // EVT_PORT_CONGESTION 选项 A「加班疏港」:追加两条归零 = 拥堵立即解除。
+    // 付了 600 块加班费却不解除拥堵,与选项文案对不上
+    public function test_port_congestion_overtime_option_clears_the_congestion(): void
+    {
+        $definition = EventDefinition::find('EVT_PORT_CONGESTION');
+        $effects = $definition['options_json']['a']['effects'];
+
+        // 代价照旧:资金 -600 + 维护 +10%
+        $this->assertEqualsWithDelta(-600.0, (float) collect($effects)
+            ->firstWhere('kind', EventCode::EFFECT_RESOURCE_DELTA)['value'], 1e-9);
+        $this->assertEqualsWithDelta(0.10, (float) collect($effects)
+            ->firstWhere('kind', EventCode::EFFECT_MODIFIER)['value'], 1e-9);
+
+        $scales = collect($effects)->where('kind', EventCode::EFFECT_MODIFIER_SCALE);
+        $this->assertCount(2, $scales);
+        $this->assertSame(
+            ['trade_capacity_pct', 'transport_capacity_pct'],
+            $scales->pluck('target')->sort()->values()->all()
+        );
+        foreach ($scales as $scale) {
+            $this->assertEqualsWithDelta(0.0, (float) $scale['value'], 1e-9);
+        }
+        $this->assertStringContainsString('拥堵立即解除', $definition['option_a_desc_zh']);
+    }
+
+    // EVT_CRIME 的随机库存损失区间:数值一个没动,只是补数说明多了一句用户复核结论。
+    // 断言区间本身 —— 说明可以改写,3%~8% 这个数是被批准过的,不许顺手调
+    public function test_crime_stock_loss_range_is_approved_three_to_eight_percent(): void
+    {
+        $auto = EventDefinition::find('EVT_CRIME')['auto_effect_json'];
+
+        $loss = collect($auto['effects'])->firstWhere('kind', EventCode::EFFECT_RESOURCE_PCT_OF_STOCK);
+        $this->assertEqualsWithDelta(-0.08, (float) $loss['min'], 1e-9);
+        $this->assertEqualsWithDelta(-0.03, (float) $loss['max'], 1e-9);
+        $this->assertStringContainsString('复核批准 3%~8%', implode('', $auto['unmapped_zh']));
+    }
+
     // ---- Seeder 守门(假失败:把 metric 改坏,seed 必须炸)----
 
     public function test_seeder_rejects_unknown_condition_metric(): void

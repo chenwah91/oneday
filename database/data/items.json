@@ -2,7 +2,7 @@
   "_source": "docs/templates/v3.2.md §7 道具 / 工具规则(24 行逐行照抄)。数值不得在这里改;改数值走后台 AdminDefinitionController 并 bump game_data_version。",
   "_effect_note": "effect_json 的结构化口径见 backlog §9 B3(建议默认值已批):产量类(*_output_pct / *_efficiency_pct / industry_output_pct)进 tool 乘区;其余进 ModifierTarget::CONSUMPTION_POINTS 已登记的消费点。映射不到已登记 target 的效果(国防 flat / 医疗 / 运输容量 / 资金效率 / 停机 / 巨型工程)原样留在 unmapped_zh,等 D5/W4 等波次登记各自的消费点再提升为 spec —— 不在这里发明 target,也不静默丢弃(与 npcs.json 的 trait_json 同一条纪律)。",
   "_durability_note": "durability_tier 按 backlog §9 B1(已批):20 分钟档 = industrial_tool / engineering_tool / logistics_tool / planning_tool / research_tool(min_era ≥ IX);其余 10 分钟档;medical_item 为一次性消耗品(durability 即使用次数,durability_mode = uses,不随工作分钟递减)。每档实际几分钟扣 1 点由 game_settings 的 item_durability_minutes_normal / _industrial 决定,不在这里写死。",
-  "_crafting_note": "crafting_source_desc_zh 是 §7 原文;crafting_building_id 只在 94 栋建筑里能**精确对上名字**时才填。对不上的(木工作坊 / 石工作坊 / 工坊 / 研究院 / 现代工厂)填进 crafting_unmapped_zh,不发明映射;手工制作两件则两列皆空 = §7 明文的「无需建筑」。",
+  "_crafting_note": "crafting_source_desc_zh 是 §7 原文;crafting_building_id 原本只在 94 栋建筑里能**精确对上名字**时才填,对不上的填进 crafting_unmapped_zh。用户 2026-08-12 拍板:§7 里那 5 个 94 栋内不存在的来源名(木工作坊 / 石工作坊 / 工坊 / 研究院 / 现代工厂)不再等建筑补齐,一律按 docs/superpowers/plans/2026-08-10-m3-backlog.md §7 的映射建议改挂现有建筑 —— IT003/IT005 木工作坊→P02 烘焙坊、IT004 石工作坊→P04 砖窑、IT013 工坊→P05 铁匠铺、IT016 研究院→K03 大学、IT019 现代工厂→P08 机械厂。这 6 条是**近似映射不是精确对名**(照 §16.1「改挂现有不加建筑」先例),原文仍完整保留在 crafting_source_desc_zh 一列;映射落地后 crafting_unmapped_zh 一律清空(填了 id 就不再是未映射,两列互斥)。⚠️ 已知副作用:IT004 的 min_era 是 II 而 P04 砖窑要到时代 III 才解锁,落地后 IT004 实际要到时代 III 才做得出来。手工制作两件仍两列皆空 = §7 明文的「无需建筑」。",
 
   "items": [
     {
@@ -35,7 +35,7 @@
         { "target": "tool", "scope": "building_category", "op": "pct", "value": 0.10, "scope_key": "food_production" }
       ], "unmapped_zh": [] },
       "craft_cost": { "wood": 8, "stone": 2, "money": 5 },
-      "crafting_source_desc_zh": "木工作坊", "crafting_building_id": null, "crafting_unmapped_zh": "木工作坊",
+      "crafting_source_desc_zh": "木工作坊", "crafting_building_id": "P02", "crafting_unmapped_zh": null,
       "trade_value": 15, "note": "基础农业工具"
     },
     {
@@ -46,7 +46,7 @@
         { "target": "tool", "scope": "resource", "op": "pct", "value": 0.10, "scope_key": "flour" }
       ], "unmapped_zh": [] },
       "craft_cost": { "wood": 2, "stone": 8, "money": 6 },
-      "crafting_source_desc_zh": "石工作坊", "crafting_building_id": null, "crafting_unmapped_zh": "石工作坊",
+      "crafting_source_desc_zh": "石工作坊", "crafting_building_id": "P04", "crafting_unmapped_zh": null,
       "trade_value": 18, "note": "降低加工损耗"
     },
     {
@@ -57,7 +57,7 @@
         { "target": "construction_speed_pct", "scope": "city", "op": "pct", "value": 0.08 }
       ], "unmapped_zh": [] },
       "craft_cost": { "wood": 7, "stone": 2, "money": 8 },
-      "crafting_source_desc_zh": "木工作坊", "crafting_building_id": null, "crafting_unmapped_zh": "木工作坊",
+      "crafting_source_desc_zh": "木工作坊", "crafting_building_id": "P02", "crafting_unmapped_zh": null,
       "trade_value": 20, "note": "建筑工具"
     },
     {
@@ -153,7 +153,7 @@
         { "target": "construction_speed_pct", "scope": "city", "op": "pct", "value": 0.15 }
       ], "unmapped_zh": [] },
       "craft_cost": { "wood": 8, "stone": 4, "iron": 10, "money": 45 },
-      "crafting_source_desc_zh": "工坊", "crafting_building_id": null, "crafting_unmapped_zh": "工坊",
+      "crafting_source_desc_zh": "工坊", "crafting_building_id": "P05", "crafting_unmapped_zh": null,
       "trade_value": 85, "note": "中世纪大型建筑"
     },
     {
@@ -184,7 +184,7 @@
         { "target": "maintenance_cost_pct", "scope": "city", "op": "pct", "value": -0.08 }
       ], "unmapped_zh": [] },
       "craft_cost": { "wood": 2, "stone": 2, "iron": 8, "money": 90 },
-      "crafting_source_desc_zh": "研究院", "crafting_building_id": null, "crafting_unmapped_zh": "研究院",
+      "crafting_source_desc_zh": "研究院", "crafting_building_id": "K03", "crafting_unmapped_zh": null,
       "trade_value": 140, "note": "提高机械维护效率"
     },
     {
@@ -215,7 +215,7 @@
       "effect_code": "downtime_reduction_pct", "effect_value": 20, "unit": "percent",
       "effect_json": { "specs": [], "unmapped_zh": ["停机时间减少(-20%):项目里没有「停机」这个状态量(半停工由 §10.5 的欠费率决定),没有可挂的消费点"] },
       "craft_cost": { "steel": 15, "electronic_components": 8, "money": 260 },
-      "crafting_source_desc_zh": "现代工厂", "crafting_building_id": null, "crafting_unmapped_zh": "现代工厂",
+      "crafting_source_desc_zh": "现代工厂", "crafting_building_id": "P08", "crafting_unmapped_zh": null,
       "trade_value": 420, "note": "现代维护工具"
     },
     {

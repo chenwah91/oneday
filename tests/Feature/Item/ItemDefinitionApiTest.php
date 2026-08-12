@@ -91,8 +91,9 @@ class ItemDefinitionApiTest extends TestCase
         $this->assertSame('uses', $byId['IT012']['durability_mode']);
 
         // §7 点名的建筑不在 94 栋内的那 6 件(木工作坊 / 石工作坊 / 工坊 / 研究院 / 现代工厂):
-        // building_id 为空 = 当前不卡建筑,但 desc 原文照给 —— 前端显示「制作于:木工作坊」而不是空白
-        $this->assertNull($byId['IT003']['crafting_building_id']);
+        // 用户 2026-08-12 拍板改挂现有建筑(400001 迁移),building_id 不再为空;
+        // 而 desc 仍是 §7 原文 —— 前端显示「制作于:木工作坊」,同时能按 building_id 判断「还没建」
+        $this->assertSame('P02', $byId['IT003']['crafting_building_id']);
         $this->assertSame('木工作坊', $byId['IT003']['crafting_source_desc_zh']);
     }
 

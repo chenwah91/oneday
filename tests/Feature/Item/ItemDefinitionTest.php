@@ -178,8 +178,11 @@ class ItemDefinitionTest extends TestCase
         $this->assertSame([], ItemDefinition::find('IT001')['unmapped_zh']);
     }
 
-    // §7 的 crafting_source 映射:能精确对上 94 栋建筑的填 crafting_building_id,
-    // 对不上的原样进 crafting_unmapped_zh(**不发明映射**),手工制作两列皆空
+    // §7 的 crafting_source 映射:22 件挂到具体建筑,手工制作两件两列皆空。
+    //
+    // 其中 6 件的来源名(木工作坊 / 石工作坊 / 工坊 / 研究院 / 现代工厂)在 94 栋里并不存在,
+    // 交付时留空放行;用户 2026-08-12 拍板按 m3-backlog §7 的建议改挂现有建筑(400001 迁移),
+    // crafting_unmapped_zh 随之清零 —— 原文仍完整保留在 crafting_source_desc_zh 一列。
     public function test_crafting_source_mapping(): void
     {
         $definitions = ItemDefinition::all();
@@ -203,7 +206,23 @@ class ItemDefinitionTest extends TestCase
             $this->assertSame('手工制作', $definitions[$itemId]['crafting_source_desc_zh']);
         }
 
-        // 94 栋里不存在的来源:building_id 留空,原文进 unmapped(等建筑补齐或用户裁决)
+        // 用户 2026-08-12 拍板的 6 条近似映射(原文 → 现有建筑),逐条断言 ——
+        // 改错一条不会让任何别的测试变红,但玩家会对着「制作于:研究院」找不到该建哪一栋
+        $approxMapping = [
+            'IT003' => ['木工作坊', 'P02'],
+            'IT004' => ['石工作坊', 'P04'],
+            'IT005' => ['木工作坊', 'P02'],
+            'IT013' => ['工坊', 'P05'],
+            'IT016' => ['研究院', 'K03'],
+            'IT019' => ['现代工厂', 'P08'],
+        ];
+        foreach ($approxMapping as $itemId => [$sourceZh, $buildingId]) {
+            $this->assertSame($sourceZh, $definitions[$itemId]['crafting_source_desc_zh'], $itemId . ' 的 §7 原文不许被映射覆盖掉');
+            $this->assertSame($buildingId, $definitions[$itemId]['crafting_building_id']);
+        }
+
+        // 两列互斥:填了 building_id 就不再是「未映射」。
+        // 6 条近似映射落地后,全表已经没有任何一行留在 unmapped 状态
         $unmapped = [];
         foreach ($definitions as $itemId => $def) {
             if ($def['crafting_unmapped_zh'] !== null) {
@@ -212,14 +231,7 @@ class ItemDefinitionTest extends TestCase
             }
         }
 
-        $this->assertSame([
-            'IT003' => '木工作坊',
-            'IT004' => '石工作坊',
-            'IT005' => '木工作坊',
-            'IT013' => '工坊',
-            'IT016' => '研究院',
-            'IT019' => '现代工厂',
-        ], $unmapped);
+        $this->assertSame([], $unmapped, '6 条近似映射落地后不该再有未映射的制作来源');
     }
 
     // 已映射的 crafting_building_id 必须真的指向 94 栋之一(外键之外再断一次)
@@ -255,6 +267,20 @@ class ItemDefinitionTest extends TestCase
 
         $current = ltrim((string) GameDataVersion::current(), 'V');
         $this->assertTrue(version_compare($current, '3.4.0', '>='), '当前数值版本不该早于工具定义落地的版本');
+    }
+
+    // M3-W10 三组数据改动落地必须留下版本号 V3.7.0(全新库由 Seeder 写、已有库由 400002 迁移递增)。
+    // 吃次版本位的理由:6 件工具的**获取条件**变了 —— 同一座城在 V3.6.2 能做出来的工具,
+    // V3.7.0 下会因为没有制作建筑而被挡回 CRAFTING_BUILDING_MISSING
+    public function test_w10_data_version_is_recorded(): void
+    {
+        $this->assertTrue(
+            DB::table('game_data_versions')->where('version', 'V3.7.0')->exists(),
+            'M3-W10 三组数据改动必须留下 V3.7.0 版本号'
+        );
+
+        $current = ltrim((string) GameDataVersion::current(), 'V');
+        $this->assertTrue(version_compare($current, '3.7.0', '>='), '当前数值版本不该早于 W10 落地的版本');
     }
 
     private function assertSpec(array $def, string $target, string $scope, ?string $scopeKey, float $value): void
