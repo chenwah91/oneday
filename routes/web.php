@@ -208,6 +208,12 @@ Route::prefix('api/admin')->middleware(['auth:web', 'admin', 'throttle:api'])->g
     // 比七个外围列(工期 / 工人 / 维护)影响更大。只改已存在条目的数值,增删条目走迁移
     Route::post('/definitions/building-level-json', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editBuildingLevelJson'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
 
+    // 建筑等级 Excel 导出 / 导入(W13-2):批量调整等级数值、为任意建筑补新等级行(等级上限已数据驱动)。
+    // 导出是只读端点(与 GET building-levels 同权限);导入是批量写,叠 admin_write 限流 ——
+    // 一次导入 = 一次事务 + 一次版本递增 + 一条汇总审计,行内校验与单格编辑器同一套 allowlist / 上限
+    Route::get('/definitions/building-levels/export', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'exportBuildingLevels'])->middleware('admin:edit_definition');
+    Route::post('/definitions/building-levels/import', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'importBuildingLevels'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
+
     // 科技定义(W11-B,v3.2 §4 的 50 行):查看 / 调整知识成本、研究时长。
     // 前置 / 解锁 / 时代 / 分支四列只读下发 —— 那是科技树拓扑,改了会造出环或死锁
     Route::get('/definitions/technologies', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'technologies'])->middleware('admin:edit_definition');

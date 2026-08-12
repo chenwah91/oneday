@@ -15,7 +15,11 @@ use App\Support\Idempotency;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
-// 升级:L1→L2→L3;严格所有权校验。
+// 升级:L1→L2→…→LN;严格所有权校验。
+//
+// W13-2 起等级上限**数据驱动**(§13):不再硬编码「3 级封顶」,
+// 能不能再升一级只看 building_level_definition 里有没有 (building_id, level+1) 那一行 ——
+// 有就允许,没有就是满级(BUILDING_LIMIT_REACHED)。后台用 Excel 导入补上 L4 定义,玩家立刻能升 L4。
 //
 // M2-C5 起改为计时升级(v3.2 §16.3「B3 = 做」):
 //   下单 → 即时扣费 + status = upgrading + construction_finished_at = now + 下一级 duration_seconds
@@ -90,15 +94,14 @@ class UpgradeService
                 throw new GameRuleException(ErrorCode::VALIDATION_ERROR, 422);
             }
 
-            if ((int) $inst->level >= 3) {
-                throw new GameRuleException(ErrorCode::BUILDING_LIMIT_REACHED, 422);
-            }
-
+            // 等级上限数据驱动(W13-2,§13):下一级定义行存在才允许升,不存在即满级。
+            // 不再硬编码 3 —— 定义表补到几级,这栋楼就能升到几级(导入侧守着「等级从 1 连续」的不变量,
+            // 所以「查不到下一级」只有一种含义:已到该建筑当前定义的最高级)
             $currentLevel = (int) $inst->level;
             $nextLevel = $currentLevel + 1;
             $lvl = DB::table('building_level_definition')->where('building_id', $inst->building_id)->where('level', $nextLevel)->first();
             if (! $lvl) {
-                throw new GameRuleException(ErrorCode::INVALID_BUILDING, 422);
+                throw new GameRuleException(ErrorCode::BUILDING_LIMIT_REACHED, 422);
             }
             // 升级成本 = 定义 cost_json × upgrade_cost_multiplier(资金与材料同乘,倍率为 1 时原样不动)。
             // 与建造同一条纪律:算一次、同时用于校验与扣款;幂等重放在上面已 return,不会按新倍率重算
@@ -107,10 +110,19 @@ class UpgradeService
                 (float) GameSetting::get(GameSetting::UPGRADE_COST_MULTIPLIER)
             );
 
-            // 资源足额:一律用结算后的最新余额(资金 money 单列在 cities.money)
+            // 资源足额:一律用结算后的最新余额(资金 money 单列在 cities.money)。
+            // W12:走完全部成本项收集所有缺口后一次性抛,前端一次就能列全「还差什么、各差多少」,
+            // 不必玩家补一样再撞一样。details 只含成本(定义公开数据)与玩家自己的余额,
+            // 符合 GameRuleException 注释的边界;数值一律服务器现值,与 BuildService 同一契约
+            $missing = [];
             foreach ($cost as $res => $amt) {
                 $have = $res === ResourceCode::MONEY ? (float) $sim['money'] : (float) ($sim['resources'][$res] ?? 0);
-                if ($have < $amt) { throw new GameRuleException(ErrorCode::INSUFFICIENT_RESOURCE, 422); }
+                if ($have < $amt) {
+                    $missing[] = ['resource_id' => $res, 'required' => (float) $amt, 'have' => $have, 'missing' => (float) $amt - $have];
+                }
+            }
+            if ($missing !== []) {
+                throw new GameRuleException(ErrorCode::INSUFFICIENT_RESOURCE, 422, ['missing' => $missing]);
             }
 
             // 扣资源(§16.3「资源在事务内扣除」:计时期间资源已经付掉,取消才按 70% 退)

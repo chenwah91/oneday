@@ -1,9 +1,12 @@
-// 建筑等级定义(building_level_definition):先选建筑,再整表改它的三级。
+// 建筑等级定义(building_level_definition):先选建筑,再整表改它的各级。
 //
-// 两块内容:
+// 三块内容:
 //   ① **外围七列**(工期 / 工人 / 三项维护 / 耗电 / 容量)—— 与其它定义同一套整表编辑器;
 //   ② **三个 JSON 列的条目级编辑**(产出 / 投入 / 建造成本)—— 点行尾「条目」展开,
 //      每组一张逐资源小表格,逐格改。这三列才是「这栋楼强不强」的真正数值。
+//   ③ **Excel 导出 / 导入**(W13-2)—— 等级上限已数据驱动(升级只看下一级定义行存不存在),
+//      批量调数值、给任意建筑补 L4/L5… 新等级行都走「导出 → 改 → 导回」;
+//      导入不删行(文件里没有的现有行一律不动),每栋的等级必须从 1 连续。
 //
 // 数据来源:GET /definitions/building-levels 现在把 editable 数组与三个 JSON 列的**现值**
 // 一起下发(已 decode:output/input 是 [{resource, rate_per_min}],cost 是 {资源: 数量},空列为 null / [])。
@@ -35,6 +38,66 @@ async function loadResourceNames() {
 function resourceLabel(code) {
     const name = resourceNames && resourceNames[code];
     return name ? `${name}(${code})` : code;
+}
+
+// ---- Excel 导出 / 导入(W13-2)----
+// 走原生 fetch 而不是 api.post:core/api.js 只发 JSON,下载要拿 blob、上传要发 multipart(FormData)。
+// CSRF 与 core/api.js 同一套口径:先确保 XSRF-TOKEN cookie 已下发,写请求带 X-XSRF-TOKEN 头
+
+function cookieValue(name) {
+    const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return m ? decodeURIComponent(m[1]) : null;
+}
+
+async function downloadExport() {
+    const res = await fetch('/api/admin/definitions/building-levels/export', { credentials: 'include' });
+    if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw { status: res.status, error: json.error || 'REQUEST_FAILED', body: json };
+    }
+    const blob = await res.blob();
+    // 文件名跟服务器的 Content-Disposition 走(带导出时间戳),取不到再用兜底名
+    const dispo = res.headers.get('Content-Disposition') || '';
+    const match = dispo.match(/filename="?([^";]+)"?/);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = match ? match[1] : 'building_levels.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+}
+
+async function uploadImport(file, reason) {
+    await fetch('/api/csrf-cookie', { credentials: 'include' });
+    const token = cookieValue('XSRF-TOKEN');
+
+    const form = new FormData();
+    form.append('file', file);
+    form.append('reason', reason);
+
+    const headers = { Accept: 'application/json' };
+    if (token) headers['X-XSRF-TOKEN'] = token;
+
+    const res = await fetch('/api/admin/definitions/building-levels/import', {
+        method: 'POST',
+        credentials: 'include',
+        headers,
+        body: form,
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || json.success === false) {
+        throw { status: res.status, error: json.error || 'REQUEST_FAILED', body: json };
+    }
+    return json.data;
+}
+
+// 导入失败时把逐行错误列出来(服务器最多回 50 条,总数写在第一句里)
+function importErrorText(err) {
+    const rows = err && err.body && Array.isArray(err.body.row_errors) ? err.body.row_errors : null;
+    if (!rows || !rows.length) return errorMessage(err);
+    const lines = rows.map((r) => `第${r.row}行 ${r.column}:${r.reason}`);
+    return `${errorMessage(err)} —— ${lines.join(';')}`;
 }
 
 // 把一列的现值摊平成 [{code, current}]。两种形状各自处理:
@@ -166,8 +229,8 @@ async function onEntrySubmit(e, row, ctx) {
 export const buildingLevelsPanel = createDefinitionPanel({
     id: 'building-level',
     label: '建筑等级',
-    title: '建筑等级定义(每栋 3 级)',
-    hint: '先在下面选一栋建筑,再逐格改它三级的数值。行尾「条目」可展开该级的<b>产出 / 投入 / 建造成本</b>三组逐资源小表格 —— 那才是这栋楼强不强的真正数值。',
+    title: '建筑等级定义(等级无上限,定义到几级就能升到几级)',
+    hint: '先在下面选一栋建筑,再逐格改它各级的数值。行尾「条目」可展开该级的<b>产出 / 投入 / 建造成本</b>三组逐资源小表格 —— 那才是这栋楼强不强的真正数值。批量改动与<b>补新等级行</b>(L4、L5…)走「导出 Excel → 改 → 导入」:导入不删行,每栋的等级必须从 1 连续。',
     listUrl: (ctx) => (ctx.state.buildingId
         ? '/api/admin/definitions/building-levels?buildingId=' + encodeURIComponent(ctx.state.buildingId)
         : null),
@@ -198,13 +261,20 @@ export const buildingLevelsPanel = createDefinitionPanel({
         capacity: { min: 0, max: 1000000000 },
     },
     expand: { label: '条目', render: renderExpand },
-    // 建筑选择器:94 行的下拉。选完立刻重新拉这栋楼的三级
+    // 建筑选择器:94 行的下拉,选完立刻重新拉这栋楼的各级。
+    // 右侧是 Excel 导出 / 导入(W13-2):导出全表 → 线下改 / 补新等级行 → 导回
     toolbar(node, ctx) {
         node.innerHTML = `
             <label class="inline-field">
                 <span class="muted">建筑</span>
                 <select class="bl-building"><option value="">加载中…</option></select>
             </label>
+            <button type="button" class="btn btn-ghost bl-export">导出 Excel</button>
+            <label class="inline-field">
+                <span class="muted">导入文件</span>
+                <input type="file" class="bl-import-file" accept=".xlsx">
+            </label>
+            <button type="button" class="btn btn-ghost bl-import">导入 Excel</button>
         `;
         const select = node.querySelector('.bl-building');
         api.get('/api/admin/definitions/buildings').then((data) => {
@@ -219,6 +289,58 @@ export const buildingLevelsPanel = createDefinitionPanel({
         select.addEventListener('change', () => {
             ctx.state.buildingId = select.value;
             ctx.reload();
+        });
+
+        // 导出:同源 session 直接下载,失败时把 JSON 错误翻成中文提示
+        const exportBtn = node.querySelector('.bl-export');
+        exportBtn.addEventListener('click', async () => {
+            ctx.clearError();
+            ctx.clearResult();
+            exportBtn.disabled = true;
+            try {
+                await downloadExport();
+                ctx.setResult('已导出全部建筑等级定义(building_id、名称、等级、七个数值列与三个 JSON 列)');
+            } catch (err) {
+                ctx.setError(errorMessage(err));
+            } finally {
+                exportBtn.disabled = false;
+            }
+        });
+
+        // 导入:reason 必填(右上角同一个输入框,与逐格编辑同一条纪律);
+        // 成功显示 {更新/新增/未变/涉及建筑} 摘要,失败把逐行错误列出来
+        const importBtn = node.querySelector('.bl-import');
+        const fileInput = node.querySelector('.bl-import-file');
+        importBtn.addEventListener('click', async () => {
+            ctx.clearError();
+            ctx.clearResult();
+
+            const reason = ctx.reason();
+            if (reason === null) return;
+
+            const file = fileInput.files && fileInput.files[0];
+            if (!file) {
+                ctx.setError('请先选择要导入的 .xlsx 文件');
+                return;
+            }
+
+            importBtn.disabled = true;
+            try {
+                const data = await uploadImport(file, reason);
+                if (!data.updated && !data.inserted) {
+                    ctx.setResult(`导入完成:文件与当前数据一致,没有任何改动(未变 ${data.unchanged} 行)`);
+                } else {
+                    const buildings = (data.buildings_affected || []).join('、');
+                    ctx.setResult(`导入完成:更新 ${data.updated} 行 / 新增 ${data.inserted} 行 / 未变 ${data.unchanged} 行,涉及建筑:${buildings}(新版本号 ${data.version})`);
+                }
+                fileInput.value = '';
+                // 当前正看着的建筑可能刚被改过:重拉一次,避免表里显示旧值
+                if (ctx.state.buildingId) ctx.reload();
+            } catch (err) {
+                ctx.setError(importErrorText(err));
+            } finally {
+                importBtn.disabled = false;
+            }
         });
     },
 });

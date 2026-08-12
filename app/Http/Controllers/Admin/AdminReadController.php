@@ -6,6 +6,7 @@ use App\Game\Event\EventCode;
 use App\Game\NPC\NpcCode;
 use App\Http\Controllers\Controller;
 use App\Support\ApiResponse;
+use App\Support\AuditAction;
 use App\Support\ErrorCode;
 use App\Support\Role;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +27,16 @@ class AdminReadController extends Controller
 
     // 仪表盘资源榜的条数
     private const DASHBOARD_TOP_RESOURCES = 10;
+
+    // 玩家详情各分区的上界(W13-1)。
+    // 实例类分区(建筑 / NPC / 科技 / 工具)按单城设计规模封顶:v3 单城建筑上限远低于 500,
+    // 这里的 500 不是「分页」而是「异常数据兜底」—— 正常城市永远取不满,
+    // 但万一出现刷出上万行的脏数据,这个端点也不能把整张表搬进内存
+    private const DETAIL_ROWS_MAX = 500;
+    private const DETAIL_EVENTS_ACTIVE_MAX = 50;   // 生效事件受并发上限约束,50 已是数倍余量
+    private const DETAIL_EVENTS_SETTLED = 10;      // 最近已结算事件
+    private const DETAIL_TRADES = 20;              // 最近市场交易(审计里的 MARKET.*)
+    private const DETAIL_AUDIT = 20;               // 最近任意审计(不带大 JSON)
 
     // 当前管理员身份:username/role/permissions。
     // 供后台前端按权限显隐按钮(前端显隐只是体验优化,真正的拦截始终在 EnsureAdmin 中间件)
@@ -210,7 +221,17 @@ class AdminReadController extends Controller
         ]]);
     }
 
-    // 玩家详情:基础信息 + 城市摘要(revision/population/money/建筑数)
+    // 玩家详情全景页(W13-1):账号 + 城市全字段 + 资源 / 建筑 / NPC / 科技 / 工具 / 事件 / 交易 / 审计。
+    //
+    // ══ 硬纪律:只读原始 DB 值,绝不在读路径上跑结算 ═══════════════════════════
+    // 这里给出的所有数值都是「最近结算时点」(cities.last_simulated_at 等时钟)的快照。
+    // 管理端 GET 必须是安全方法:顺手 simulate 一次等于「管理员看一眼就改写玩家存档」,
+    // 快照口径由前端标注,权威值永远在玩家自己的操作路径上产生。
+    //
+    // ══ 尺寸与查询纪律 ══════════════════════════════════════════════════════
+    // 每个分区一条有界 SQL(join 定义表取中文名,零 N+1),查询条数是常量;
+    // 大 JSON 列(before/after/metadata)一律不出库,唯一例外是市场交易的 delta_json
+    // (资源差额映射,几十字节)。敏感列(password/remember_token)绝不进内存。
     public function playerDetail(int $id): JsonResponse
     {
         // 仅取展示所需字段,password/remember_token 等敏感列不进内存
@@ -221,16 +242,9 @@ class AdminReadController extends Controller
         }
 
         $city = DB::table('cities')->where('user_id', $id)->first();
-        $citySummary = null;
-        if ($city) {
-            $citySummary = [
-                'id' => $city->id, 'revision' => $city->revision, 'population' => $city->population,
-                'money' => (float) $city->money,
-                'buildingCount' => DB::table('city_building_instances')->where('city_id', $city->id)->count(),
-            ];
-        }
 
-        return ApiResponse::ok(['data' => [
+        // 没有城市的玩家:各分区统一给空数组(不是 null),前端不必逐分区判空
+        $data = [
             'player' => [
                 'id' => $u->id, 'username' => $u->username, 'email' => $u->email,
                 'role' => $u->role, 'createdAt' => $u->created_at,
@@ -239,8 +253,242 @@ class AdminReadController extends Controller
                 'banned_at'  => $u->banned_at,
                 'ban_reason' => $u->ban_reason,
             ],
-            'city' => $citySummary,
-        ]]);
+            'city'         => null,
+            'resources'    => [],
+            'buildings'    => [],
+            'npcs'         => [],
+            'technologies' => [],
+            'items'        => [],
+            'events'       => ['active' => [], 'settled' => []],
+            'trades'       => [],
+            'recent_audit' => [],
+        ];
+
+        if ($city) {
+            $cityId = (int) $city->id;
+            $data['city']         = self::detailCity($city);
+            $data['resources']    = self::detailResources($cityId);
+            $data['buildings']    = self::detailBuildings($cityId);
+            $data['npcs']         = self::detailNpcs($cityId);
+            $data['technologies'] = self::detailTechnologies($cityId);
+            $data['items']        = self::detailItems($cityId);
+            $data['events']       = self::detailEvents($cityId);
+            $data['trades']       = self::detailTrades($cityId);
+            $data['recent_audit'] = self::detailRecentAudit($cityId);
+        }
+
+        return ApiResponse::ok(['data' => $data]);
+    }
+
+    // ---------- 玩家详情的分区取数(全部只读 + 有界)----------
+
+    // 城市全字段。camelCase 的 buildingCount 是历史契约(前端与测试在读,不能删);
+    // 新字段一律 snake_case(2026-08-10 拍板),列有什么给什么,不做任何推导计算
+    private static function detailCity(object $city): array
+    {
+        return [
+            'id' => $city->id, 'revision' => $city->revision, 'population' => $city->population,
+            'money' => (float) $city->money,
+            'buildingCount' => DB::table('city_building_instances')->where('city_id', $city->id)->count(),
+            // ---- W13-1 起的全字段(cities 实际列)----
+            'name'              => $city->name,
+            'era_key'           => $city->era_key,
+            'era_order'         => (int) $city->era_order,
+            'happiness'         => (float) $city->happiness,
+            'map_width'         => (int) $city->map_width,
+            'map_height'        => (int) $city->map_height,
+            'game_data_version' => $city->game_data_version,
+            // 五个时钟:last_simulated_at 是主结算时钟,其余是各子系统的懒结算时钟。
+            // 它们同时是「本页快照有多旧」的口径,前端要标注
+            'last_simulated_at' => (string) $city->last_simulated_at,
+            'npc_settled_at'    => $city->npc_settled_at,
+            'item_settled_at'   => $city->item_settled_at,
+            'event_settled_at'  => $city->event_settled_at,
+            'food_deficit_since' => $city->food_deficit_since,
+            'food_zero_since'    => $city->food_zero_since,
+            'created_at'        => (string) $city->created_at,
+            'updated_at'        => (string) $city->updated_at,
+        ];
+    }
+
+    // 资源现况:city_resources 全部行 + 定义表中文名。
+    // money 不在这里(它是 cities 上的列,由 city 分区带出);缺名回退 resource_id
+    private static function detailResources(int $cityId): array
+    {
+        return DB::table('city_resources as cr')
+            ->leftJoin('resource_definition as rd', 'rd.resource_id', '=', 'cr.resource_id')
+            ->where('cr.city_id', $cityId)
+            ->orderBy('cr.resource_id')
+            ->limit(self::DETAIL_ROWS_MAX)
+            ->get(['cr.resource_id', 'rd.name', 'cr.amount'])
+            ->map(fn ($r) => [
+                'resource_id' => (string) $r->resource_id,
+                'name'        => $r->name === null ? (string) $r->resource_id : (string) $r->name,
+                'amount'      => (float) $r->amount,
+            ])->all();
+    }
+
+    // 建筑实例:全部行 + 定义表中文名(一条 join,零 N+1)
+    private static function detailBuildings(int $cityId): array
+    {
+        return DB::table('city_building_instances as bi')
+            ->leftJoin('building_definition as bd', 'bd.building_id', '=', 'bi.building_id')
+            ->where('bi.city_id', $cityId)
+            ->orderBy('bi.id')
+            ->limit(self::DETAIL_ROWS_MAX)
+            ->get(['bi.id', 'bi.building_id', 'bd.name', 'bi.level', 'bi.status',
+                'bi.x', 'bi.y', 'bi.assigned_workers'])
+            ->map(fn ($r) => [
+                'id'               => (int) $r->id,
+                'building_id'      => (string) $r->building_id,
+                'name'             => $r->name === null ? (string) $r->building_id : (string) $r->name,
+                'level'            => (int) $r->level,
+                'status'           => (string) $r->status,
+                'x'                => (int) $r->x,
+                'y'                => (int) $r->y,
+                'assigned_workers' => (int) $r->assigned_workers,
+            ])->all();
+    }
+
+    // NPC:含 left(已离场)的全部行 —— 详情页要能回答「他的人都去哪了」;
+    // 岗位 = 所派建筑实例 id + 该建筑的中文名(两级 leftJoin,未派驻两者皆 null)
+    private static function detailNpcs(int $cityId): array
+    {
+        return DB::table('city_npcs as cn')
+            ->leftJoin('npc_definition as nd', 'nd.npc_id', '=', 'cn.npc_id')
+            ->leftJoin('city_building_instances as bi', 'bi.id', '=', 'cn.assigned_instance_id')
+            ->leftJoin('building_definition as bd', 'bd.building_id', '=', 'bi.building_id')
+            ->where('cn.city_id', $cityId)
+            ->orderBy('cn.id')
+            ->limit(self::DETAIL_ROWS_MAX)
+            ->get(['cn.id', 'cn.npc_id', 'nd.name_zh', 'nd.name_key', 'nd.rarity',
+                'cn.skill_level', 'cn.skill_value', 'cn.morale', 'cn.status',
+                'cn.assigned_instance_id', 'bd.name as assigned_building_name'])
+            ->map(fn ($r) => [
+                'id'          => (int) $r->id,
+                'npc_id'      => (string) $r->npc_id,
+                // 显示名:中文名 → name_key → code,逐级回退
+                'name'        => $r->name_zh !== null ? (string) $r->name_zh
+                    : ($r->name_key !== null ? (string) $r->name_key : (string) $r->npc_id),
+                'rarity'      => $r->rarity,
+                'skill_level' => (int) $r->skill_level,
+                'skill_value' => (int) $r->skill_value,
+                'morale'      => (float) $r->morale,
+                'status'      => (string) $r->status,
+                'assigned_instance_id'   => $r->assigned_instance_id === null ? null : (int) $r->assigned_instance_id,
+                'assigned_building_name' => $r->assigned_building_name,
+            ])->all();
+    }
+
+    // 科技:在研 + 已解锁的全部行 + 定义表中文名
+    private static function detailTechnologies(int $cityId): array
+    {
+        return DB::table('city_technologies as ct')
+            ->leftJoin('technology_definition as td', 'td.tech_id', '=', 'ct.tech_id')
+            ->where('ct.city_id', $cityId)
+            ->orderBy('ct.id')
+            ->limit(self::DETAIL_ROWS_MAX)
+            ->get(['ct.tech_id', 'td.name', 'ct.status', 'ct.started_at', 'ct.finished_at'])
+            ->map(fn ($r) => [
+                'tech_id'     => (string) $r->tech_id,
+                'name'        => $r->name === null ? (string) $r->tech_id : (string) $r->name,
+                'status'      => (string) $r->status,
+                'started_at'  => (string) $r->started_at,
+                'finished_at' => (string) $r->finished_at,
+            ])->all();
+    }
+
+    // 工具:逐件(含 broken)+ 定义名 / 耐久上限 / 装备在哪栋(建筑名同 NPC 的两级 leftJoin)。
+    // item_definition 没有中文名列,显示名用 name_key(与后台工具面板同口径)
+    private static function detailItems(int $cityId): array
+    {
+        return DB::table('city_items as ci')
+            ->leftJoin('item_definition as idf', 'idf.item_id', '=', 'ci.item_id')
+            ->leftJoin('city_building_instances as bi', 'bi.id', '=', 'ci.equipped_instance_id')
+            ->leftJoin('building_definition as bd', 'bd.building_id', '=', 'bi.building_id')
+            ->where('ci.city_id', $cityId)
+            ->orderBy('ci.id')
+            ->limit(self::DETAIL_ROWS_MAX)
+            ->get(['ci.id', 'ci.item_id', 'idf.name_key', 'ci.durability_left', 'idf.durability',
+                'ci.status', 'ci.equipped_instance_id', 'bd.name as equipped_building_name'])
+            ->map(fn ($r) => [
+                'id'              => (int) $r->id,
+                'item_id'         => (string) $r->item_id,
+                'name'            => $r->name_key === null ? (string) $r->item_id : (string) $r->name_key,
+                'durability_left' => (float) $r->durability_left,
+                'durability_max'  => $r->durability === null ? null : (int) $r->durability,
+                'status'          => (string) $r->status,
+                'equipped_instance_id'   => $r->equipped_instance_id === null ? null : (int) $r->equipped_instance_id,
+                'equipped_building_name' => $r->equipped_building_name,
+            ])->all();
+    }
+
+    // 事件:生效中的全部(含过期未翻牌的 —— 只读路径不代跑懒结算,原样呈现并由前端标注)
+    // + 最近 10 条已结算(resolved / expired)
+    private static function detailEvents(int $cityId): array
+    {
+        $base = fn () => DB::table('city_events as ce')
+            ->leftJoin('event_definition as ed', 'ed.event_id', '=', 'ce.event_id')
+            ->where('ce.city_id', $cityId);
+
+        $columns = ['ce.id', 'ce.event_id', 'ed.name_zh', 'ce.status',
+            'ce.triggered_at', 'ce.expires_at', 'ce.resolved_at', 'ce.chosen_option'];
+
+        $format = fn ($r) => [
+            'id'            => (int) $r->id,
+            'event_id'      => (string) $r->event_id,
+            'name'          => $r->name_zh === null ? (string) $r->event_id : (string) $r->name_zh,
+            'status'        => (string) $r->status,
+            'triggered_at'  => (string) $r->triggered_at,
+            'expires_at'    => (string) $r->expires_at,
+            'resolved_at'   => $r->resolved_at,
+            'chosen_option' => $r->chosen_option,
+        ];
+
+        return [
+            'active' => $base()->where('ce.status', EventCode::STATUS_ACTIVE)
+                ->orderByDesc('ce.id')->limit(self::DETAIL_EVENTS_ACTIVE_MAX)
+                ->get($columns)->map($format)->all(),
+            'settled' => $base()->whereIn('ce.status', [EventCode::STATUS_RESOLVED, EventCode::STATUS_EXPIRED])
+                ->orderByDesc('ce.id')->limit(self::DETAIL_EVENTS_SETTLED)
+                ->get($columns)->map($format)->all(),
+        ];
+    }
+
+    // 最近 20 条市场交易:审计里的 MARKET.BUY / MARKET.SELL。
+    // delta_json 解码后带上 —— 市场 delta 是「资源/数量/单价/手续费」的小映射(几十字节),
+    // 不违反「列表不带大 JSON」的尺寸纪律(before/after/metadata 仍只走审计详情端点)
+    private static function detailTrades(int $cityId): array
+    {
+        return DB::table('audit_logs')
+            ->where('city_id', $cityId)
+            ->whereIn('action', [AuditAction::MARKET_BUY, AuditAction::MARKET_SELL])
+            ->orderByDesc('id')
+            ->limit(self::DETAIL_TRADES)
+            ->get(['id', 'action', 'occurred_at', 'status', 'delta_json'])
+            ->map(fn ($r) => [
+                'id'          => (int) $r->id,
+                'action'      => (string) $r->action,
+                'occurred_at' => (string) $r->occurred_at,
+                'status'      => (string) $r->status,
+                'delta'       => self::decodeJson($r->delta_json),
+            ])->all();
+    }
+
+    // 最近 20 条任意审计:只给四个轻量列,完整字段走「查看完整审计」跳审计面板
+    private static function detailRecentAudit(int $cityId): array
+    {
+        return DB::table('audit_logs')
+            ->where('city_id', $cityId)
+            ->orderByDesc('id')
+            ->limit(self::DETAIL_AUDIT)
+            ->get(['id', 'action', 'occurred_at', 'status'])
+            ->map(fn ($r) => [
+                'id'          => (int) $r->id,
+                'action'      => (string) $r->action,
+                'occurred_at' => (string) $r->occurred_at,
+                'status'      => (string) $r->status,
+            ])->all();
     }
 
     // ---------- 审计 ----------

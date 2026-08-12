@@ -83,7 +83,35 @@ class UpgradeTest extends TestCase
         $this->finishWork($u, $id);
         $this->assertSame(3, (int) CityBuildingInstance::find($id)->level);
 
-        // L3 已满级,再升级被拒
+        // 满级被拒 —— 口径是数据驱动的(W13-2):种子只定义到 L3,查不到 L4 定义即满级,
+        // 不是代码里写死 3;补上 L4 定义后同一栋楼就能继续升(见 test_upgrade_follows_defined_levels_beyond_three)
+        $this->actingAs($u)->postJson('/api/city/upgrade', ['instance_id' => $id])
+            ->assertStatus(422)->assertJson(['error' => 'BUILDING_LIMIT_REACHED']);
+    }
+
+    // 等级无上限(W13-2):上限完全由 building_level_definition 决定 ——
+    // 没有 L4 定义时 3 级封顶;补上 L4 定义后 3→4 立刻可升;没有 L5 时 L4 就是新的满级
+    public function test_upgrade_follows_defined_levels_beyond_three(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-01-01 00:00:00'));
+        [$u, $city, $id] = $this->makeUserWithFarm('unlimited');
+        // 等级推进的过程已由 test_upgrade_l1_to_l2_to_l3 覆盖,这里直接把实例推到 L3
+        DB::table('city_building_instances')->where('id', $id)->update(['level' => 3]);
+
+        // 没有 L4 定义:3 级即满级
+        $this->actingAs($u)->postJson('/api/city/upgrade', ['instance_id' => $id])
+            ->assertStatus(422)->assertJson(['error' => 'BUILDING_LIMIT_REACHED']);
+
+        // 补上 L4 定义(以 L3 行为模板,补数据不改数值口径):同一栋楼立刻能再升一级
+        $l3 = (array) DB::table('building_level_definition')->where('building_id', 'F02')->where('level', 3)->first();
+        DB::table('building_level_definition')->insert(array_merge($l3, ['level' => 4]));
+
+        $this->actingAs($u)->postJson('/api/city/upgrade', ['instance_id' => $id])->assertOk()
+            ->assertJson(['data' => ['building' => ['level' => 3, 'target_level' => 4, 'status' => 'upgrading']]]);
+        $this->finishWork($u, $id);
+        $this->assertSame(4, (int) CityBuildingInstance::find($id)->level);
+
+        // 没有 L5 定义:L4 就是新的满级(错误码同一条 —— 前端译成「已达最高等级」)
         $this->actingAs($u)->postJson('/api/city/upgrade', ['instance_id' => $id])
             ->assertStatus(422)->assertJson(['error' => 'BUILDING_LIMIT_REACHED']);
     }
@@ -118,6 +146,39 @@ class UpgradeTest extends TestCase
         $this->assertSame($before - 12, $wood()); // 只扣了一次木材
         $this->finishWork($u, $id);
         $this->assertSame(2, (int) CityBuildingInstance::find($id)->level); // 停在 L2,未被重复升到 L3
+    }
+
+    // 缺料明细(W12):升级的 INSUFFICIENT_RESOURCE 同样带 details.missing,契约与建造一致
+    // (F02 L1→L2:木材12/石料3/资金8)
+    public function test_upgrade_insufficient_resource_lists_every_shortfall(): void
+    {
+        [$u, $city, $id] = $this->makeUserWithFarm('upgradepoor');
+        DB::table('city_resources')->where('city_id', $city->id)->update(['amount' => 0]);
+        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->update(['amount' => 2]);
+        DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'stone')->update(['amount' => 1]);
+        DB::table('cities')->where('id', $city->id)->update(['money' => 3]);
+
+        $res = $this->actingAs($u)->postJson('/api/city/upgrade', ['instance_id' => $id]);
+        $res->assertStatus(422)->assertJson(['error' => 'INSUFFICIENT_RESOURCE']);
+
+        $missing = collect($res->json('details.missing'))->keyBy('resource_id');
+        $this->assertCount(3, $missing);
+        foreach ([
+            'wood'  => ['required' => 12.0, 'have' => 2.0, 'missing' => 10.0],
+            'stone' => ['required' => 3.0,  'have' => 1.0, 'missing' => 2.0],
+            'money' => ['required' => 8.0,  'have' => 3.0, 'missing' => 5.0],
+        ] as $rid => $want) {
+            $row = $missing[$rid];
+            $this->assertSame($want['required'], (float) $row['required'], "$rid required");
+            $this->assertSame($want['have'], (float) $row['have'], "$rid have");
+            $this->assertSame($want['missing'], (float) $row['missing'], "$rid missing");
+        }
+
+        // 拒绝即整体回滚:等级/状态不动、资源没扣
+        $inst = DB::table('city_building_instances')->where('id', $id)->first();
+        $this->assertSame(1, (int) $inst->level);
+        $this->assertSame('active', $inst->status);
+        $this->assertSame(2.0, (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->value('amount'));
     }
 
     public function test_cannot_upgrade_another_players_building(): void

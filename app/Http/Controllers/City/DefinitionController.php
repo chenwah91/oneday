@@ -35,6 +35,13 @@ class DefinitionController extends Controller
 
     public function buildings(): JsonResponse
     {
+        // 每栋建筑当前定义到的最高等级(W13-2):等级上限已数据驱动(见 UpgradeService),
+        // 前端「Lv x / MAX」与升级按钮置灰需要知道 MAX 是几 —— 不下发它,前端只能写死 3
+        $maxLevels = DB::table('building_level_definition')
+            ->select('building_id', DB::raw('MAX(level) as max_level'))
+            ->groupBy('building_id')
+            ->pluck('max_level', 'building_id');
+
         $defs = DB::table('building_definition as bd')
             ->join('building_level_definition as bl', function ($j) {
                 $j->on('bd.building_id', '=', 'bl.building_id')->where('bl.level', '=', 1);
@@ -53,6 +60,8 @@ class DefinitionController extends Controller
                 'era'         => $r->era_key,
                 'era_order'   => (int) $r->era_order,
                 'max_count'   => (int) $r->max_count,
+                // 该建筑已定义的最高等级(join L1 行保证了至少有 1 级,兜底 1 只是防御)
+                'max_level'   => (int) ($maxLevels[$r->building_id] ?? 1),
                 'footprint'   => ['w' => (int) $r->footprint_w, 'h' => (int) $r->footprint_h],
                 'level1'      => [
                     'cost'   => json_decode($r->cost_json, true),

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Game\City\EraService;
+use App\Game\Definition\EnumCode;
 use App\Game\Definition\GameDataVersion;
 use App\Game\Event\EventDefinition;
 use App\Game\Item\ItemDefinition;
@@ -13,9 +14,13 @@ use App\Support\ApiResponse;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
+use App\Support\Xlsx\XlsxReader;
+use App\Support\Xlsx\XlsxWriter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 // 后台调整建筑等级数值:allowlist 字段 + 强制 reason + 审计 + 版本递增
 class AdminDefinitionController extends Controller
@@ -109,7 +114,9 @@ class AdminDefinitionController extends Controller
     {
         $data = $request->validate([
             'buildingId' => ['required', 'string', 'max:16'],
-            'level'      => ['required', 'integer', 'between:1,3'],
+            // 上限 255 = level 列(unsignedTinyInteger)的物理上限,不再写死 3(W13-2 等级无上限):
+            // 该级存不存在由下面的行查询判定(查不到 404),这里只拦「列装不下」的值
+            'level'      => ['required', 'integer', 'between:1,255'],
             'field'      => ['required', 'string'],
             // value 不允许负数:所有 EDITABLE 字段(耗时/工人/维护/幸福度/治理/防御/容量)按设计均为非负,
             // 若放行负数,负的 maintenance_money_per_min 会让 SimulationService 的 max(0, money - rate*minutes) 变成无上限生钱
@@ -191,7 +198,8 @@ class AdminDefinitionController extends Controller
     {
         $data = $request->validate([
             'building_id' => ['required', 'string', 'max:16'],
-            'level'       => ['required', 'integer', 'between:1,3'],
+            // 与 editBuildingLevel 同一条理由(W13-2):等级上限数据驱动,255 是列的物理上限
+            'level'       => ['required', 'integer', 'between:1,255'],
             'column'      => ['required', 'string'],
             // 条目定位键:output/input 是 specs 里的 resource 字段,cost 是 map 的键
             'resource'    => ['required', 'string', 'max:32'],
@@ -325,6 +333,506 @@ class AdminDefinitionController extends Controller
         }
 
         return ['status' => 'ok', 'before' => $before, 'json' => $encoded];
+    }
+
+    // ---- 建筑等级 Excel 导出 / 导入(W13-2)----
+
+    // 导出列顺序 = 导入表头 allowlist。「名称」是只读参考列(join building_definition.name,导入时忽略);
+    // 其余列:两列主键 + EDITABLE 的七个数值列 + 三个 JSON 列(JSON 文本原样进单元格)。
+    // 常量表达式不能调 array_merge,这里手抄一份 —— 增删 EDITABLE 字段时必须同步这里与导入校验
+    private const XLSX_NAME_COLUMN = '名称';
+
+    private const XLSX_COLUMNS = [
+        'building_id', self::XLSX_NAME_COLUMN, 'level',
+        'duration_seconds', 'worker_required',
+        'maintenance_money_per_min', 'maintenance_food_per_min', 'maintenance_fuel_per_min', 'power_per_min',
+        'capacity',
+        'output_json', 'input_json', 'cost_json',
+    ];
+
+    // 导入单文件最多多少行数据(不含表头):94 栋 × 255 级的理论极限远用不到,
+    // 这只是防「传错文件」的护栏,与 5MB 的大小上限同一用途
+    private const XLSX_MAX_ROWS = 30000;
+
+    // 逐行错误最多回多少条:全表打错时一次回几千条错误没人读得完,前 50 条足够定位问题模式
+    private const XLSX_MAX_ERRORS = 50;
+
+    // 审计明细最多记多少格变更(§57:审计不保存大型 Snapshot,超出计数说明)
+    private const XLSX_AUDIT_DETAIL_MAX = 100;
+
+    // 导出:全部建筑等级定义,一行一级,按 building_id, level 排序。
+    // 只读端点(与 GET /definitions/building-levels 同权限),不写审计、不 bump 版本
+    public function exportBuildingLevels(): BinaryFileResponse
+    {
+        $names = DB::table('building_definition')->pluck('name', 'building_id');
+        $rows = DB::table('building_level_definition')->orderBy('building_id')->orderBy('level')->get();
+
+        $data = [self::XLSX_COLUMNS];
+        foreach ($rows as $r) {
+            $data[] = [
+                $r->building_id,
+                (string) ($names[$r->building_id] ?? ''),
+                (int) $r->level,
+                (int) $r->duration_seconds,
+                (int) $r->worker_required,
+                (float) $r->maintenance_money_per_min,
+                (float) $r->maintenance_food_per_min,
+                (float) $r->maintenance_fuel_per_min,
+                (float) $r->power_per_min,
+                (float) $r->capacity,
+                $r->output_json,
+                $r->input_json,
+                $r->cost_json,
+            ];
+        }
+
+        $path = tempnam(sys_get_temp_dir(), 'blx');
+        XlsxWriter::write($path, $data);
+
+        return response()->download($path, 'building_levels_' . now()->format('Ymd_His') . '.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
+    // 导入:11 步铁模板的批量版。
+    //   ① 表头 allowlist ② 逐行校验(building_id 必须已存在 —— **不准借道导入新建建筑**;
+    //   数值列与 editBuildingLevel 同一套 FIELD_MAX / 整数特判;JSON 列合法且条目过资源 allowlist)
+    //   ③ 等级连续性不变量(每栋导入后 1..N 连续,断档 422 —— 否则升级链断裂)
+    //   ④ 全过才开事务:行锁 → 与现值 diff → 只写有变化的行 + 新增行,**绝不 DELETE**
+    //     (文件里没有的现有行一律不动:删除等级不在本波范围)
+    //   ⑤ before/after 摘要进审计、明细进 metadata(超长截断)、GDV bump 一次、缓存无(等级定义无请求级缓存)
+    //   ⑥ 响应 {updated, inserted, unchanged, buildings_affected, version}
+    public function importBuildingLevels(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            // 5MB:定义表全量导出不足 100KB,超大文件只可能是传错了东西
+            'file'   => ['required', 'file', 'max:5120'],
+            // reason 上限对齐 audit_logs.reason_code 的 VARCHAR(80),与其它编辑器同一条纪律
+            'reason' => ['required', 'string', 'min:2', 'max:80'],
+        ]);
+
+        try {
+            $sheet = XlsxReader::read($data['file']->getRealPath());
+        } catch (RuntimeException $e) {
+            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
+                'errors' => ['file' => ['文件无法按 xlsx 解析:' . $e->getMessage()]],
+            ]);
+        }
+
+        if ($sheet === [] || count($sheet) - 1 > self::XLSX_MAX_ROWS) {
+            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
+                'errors' => ['file' => [$sheet === [] ? '文件里没有任何数据' : '行数超过上限 ' . self::XLSX_MAX_ROWS]],
+            ]);
+        }
+
+        // ---- ① 表头 allowlist(未知列 / 重复列 / 缺必需列一律 422)----
+        $headerRowNum = array_key_first($sheet);
+        $columnAt = [];   // 列位置 => 列名(「名称」列记为 null = 忽略)
+        $present = [];
+        $headerErrors = [];
+        foreach ($sheet[$headerRowNum] as $i => $cell) {
+            $name = trim((string) ($cell ?? ''));
+            if ($name === '') {
+                continue; // 空表头格:该列下方必须也为空(逐行校验时按「无表头的列」拒)
+            }
+            if (! in_array($name, self::XLSX_COLUMNS, true)) {
+                $headerErrors[] = ['row' => $headerRowNum, 'column' => $name, 'reason' => '未知列(不在允许的表头清单里)'];
+                continue;
+            }
+            if (isset($present[$name])) {
+                $headerErrors[] = ['row' => $headerRowNum, 'column' => $name, 'reason' => '表头重复出现'];
+                continue;
+            }
+            $present[$name] = true;
+            $columnAt[$i] = $name === self::XLSX_NAME_COLUMN ? null : $name;
+        }
+        foreach (self::XLSX_COLUMNS as $required) {
+            if ($required !== self::XLSX_NAME_COLUMN && ! isset($present[$required])) {
+                $headerErrors[] = ['row' => $headerRowNum, 'column' => $required, 'reason' => '缺少必需列(请以导出文件为模板)'];
+            }
+        }
+        if ($headerErrors !== []) {
+            return self::importFail($headerErrors);
+        }
+
+        // ---- ② 逐行校验(错误按 {row, column, reason} 收集,一次性返回)----
+        $knownBuildings = array_flip(DB::table('building_definition')->pluck('building_id')->all());
+        $errors = [];
+        $parsed = []; // building_id => level => ['numeric' => [...], 'json' => [...]]
+        foreach ($sheet as $rowNum => $cells) {
+            if ($rowNum === $headerRowNum || self::xlsxRowEmpty($cells)) {
+                continue;
+            }
+            $row = self::parseImportRow($rowNum, $cells, $columnAt, $knownBuildings, $errors);
+            if ($row === null) {
+                continue;
+            }
+            [$buildingId, $level, $values] = $row;
+            if (isset($parsed[$buildingId][$level])) {
+                $errors[] = ['row' => $rowNum, 'column' => 'level', 'reason' => "重复行:{$buildingId} L{$level} 在文件里出现了多次"];
+                continue;
+            }
+            $parsed[$buildingId][$level] = $values;
+        }
+
+        // ---- ③ 等级连续性不变量(先在锁外收集完整错误清单,锁内还会复核一次)----
+        if ($errors === [] && $parsed !== []) {
+            self::assertLevelContinuity($parsed, $errors);
+        }
+        if ($errors !== []) {
+            return self::importFail($errors);
+        }
+        if ($parsed === []) {
+            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
+                'errors' => ['file' => ['文件里没有任何数据行']],
+            ]);
+        }
+
+        $admin = $request->user();
+        $reason = $data['reason'];
+
+        // ---- ④⑤ 事务:行锁 → 复核连续性 → diff → update/insert(绝不 DELETE)→ 审计 + GDV bump ----
+        $result = DB::transaction(function () use ($parsed, $admin, $reason) {
+            // lockForUpdate 锁住涉及建筑的全部现有等级行:并发编辑器改同一行时,diff 的 before 才可信
+            $current = [];
+            $lockedRows = DB::table('building_level_definition')
+                ->whereIn('building_id', array_keys($parsed))
+                ->lockForUpdate()->get();
+            foreach ($lockedRows as $row) {
+                $current[$row->building_id][(int) $row->level] = $row;
+            }
+
+            // 锁内复核连续性:锁外检查到开锁之间definition 可能被并发改动(极小概率,但守着不变量不吃亏)
+            foreach ($parsed as $buildingId => $levels) {
+                $set = array_map('intval', array_unique(array_merge(array_keys($current[$buildingId] ?? []), array_keys($levels))));
+                sort($set);
+                if ($set !== range(1, count($set))) {
+                    return 'gap_conflict';
+                }
+            }
+
+            $updated = 0;
+            $inserted = 0;
+            $unchanged = 0;
+            $changes = [];       // [{id, field, before, after}](审计明细,截断进 metadata)
+            $insertedRows = [];
+            $affected = [];
+
+            foreach ($parsed as $buildingId => $levels) {
+                ksort($levels); // 低级先写:新增 L4、L5 同时导入时按序插,PK 冲突之外无顺序依赖
+                foreach ($levels as $level => $values) {
+                    $existing = $current[$buildingId][$level] ?? null;
+
+                    if ($existing === null) {
+                        DB::table('building_level_definition')->insert([
+                            'building_id'               => $buildingId,
+                            'level'                     => $level,
+                            // cost_type 是无程序读点的历史描述列(全库唯一读点是 EnumCode 的登记表);
+                            // 新等级行沿用最近一档的既有 code,不新增枚举值 ——
+                            // 加新 code 要同步 enum-code-map.md / enum-names.js / EnumCodeTest,属结构性变更
+                            'cost_type'                 => self::costTypeForLevel($level),
+                            'cost_json'                 => $values['json']['cost_json'],
+                            'duration_seconds'          => (int) $values['numeric']['duration_seconds'],
+                            'worker_required'           => (int) $values['numeric']['worker_required'],
+                            'input_json'                => $values['json']['input_json'],
+                            'output_json'               => $values['json']['output_json'],
+                            'maintenance_money_per_min' => $values['numeric']['maintenance_money_per_min'],
+                            'maintenance_food_per_min'  => $values['numeric']['maintenance_food_per_min'],
+                            'maintenance_fuel_per_min'  => $values['numeric']['maintenance_fuel_per_min'],
+                            'power_per_min'             => $values['numeric']['power_per_min'],
+                            'capacity'                  => $values['numeric']['capacity'],
+                        ]);
+                        $inserted++;
+                        $insertedRows[] = $buildingId . ':' . $level;
+                        $affected[$buildingId] = true;
+                        continue;
+                    }
+
+                    // 与现值 diff:只写真正变化的列;整行没变化就一个字节都不写(unchanged)
+                    $update = [];
+                    foreach ($values['numeric'] as $col => $value) {
+                        if (abs((float) $existing->{$col} - $value) > 1e-9) {
+                            $update[$col] = $value;
+                            $changes[] = ['id' => $buildingId . ':' . $level, 'field' => $col, 'before' => (float) $existing->{$col}, 'after' => $value];
+                        }
+                    }
+                    foreach ($values['json'] as $col => $canonical) {
+                        $beforeRaw = $existing->{$col};
+                        $before = $beforeRaw === null ? null : json_decode((string) $beforeRaw, true);
+                        $after = $canonical === null ? null : json_decode($canonical, true);
+                        // 结构宽松比较(8 与 8.0 相等、键序无关):纯格式差异不算改动,不制造假审计
+                        if ($before != $after) {
+                            $update[$col] = $canonical;
+                            $changes[] = ['id' => $buildingId . ':' . $level, 'field' => $col, 'before' => $beforeRaw, 'after' => $canonical];
+                        }
+                    }
+
+                    if ($update === []) {
+                        $unchanged++;
+                        continue;
+                    }
+
+                    DB::table('building_level_definition')
+                        ->where('building_id', $buildingId)->where('level', $level)
+                        ->update($update);
+                    $updated++;
+                    $affected[$buildingId] = true;
+                }
+            }
+
+            // 全部没变化:不 bump 版本、不写审计(空版本只会稀释 §65 的回查价值),照常返回统计
+            if ($updated === 0 && $inserted === 0) {
+                return ['updated' => 0, 'inserted' => 0, 'unchanged' => $unchanged, 'buildings_affected' => [], 'version' => null];
+            }
+
+            $buildings = array_keys($affected);
+            sort($buildings);
+
+            $version = GameDataVersion::bump(
+                "Excel 导入建筑等级:更新 {$updated} 行 / 新增 {$inserted} 行(涉及 " . count($buildings) . ' 栋)',
+                'admin:' . $admin->username
+            );
+
+            // before/after 用「building:level.列」定位到具体格(与单格编辑器同一回查口径);
+            // 超过 XLSX_AUDIT_DETAIL_MAX 截断,截断量记进 metadata(§57:审计不装大 Snapshot)
+            $detail = array_slice($changes, 0, self::XLSX_AUDIT_DETAIL_MAX);
+            $beforeAudit = [];
+            $afterAudit = [];
+            foreach ($detail as $chg) {
+                $beforeAudit[$chg['id'] . '.' . $chg['field']] = $chg['before'];
+                $afterAudit[$chg['id'] . '.' . $chg['field']] = $chg['after'];
+            }
+
+            AuditLogger::record(AuditAction::ADMIN_CONFIG_CHANGE, 'success', [
+                'actor_type' => 'admin', 'actor_id' => $admin->id, 'user_id' => $admin->id,
+                'entity_type' => 'building_level_definition',
+                'entity_id'   => 'excel_import',
+                'reason_code' => $reason,
+                'before_json' => $beforeAudit,
+                'after_json'  => $afterAudit,
+                'metadata_json' => [
+                    'game_data_version'  => $version,
+                    'updated'            => $updated,
+                    'inserted'           => $inserted,
+                    'unchanged'          => $unchanged,
+                    'buildings_affected' => array_slice($buildings, 0, self::XLSX_AUDIT_DETAIL_MAX),
+                    'inserted_rows'      => array_slice($insertedRows, 0, self::XLSX_AUDIT_DETAIL_MAX),
+                    'changes_truncated'  => max(0, count($changes) - self::XLSX_AUDIT_DETAIL_MAX),
+                ],
+            ]);
+
+            return [
+                'updated'            => $updated,
+                'inserted'           => $inserted,
+                'unchanged'          => $unchanged,
+                'buildings_affected' => $buildings,
+                'version'            => $version,
+            ];
+        });
+
+        if ($result === 'gap_conflict') {
+            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
+                'errors' => ['file' => ['等级连续性校验未通过(定义在校验后被并发改动),请重新导出后再试']],
+            ]);
+        }
+
+        return ApiResponse::ok(['data' => $result]);
+    }
+
+    // 逐行解析 + 校验。通过返回 [building_id, level, ['numeric'=>…, 'json'=>…]],失败往 $errors 里收集并返回 null
+    private static function parseImportRow(int $rowNum, array $cells, array $columnAt, array $knownBuildings, array &$errors): ?array
+    {
+        $raw = [];
+        foreach ($cells as $i => $cell) {
+            if ($cell === null || $cell === '') {
+                continue;
+            }
+            if (! array_key_exists($i, $columnAt)) {
+                $errors[] = ['row' => $rowNum, 'column' => XlsxWriter::columnRef($i), 'reason' => '该列没有表头,不知道这格数据是什么'];
+                return null;
+            }
+            if ($columnAt[$i] === null) {
+                continue; // 「名称」参考列:导入时忽略
+            }
+            $raw[$columnAt[$i]] = $cell;
+        }
+
+        $ok = true;
+        $fail = function (string $column, string $reason) use (&$errors, &$ok, $rowNum): void {
+            $errors[] = ['row' => $rowNum, 'column' => $column, 'reason' => $reason];
+            $ok = false;
+        };
+
+        // building_id:必须已存在于 building_definition —— 不准借道导入新建建筑(结构性变更走迁移)
+        $buildingId = trim((string) ($raw['building_id'] ?? ''));
+        if ($buildingId === '' || ! isset($knownBuildings[$buildingId])) {
+            $fail('building_id', $buildingId === '' ? 'building_id 不能为空' : "building_id 不存在:{$buildingId}(导入不能新建建筑)");
+        }
+
+        // level:1~255 的整数(255 = level 列 unsignedTinyInteger 的物理上限)
+        $levelRaw = $raw['level'] ?? null;
+        $level = 0;
+        if (! is_numeric($levelRaw) || (float) $levelRaw < 1 || (float) $levelRaw > 255 || floor((float) $levelRaw) !== (float) $levelRaw) {
+            $fail('level', 'level 必须是 1~255 的整数');
+        } else {
+            $level = (int) $levelRaw;
+        }
+
+        // 七个数值列:与 editBuildingLevel 同一套 FIELD_MAX / 非负 / 整数特判
+        $numeric = [];
+        foreach (self::EDITABLE as $col) {
+            $value = $raw[$col] ?? null;
+            if (! is_numeric($value)) {
+                $fail($col, $value === null ? '不能为空' : '必须是数字');
+                continue;
+            }
+            $value = (float) $value;
+            if ($value < 0) {
+                $fail($col, '不能是负数');
+                continue;
+            }
+            if ($value > self::BUILDING_FIELD_MAX[$col]) {
+                $fail($col, '超出该字段允许的上限 ' . self::BUILDING_FIELD_MAX[$col]);
+                continue;
+            }
+            if (in_array($col, ['duration_seconds', 'worker_required'], true) && floor($value) !== $value) {
+                $fail($col, '该字段必须是整数(int 列,小数会被静默截断)');
+                continue;
+            }
+            $numeric[$col] = $value;
+        }
+
+        // 三个 JSON 列:合法 JSON + 条目过资源 allowlist + 数值过 BUILDING_JSON_MAX(与条目编辑器同一套护栏)
+        $json = [];
+        foreach (self::BUILDING_JSON_COLUMNS as $col) {
+            $cell = $raw[$col] ?? null;
+            if ($cell === null || trim((string) $cell) === '') {
+                if ($col === 'cost_json') {
+                    $fail($col, 'cost_json 不能为空(该列 NOT NULL,免费建造/升级请显式写 {} 并三思)');
+                } else {
+                    $json[$col] = null; // input/output 允许为空(NULL 列)
+                }
+                continue;
+            }
+            $decoded = json_decode(trim((string) $cell), true);
+            if (! is_array($decoded)) {
+                $fail($col, '不是合法的 JSON(必须是数组或对象)');
+                continue;
+            }
+            $shapeError = $col === 'cost_json'
+                ? self::validateCostJson($decoded)
+                : self::validateRateJson($decoded, self::BUILDING_JSON_MAX[$col]);
+            if ($shapeError !== null) {
+                $fail($col, $shapeError);
+                continue;
+            }
+            // 规范化落库:cost 的空映射要编成 {} 而不是 [](两列形状不能互相污染)
+            $json[$col] = $col === 'cost_json' && $decoded === []
+                ? '{}'
+                : json_encode($decoded, JSON_UNESCAPED_UNICODE);
+        }
+
+        return $ok ? [$buildingId, $level, ['numeric' => $numeric, 'json' => $json]] : null;
+    }
+
+    // output_json / input_json 的形状:[{resource, rate_per_min}, …]。
+    // resource 必须是登记在册的资源 code(allowlist 外的键 = 永远读不到的配置,与条目编辑器同一条理由)
+    private static function validateRateJson(array $decoded, float $max): ?string
+    {
+        if ($decoded !== [] && ! array_is_list($decoded)) {
+            return '必须是条目列表([{"resource":…,"rate_per_min":…}, …])';
+        }
+        foreach ($decoded as $i => $entry) {
+            if (! is_array($entry) || ! is_string($entry['resource'] ?? null)) {
+                return "第 {$i} 条缺少 resource 字段";
+            }
+            if (! array_key_exists($entry['resource'], ResourceCode::CHINESE_NAMES)) {
+                return "第 {$i} 条的资源 code 未登记:{$entry['resource']}";
+            }
+            $rate = $entry['rate_per_min'] ?? null;
+            if (! is_numeric($rate) || (float) $rate < 0 || (float) $rate > $max) {
+                return "第 {$i} 条的 rate_per_min 必须是 0~{$max} 的数字";
+            }
+        }
+
+        return null;
+    }
+
+    // cost_json 的形状:{资源 code: 数量}
+    private static function validateCostJson(array $decoded): ?string
+    {
+        $max = self::BUILDING_JSON_MAX['cost_json'];
+        foreach ($decoded as $code => $amount) {
+            if (! is_string($code) || ! array_key_exists($code, ResourceCode::CHINESE_NAMES)) {
+                return "资源 code 未登记:{$code}";
+            }
+            if (! is_numeric($amount) || (float) $amount < 0 || (float) $amount > $max) {
+                return "{$code} 的成本必须是 0~{$max} 的数字";
+            }
+        }
+
+        return null;
+    }
+
+    // 等级连续性:每栋建筑「现有等级 ∪ 文件等级」必须恰好是 1..N —— 断档会让升级链在缺口处断裂
+    // (UpgradeService 查不到 level+1 即判满级,L5 定义在断档之上等于永远够不着)
+    private static function assertLevelContinuity(array $parsed, array &$errors): void
+    {
+        $existing = DB::table('building_level_definition')
+            ->whereIn('building_id', array_keys($parsed))
+            ->get(['building_id', 'level']);
+        $byBuilding = [];
+        foreach ($existing as $row) {
+            $byBuilding[$row->building_id][] = (int) $row->level;
+        }
+
+        foreach ($parsed as $buildingId => $levels) {
+            $set = array_map('intval', array_unique(array_merge($byBuilding[$buildingId] ?? [], array_keys($levels))));
+            sort($set);
+            if ($set !== range(1, count($set))) {
+                $missing = array_values(array_diff(range(1, max($set)), $set));
+                $errors[] = [
+                    'row'    => 0,
+                    'column' => 'level',
+                    'reason' => "{$buildingId} 导入后等级断档(缺 L" . implode('、L', $missing) . '):等级必须从 1 连续',
+                ];
+            }
+        }
+    }
+
+    // cost_type 是无程序读点的历史描述列:L1 = 建造,L2 = L1→L2,更高级沿用最近一档的既有 code
+    // (新增枚举值要同步 enum-code-map.md / enum-names.js / EnumCodeTest 三处,属结构性变更,不在本波)
+    private static function costTypeForLevel(int $level): string
+    {
+        if ($level <= 1) {
+            return EnumCode::COST_TYPE_BUILD;
+        }
+        if ($level === 2) {
+            return EnumCode::COST_TYPE_UPGRADE_L1_L2;
+        }
+
+        return EnumCode::COST_TYPE_UPGRADE_L2_L3;
+    }
+
+    // 一行是否全空(Excel 常在表尾留几行只有格式没有值的空行)
+    private static function xlsxRowEmpty(array $cells): bool
+    {
+        foreach ($cells as $cell) {
+            if ($cell !== null && trim((string) $cell) !== '') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // 逐行错误的统一 422(上限 XLSX_MAX_ERRORS 条,总数在 errors.file 里说明)
+    private static function importFail(array $errors): JsonResponse
+    {
+        return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
+            'errors'     => ['file' => ['导入文件校验未通过,共 ' . count($errors) . ' 处错误(最多列出 ' . self::XLSX_MAX_ERRORS . ' 条)']],
+            'row_errors' => array_slice($errors, 0, self::XLSX_MAX_ERRORS),
+        ]);
     }
 
     // ---- NPC 定义(M3-D1)----

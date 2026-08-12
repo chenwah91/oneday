@@ -4,7 +4,7 @@
 // 契约字段一律 snake_case 全小写(用户 2026-08-10 拍板)
 import { api } from '../core/api.js';
 import { state, setState, onChange } from '../core/state.js';
-import { errorText } from '../core/error-messages.js';
+import { errorText, insufficientDetailText } from '../core/error-messages.js';
 import { newIdempotencyKey } from '../core/idempotency.js';
 import { notifySuccess, notifyError } from './notification.js';
 import { render as renderBuildings } from '../renderer/buildings.js';
@@ -13,7 +13,15 @@ import { fmt } from '../utils/format.js';
 import { resourceName, isCapacity } from '../modules/resources.js';
 import { categoryName, npcSkillName } from '../core/enum-names.js';
 
-const MAX_LEVEL = 3; // 与后端 UpgradeService 一致:L1→L2→L3
+// 等级上限已数据驱动(W13-2):以定义端点下发的 max_level 为准(该建筑定义到几级就能升到几级)。
+// 3 只是老响应没带 max_level 时的兜底;真正的闸门在服务端(没有下一级定义就回 BUILDING_LIMIT_REACHED)
+const MAX_LEVEL = 3;
+
+// 该建筑定义到的最高等级:定义带 max_level 用它,否则回落旧的写死值
+function maxLevelOf(def) {
+    const n = def && Number(def.max_level);
+    return Number.isFinite(n) && n > 0 ? n : MAX_LEVEL;
+}
 
 // 返还比例(v3.2 §10.9 拆除 50% / §3.2 取消 70%):只用于文案,真正的返还量由服务器算
 const DEMOLISH_REFUND_PERCENT = 50;
@@ -419,7 +427,7 @@ function render() {
     // 明细:拿不到的字段直接不显示
     const body = document.createElement('div');
     body.className = 'bldg-body';
-    body.appendChild(makeRow('等级', 'Lv' + level + ' / ' + MAX_LEVEL));
+    body.appendChild(makeRow('等级', 'Lv' + level + ' / ' + maxLevelOf(def)));
     body.appendChild(makeRow('位置', '(' + b.x + ', ' + b.y + ')'));
     // def.category 是英文 code(v3.2 §0.2),显示时翻成中文
     if (def && def.category) body.appendChild(makeRow('分类', categoryName(def.category)));
@@ -455,7 +463,7 @@ function render() {
     const actions = document.createElement('div');
     actions.className = 'bldg-actions';
 
-    const maxed = level >= MAX_LEVEL;
+    const maxed = level >= maxLevelOf(def);
     // 升级中显示"取消升级(退 70%)",其余情况显示升级按钮;施工中两者都不可用
     if (b.status === 'upgrading') {
         const cancelBtn = makeButton('bldg-btn-upgrade', '取消升级(退 ' + CANCEL_REFUND_PERCENT + '%)', () => doCancelUpgrade(b));
@@ -525,9 +533,11 @@ async function refreshCity() {
     }
 }
 
-// 请求失败的统一处理:提示 + 必要时刷新快照
+// 请求失败的统一处理:提示 + 必要时刷新快照。
+// 升级缺料时优先给逐项明细(W12:后端给 INSUFFICIENT_RESOURCE 补了 details.missing),
+// 拿不到明细(老响应)回落 errorText;其余错误码不受影响
 async function handleMutationError(err, fallback, overrides) {
-    notifyError(errorText(err, fallback, overrides));
+    notifyError(insufficientDetailText(err) || errorText(err, fallback, overrides));
     const code = err && err.error;
     if (code === 'REVISION_CONFLICT' || code === 'NOT_FOUND') {
         await refreshCity();
