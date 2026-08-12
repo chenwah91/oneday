@@ -64,6 +64,33 @@ class LoginController extends Controller
             return ApiResponse::fail(ErrorCode::BAD_CREDENTIALS, 401);
         }
 
+        // 封禁 Fail Closed(W11-C1 任务4):密码对了不等于能进来。
+        //
+        // 检查刻意排在**密码校验之后**:放在之前的话,任何人拿一个用户名就能试出「这个号被封了」,
+        // 等于送了一个账号枚举面。走到这里的前提是他本来就知道密码,不构成额外泄漏。
+        // Auth::attempt 已经把登录态建起来了,所以必须先 logout 再返回 —— 否则这一记 401 之后
+        // 他手里已经握着一个有效 session,下一个请求就直接进去了(只是会被 EnsureNotBanned 再拦一次,
+        // 但那已经是「靠第二道闸兜底」而不是这一道自己关严)。
+        // 同样不 regenerate session、不 clear 限流:失败的登录不该给账号重置任何计数器
+        if ($user->banned_at !== null) {
+            Auth::guard('web')->logout();
+
+            AuditLogger::record(AuditAction::AUTH_LOGIN_FAILED, 'rejected', [
+                'actor_id'      => $user->id,
+                'user_id'       => $user->id,
+                'reason_code'   => ErrorCode::ACCOUNT_BANNED,
+                'metadata_json' => ['banned_at' => (string) $user->banned_at],
+            ]);
+            SecurityLogger::log('security.login_failed', [
+                'user_id'    => $user->id,
+                'route'      => $request->path(),
+                'reason'     => ErrorCode::ACCOUNT_BANNED,
+                'error_code' => ErrorCode::ACCOUNT_BANNED,
+            ]);
+
+            return ApiResponse::fail(ErrorCode::ACCOUNT_BANNED, 401);
+        }
+
         RateLimiter::clear($key);
         $request->session()->regenerate();
         $user = Auth::user();

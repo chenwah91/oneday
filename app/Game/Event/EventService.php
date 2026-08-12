@@ -33,6 +33,10 @@ final class EventService
     // 不做历史查询(那是审计的活)
     private const RECENT_LIMIT = 10;
 
+    // 事件损失减免的绝对上限:减免 100% = 负面事件完全无害,那条线一旦被越过,
+    // 「危机管理」类加成就会把整个事件系统变成纯正向系统。0.9 是安全夹子不是运营旋钮
+    public const MAX_LOSS_REDUCTION = 0.9;
+
     // ---------- 只读 ----------
 
     // GET /api/city/events 的完整数据块
@@ -158,7 +162,7 @@ final class EventService
 
     // ---------- 事件损失减免(D0.3 登记的 event_loss_reduction_pct,消费点就是这里)----------
 
-    // 全城当前的损失减免比例,夹在 [0, 0.9]。两个来源:
+    // 全城当前的损失减免比例,夹在 [0, MAX_LOSS_REDUCTION]。两个来源:
     //   ① 事件自己写下的持续型 modifier(将来的「危机管理」类正向事件);
     //   ② NPC 特性(§6.3 里 N001 等的「危机事件稳定度提高」,trait_json 已结构化成该 target)。
     // 之所以由本类聚合而不是各系统自己扣:D0.3 的纪律是「每个 target 只有一个消费点」。
@@ -192,7 +196,7 @@ final class EventService
             }
         }
 
-        return max(0.0, min(0.9, $total));
+        return max(0.0, min(self::MAX_LOSS_REDUCTION, $total));
     }
 
     // ---------- 结算 ----------

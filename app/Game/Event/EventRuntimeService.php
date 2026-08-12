@@ -3,9 +3,12 @@
 namespace App\Game\Event;
 
 use App\Game\Simulation\SimConstants;
+use App\Game\Simulation\SimulationService;
 use App\Models\City;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
+use App\Support\ErrorCode;
+use App\Support\GameRuleException;
 use App\Support\GameSetting;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -57,7 +60,7 @@ final class EventRuntimeService
 
             $elapsed = max(0, $now->getTimestamp() - $last->getTimestamp());
             // 离线封顶:超出部分不补算,但时钟照样推进到 $now(否则积压会被反复重算)
-            $elapsed = min($elapsed, SimConstants::MAX_OFFLINE_SECONDS);
+            $elapsed = min($elapsed, (int) GameSetting::get(GameSetting::MAX_OFFLINE_SECONDS));
 
             DB::table('cities')->where('id', $city->id)->update(['event_settled_at' => $now]);
 
@@ -237,8 +240,120 @@ final class EventRuntimeService
         return $definition;
     }
 
+    // ---------- 管理员手动触发(W11-C1 任务5,测试 / 线上复现用)----------
+
+    // 强制在某座城市触发指定事件。**复用 trigger() 同一条落地路径** ——
+    // 同一个 city_events 实例、同一个 EventEffect、同一条 EVENT.TRIGGER 审计、同一份冷却写入。
+    // 不另起一套「管理员专用的简化触发」是硬要求:两条路径迟早会漂移,
+    // 而复现出来的现场一旦与线上不是同一条代码,复现本身就没有意义了。
+    //
+    // ══ 跳过什么、不跳过什么 ═══════════════════════════════════════════════════
+    //   跳过:① 要不要触发的权重掷点(EventRandom::chance)—— 复现不该看运气;
+    //         ② 冷却(city_event_cooldowns)—— 冷却是给自然节奏用的,不是安全边界。
+    //   照常尊重:并发上限 max_active / 灾害档 max_active_disaster、同事件不重复叠加、
+    //         事件总开关与该事件的 enabled、锁内先结算。
+    //         并发上限**必须**守住:它挡的是「同时挂 5 个减益把城市打崩」,
+    //         而那正是手滑连点两下就会发生的事(满了返回 422,不静默排队)。
+    //
+    // ══ 与自然触发怎么区分 ═════════════════════════════════════════════════════
+    // EVENT.TRIGGER 那条审计的 actor 仍是 system(它记录的是「事件发生了」这件事,口径不能变),
+    // 另外**再写一条** ADMIN.CONFIG_CHANGE(actor_type=admin,metadata 带 event_id / reason / forced=true)。
+    // 两条审计共享同一个 entity_id(实例 id),按实例 id 一查就知道这一次是不是人为触发的。
+    public static function forceTrigger(City $city, string $eventId, int $adminId, string $reason): array
+    {
+        $definition = EventDefinition::find($eventId);
+        if ($definition === null) {
+            throw new GameRuleException(ErrorCode::NOT_FOUND, 404);
+        }
+
+        // 总开关与逐事件开关照常尊重:事件被关掉通常是因为它本身算错了 / 被刷,
+        // 这种时候最不该给一个「绕过开关也能放出来」的后门。
+        // 真要复现,管理员手上就有 /api/admin/definitions/event 可以先把它打开(同一档权限)
+        if (GameSetting::get(GameSetting::EVENT_ENABLED) !== true || ! $definition['enabled']) {
+            throw new GameRuleException(ErrorCode::EVENT_DISABLED, 422);
+        }
+
+        return DB::transaction(function () use ($city, $definition, $adminId, $reason) {
+            $locked = DB::table('cities')->where('id', $city->id)->lockForUpdate()->first();
+            if (! $locked) {
+                throw new GameRuleException(ErrorCode::NOT_FOUND, 404);
+            }
+
+            $now = now();
+
+            // 到期作废先跑一遍:否则「已过期但还没被翻牌」的实例会占着并发名额,
+            // 让管理员看到一个假的「上限已满」
+            self::expireOverdue($locked, $now);
+
+            $active = self::activeSummary((int) $locked->id, $now);
+            $maxActive = (int) GameSetting::get(GameSetting::EVENT_MAX_ACTIVE);
+            $maxDisaster = (int) GameSetting::get(GameSetting::EVENT_MAX_ACTIVE_DISASTER);
+            $isDisaster = in_array($definition['category'], EventCode::CATEGORY_GROUP_DISASTER_DEFENSE, true);
+
+            // 同一事件不重复叠加(与自然路径 pickCandidate 的第一道过滤同口径):
+            // 叠第二份会让持续型 modifier 双倍生效,而那是纯粹的数值事故
+            if (in_array($definition['event_id'], $active['ids'], true)) {
+                throw new GameRuleException(ErrorCode::EVENT_LIMIT_REACHED, 422, [
+                    'limit' => 'already_active', 'event_id' => $definition['event_id'],
+                ]);
+            }
+            if (count($active['ids']) >= $maxActive) {
+                throw new GameRuleException(ErrorCode::EVENT_LIMIT_REACHED, 422, [
+                    'limit' => 'max_active', 'current' => count($active['ids']), 'max' => $maxActive,
+                ]);
+            }
+            if ($isDisaster && $active['disaster'] >= $maxDisaster) {
+                throw new GameRuleException(ErrorCode::EVENT_LIMIT_REACHED, 422, [
+                    'limit' => 'max_active_disaster', 'current' => $active['disaster'], 'max' => $maxDisaster,
+                ]);
+            }
+
+            // 锁内先跑 Time Delta 结算(照玩家路径纪律):
+            // 正向事件按「当前真实产能」折算发放量,不结算就会用上一段的旧产能算奖励
+            $sim = SimulationService::applyLocked($locked, $now);
+            $locked = DB::table('cities')->where('id', $locked->id)->first();
+
+            $windowSeconds = max(1, (int) GameSetting::get(GameSetting::EVENT_WINDOW_SECONDS));
+            $window = intdiv($now->getTimestamp(), $windowSeconds);
+
+            // 冷却表传空数组:手动触发不读冷却(跳过),但 trigger() 内部照常**写**新的冷却行 ——
+            // 复现完之后自然路径不该立刻再抽到同一条
+            $cooldowns = [];
+            $instanceId = self::trigger($locked, $sim, $definition, $window, $now, $active, $cooldowns);
+
+            // 第二条审计:与自然触发的区分点。actor_type=admin,reason 强制填,
+            // metadata 里 forced=true 让「按实例 id 反查是不是人为触发」成为一次等值查询
+            AuditLogger::record(AuditAction::ADMIN_CONFIG_CHANGE, 'success', [
+                'actor_type' => 'admin', 'actor_id' => $adminId,
+                'user_id' => $locked->user_id, 'city_id' => $locked->id,
+                'entity_type' => 'city_event', 'entity_id' => (string) $instanceId,
+                'reason_code' => $reason,
+                'metadata_json' => [
+                    'forced'       => true,
+                    'event_id'     => $definition['event_id'],
+                    'reason'       => $reason,
+                    'window_index' => $window,
+                    // 跳过了哪两件事,写进审计而不是只写在代码注释里
+                    'skipped'      => ['weight_roll', 'cooldown'],
+                ],
+            ]);
+
+            return [
+                'event_instance_id' => $instanceId,
+                'event_id'          => $definition['event_id'],
+                'name_zh'           => $definition['name_zh'],
+                'city_id'           => (int) $locked->id,
+                'triggered_at'      => $now->toIso8601String(),
+                'window_index'      => $window,
+                'active_count'      => count($active['ids']),
+                'max_active'        => $maxActive,
+            ];
+        });
+    }
+
     // ---------- 触发 ----------
 
+    // 返回新建实例的 id(自然路径不用它,手动触发路径要靠它挂第二条审计)
     private static function trigger(
         object $locked,
         array $sim,
@@ -247,7 +362,7 @@ final class EventRuntimeService
         Carbon $now,
         array &$active,
         array &$cooldowns
-    ): void {
+    ): int {
         // 有选项但持续时间为 0 的事件(EVT_GRANARY_PEST / EVT_REFUGEES…)也必须有一个过期时刻:
         // §70 要求 expires_at 非空,而「永不过期的待办」会让玩家的事件列表越积越长
         $duration = $definition['duration_minutes'] > 0
@@ -304,6 +419,8 @@ final class EventRuntimeService
         $cooldowns[$definition['event_id']] = $now->copy()->addMinutes($definition['cooldown_minutes']);
 
         self::auditTrigger($locked, $definition, $instanceId, $window, $expiresAt, $rolled, $applied, $effect->notes());
+
+        return $instanceId;
     }
 
     // 触发审计(actor = system)。正向事件的资源发放另写一条 EVENT.REWARD ——

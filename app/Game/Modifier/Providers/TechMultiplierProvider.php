@@ -5,8 +5,8 @@ namespace App\Game\Modifier\Providers;
 use App\Game\Modifier\ModifierContext;
 use App\Game\Modifier\ModifierTarget;
 use App\Game\Modifier\MultiplierProvider;
-use App\Game\Simulation\SimConstants;
 use App\Game\Technology\TechService;
+use App\Support\GameSetting;
 use Illuminate\Support\Facades\DB;
 
 // tech 乘区(v3.2 §5,M2-B3 迁入):multiplier = 1 + 0.02 × 该建筑所属分支的已解锁科技条数。
@@ -60,10 +60,13 @@ final class TechMultiplierProvider extends MultiplierProvider
             ->whereIn('bd.building_id', $context->buildingIds)
             ->pluck('td.branch', 'bd.building_id')->all();
 
+        // 每条科技的分支效率加成改成后台设定(默认 0.02 = §5 的 +2%),取值在 prepare 里一次
+        $perTech = (float) GameSetting::get(GameSetting::TECH_BRANCH_EFFICIENCY_BONUS);
+
         foreach ($branchOf as $buildingId => $branch) {
             $unlocked = $counts[$branch] ?? 0;
             if ($unlocked > 0) {
-                $this->byBuilding[$buildingId] = 1.0 + $unlocked * SimConstants::TECH_BRANCH_EFFICIENCY_BONUS;
+                $this->byBuilding[$buildingId] = 1.0 + $unlocked * $perTech;
             }
         }
     }

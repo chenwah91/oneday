@@ -49,9 +49,11 @@ class MarketAdminTest extends TestCase
         $this->assertEqualsWithDelta(22.0, (float) $iron['base_price'], 0.0001);
         $this->assertEqualsWithDelta(1364.0, (float) $iron['base_liquidity'], 0.0001);
 
-        // 可编辑字段清单随响应下发,后台不必自己维护一份「哪些能改」
+        // 可编辑字段清单随响应下发,后台不必自己维护一份「哪些能改」。
+        // trade_mode 于 W11-B 加入(单资源停市 / 复市):它是唯一的字符串字段,
+        // 且只放行 spot ↔ non_tradeable 互切 —— 互切规则由 AdminDefinitionExpansionTest 守
         $this->assertSame(
-            ['base_price', 'min_price', 'max_price', 'volatility', 'elasticity', 'fee_rate', 'base_liquidity'],
+            ['base_price', 'min_price', 'max_price', 'volatility', 'elasticity', 'fee_rate', 'base_liquidity', 'trade_mode'],
             $res->json('data.editable')
         );
     }
@@ -106,13 +108,17 @@ class MarketAdminTest extends TestCase
 
     // ---- 写:护栏 ----
 
-    // 结构列不可改:改 trade_mode 等于「上市 / 退市」一种资源,属结构性变更,必须走 Seed + 迁移
+    // 结构列不可改:那三列是「这个资源在 §8 里的身份」,改了等于换一个资源,必须走 Seed + 迁移。
+    //
+    // trade_mode 已于 W11-B 移出本清单(单资源停市 / 复市是真实的运营需求),
+    // 但只放行 spot ↔ non_tradeable —— 「用数字 1 当 trade_mode」这种脏值仍然会被拒,
+    // 所以下面的 knowledge 保持 non_tradeable 这条断言照旧成立
     public function test_structural_columns_are_not_editable(): void
     {
         // 管理员在循环外只建一个:users.email 有唯一索引,循环里反复 create 会撞唯一键
         $admin = $this->admin();
 
-        foreach (['trade_mode', 'rs_code', 'resource_id', 'first_era', 'market_category'] as $field) {
+        foreach (['rs_code', 'resource_id', 'first_era', 'market_category'] as $field) {
             $this->actingAs($admin)->postJson('/api/admin/definitions/market', [
                 'resource_code' => 'knowledge', 'field' => $field, 'value' => 1, 'reason' => '试图改结构列',
             ])->assertStatus(422);
@@ -223,7 +229,8 @@ class MarketAdminTest extends TestCase
         // 数值型必须带闭区间,后台才渲染得出带校验的数字输入框(不必让运营手写 JSON)
         $slippage = $settings[GameSetting::MARKET_SLIPPAGE_COEFFICIENT];
         $this->assertSame('number', $slippage['type']);
-        $this->assertSame(0, $slippage['min_value']);
+        // 下限刻意不是 0(W11-A 收紧):§13 的四道反套利机制不许被后台关停
+        $this->assertSame(0.01, $slippage['min_value']);
         $this->assertSame(5, $slippage['max_value']);
     }
 

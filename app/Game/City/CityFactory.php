@@ -38,7 +38,8 @@ class CityFactory
                 'revision'          => 0,
                 'last_simulated_at' => now(),
                 'money'             => self::initialMoney($config),
-                'population'        => SimConstants::START_POPULATION,
+                // 建城初始人口:后台可调(默认 30 = 迁移前的 SimConstants::START_POPULATION)
+                'population'        => (int) GameSetting::get(GameSetting::INITIAL_POPULATION),
                 'map_width'         => SimConstants::MAP_W,
                 'map_height'        => SimConstants::MAP_H,
             ]);

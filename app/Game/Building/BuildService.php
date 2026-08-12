@@ -12,6 +12,7 @@ use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
 use App\Support\GameRuleException;
+use App\Support\GameSetting;
 use App\Support\Idempotency;
 use Illuminate\Support\Facades\DB;
 
@@ -39,7 +40,13 @@ class BuildService
         if (! $lvl) {
             throw new GameRuleException(ErrorCode::INVALID_BUILDING, 422);
         }
-        $cost = json_decode($lvl->cost_json, true) ?: [];
+        // 建造成本 = 定义 cost_json × build_cost_multiplier(资金与材料同乘,倍率为 1 时原样不动)。
+        // 取值在这里一次:同一个 $cost 数组同时用于「余额够不够」与「扣多少」,两处不可能出现两套价。
+        // 幂等重放在上面已经 return,走不到这里 —— 重放不会按新倍率重算一次
+        $cost = ConstructionService::scaleCost(
+            json_decode($lvl->cost_json, true) ?: [],
+            (float) GameSetting::get(GameSetting::BUILD_COST_MULTIPLIER)
+        );
 
         return DB::transaction(function () use ($city, $def, $lvl, $buildingId, $x, $y, $cost, $idempotencyKey, $expectedRevision, $requestHash) {
             $locked = DB::table('cities')->where('id', $city->id)->lockForUpdate()->first();

@@ -36,11 +36,28 @@ class SimConstants
     public const BASE_GROWTH_PER_MIN = 0.002;
 
     // 分段结算的段长(分钟):离线时长按此切段,段内人口恒定、段末更新人口(CLAUDE §18 分段结算)
-    // 12h 封顶 ÷ 30min = 24 段,恰好等于 MAX_SEGMENTS
+    // 12h 封顶 ÷ 30min = 24 段
     public const SEGMENT_MINUTES = 30;
 
-    // 单次结算的最大段数:12h/30min = 24。段数上限保证最坏情况下的循环次数可控
-    public const MAX_SEGMENTS = 24;
+    // 分段循环的**性能保护**硬上限:与业务无关,纯粹是「一次结算最多跑多少圈」的天花板。
+    // 240 段 = 后台把段长调到最小 1 分钟、离线封顶调到 4 小时时的段数,再长的离线只会让每段变长而不是变多。
+    // 它刻意不是配置:配置错了(比如段长 1 分钟 + 封顶 7 天 = 10080 段)不该把服务器拖垮
+    public const SEGMENT_HARD_LIMIT = 240;
+
+    // 单次结算的最大段数 = ceil(离线封顶 ÷ 段长),再夹在 SEGMENT_HARD_LIMIT 之下。
+    //
+    // 原先是写死的 24(= 12h / 30min),与上面两个数是「三个数手工保持一致」的关系 ——
+    // 离线封顶或段长一改,24 就悄悄不对了(段数变少 = 末段被拉长 = 人口复利算粗)。
+    // 改成派生之后只剩两个自由度,第三个数永远自洽。
+    //
+    // 传参而不是直接读 GameSetting:本类是纯常量 / 纯函数,不引依赖 —— 取值由调用方(结算内核)负责。
+    public static function maxSegments(int $maxOfflineSeconds, int $segmentMinutes): int
+    {
+        $segmentMinutes = max(1, $segmentMinutes);
+        $segments = (int) ceil(max(0, $maxOfflineSeconds) / ($segmentMinutes * 60));
+
+        return max(1, min($segments, self::SEGMENT_HARD_LIMIT));
+    }
 
     // ---- 粮食赤字三级后果(v3.2 §10.1,数值不得在代码里改,要调先提 game_data_version)----
 
@@ -148,7 +165,9 @@ class SimConstants
     //   0.80 ~ 1.00    → 轻微运输延迟(§10.7 只写了「延迟」没写降产,所以仍是 1.00)
     //   1.00 ~ 1.25    → 从 1.00 线性下降至 0.70
     //   > 1.25         → 继续下降但不低于 0.25,并产生拥堵警报
-    public const TRANSPORT_LOAD_FREE = 0.80;
+    //
+    // 第一档的 0.80 曾有过一个 TRANSPORT_LOAD_FREE 常量,但前两档的物流率都是 1.00 ——
+    // 代码里从来没有任何地方需要区分它们,那个常量零调用方,W11-A 删除(口径仍记在上面的注释里)。
     public const TRANSPORT_LOAD_TIGHT = 1.00;
     public const TRANSPORT_LOAD_OVER = 1.25;
 

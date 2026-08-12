@@ -873,7 +873,8 @@ final class EventEffect
     // 夹取:下限 0(§52 不变量),上限仓储容量(超出部分记进 notes,不静默吞掉)
     public function commitResources(): array
     {
-        $storage = (float) ($this->sim['storageCapacity'] ?? SimConstants::BASE_STORAGE);
+        // 兜底值走后台设定的基础仓储(与内核 applyLocked 同一个键),避免「内核按设定算、这里按旧常量算」
+        $storage = (float) ($this->sim['storageCapacity'] ?? GameSetting::get(GameSetting::BASE_STORAGE));
         $actual = [];
 
         foreach ($this->delta as $code => $amount) {
@@ -944,10 +945,16 @@ final class EventEffect
         return (float) $effect['value'];
     }
 
-    // 效果强度倍率(后台逐事件可调,默认 1.0)。所有效果的**数值**统一乘它,时长不乘
+    // 效果强度倍率。所有效果的**数值**统一乘它,时长不乘。
+    //
+    // 两层相乘:逐事件的 effect_multiplier(event_definition 表,后台按行改 + bump 数值版本)
+    //         × 全局的 event_effect_multiplier_global(game_settings,一改影响全服)。
+    // 分工与市场的 fee_rate × 全局倍率一模一样:逐行的数在定义表,压在所有行上的那一层在设定里。
+    // 全局倍率调到 0 = 事件照常触发、照常显示,但一律零效果 —— 比整条 event_enabled 停用更温和的止血阀
     private function strength(): float
     {
-        return max(0.0, (float) ($this->definition['effect_multiplier'] ?? 1.0));
+        return max(0.0, (float) ($this->definition['effect_multiplier'] ?? 1.0))
+            * max(0.0, (float) GameSetting::get(GameSetting::EVENT_EFFECT_MULTIPLIER_GLOBAL));
     }
 
     private function stock(string $code): float

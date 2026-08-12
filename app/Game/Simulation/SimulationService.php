@@ -13,6 +13,7 @@ use App\Game\Modifier\Providers\LogisticsMultiplierProvider;
 use App\Game\Modifier\Providers\PowerMultiplierProvider;
 use App\Game\Resource\ResourceCode;
 use App\Models\City;
+use App\Support\GameSetting;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -67,18 +68,28 @@ class SimulationService
         return self::multiplierProduct($u['multipliers']) * (float) ($u['maintRate'] ?? 1.0);
     }
 
-    // 可分配劳动力:availableWorkers = floor(population × 0.60)(v3.2 §10.4)
-    public static function availableWorkers(int|float $population): int
+    // ---- 内核曲线参数的统一取值口(W11-A)----
+    //
+    // 全部走 GameSetting 的**请求级缓存**:一次请求内整表只查一次库,之后是纯数组查找。
+    // 所以分段循环里、逐实例的纯函数里直接调它都不产生任何数据库往返 —— 与「循环内零查库」并不冲突。
+    // 登记默认值 = 迁移前的 SimConstants 常量值,读不出来时自动回退,内核行为永远有兜底。
+    private static function num(string $key): float
     {
-        return (int) floor(max(0, $population) * SimConstants::WORKER_RATIO);
+        return (float) GameSetting::get($key);
     }
 
-    // 人均税额(v3.2 §10.5):时代 I = 0.02,每进入下一个时代 ×1.5。
+    // 可分配劳动力:availableWorkers = floor(population × worker_ratio)(v3.2 §10.4,默认 0.60)
+    public static function availableWorkers(int|float $population): int
+    {
+        return (int) floor(max(0, $population) * self::num(GameSetting::WORKER_RATIO));
+    }
+
+    // 人均税额(v3.2 §10.5):时代 I = tax_per_capita_era_1(默认 0.02),每进入下一个时代 ×tax_era_multiplier(默认 1.5)。
     // 即 taxPerCapitaPerMin = 0.02 × 1.5^(era_order − 1);era_order 小于 1(含列缺失兜底)一律按时代 I
     public static function taxPerCapitaPerMin(int $eraOrder): float
     {
-        return SimConstants::TAX_PER_CAPITA_ERA_1
-            * pow(SimConstants::TAX_ERA_MULTIPLIER, max(1, $eraOrder) - 1);
+        return self::num(GameSetting::TAX_PER_CAPITA_ERA_1)
+            * pow(self::num(GameSetting::TAX_ERA_MULTIPLIER), max(1, $eraOrder) - 1);
     }
 
     // 治理负载(v3.2 §10.5 / §10.6):governanceLoad = population / max(1, governanceCapacity)
@@ -91,11 +102,11 @@ class SimulationService
     // M2 它只作用于 taxIncome(§10.5 的税收公式);§10.6 里「腐败 / 治安 / 抗议事件权重」明确留 M3
     public static function governanceEfficiency(float $load): float
     {
-        if ($load <= SimConstants::GOVERNANCE_LOAD_GOOD) { return SimConstants::GOVERNANCE_EFFICIENCY_GOOD; }
-        if ($load <= SimConstants::GOVERNANCE_LOAD_TIGHT) { return SimConstants::GOVERNANCE_EFFICIENCY_TIGHT; }
-        if ($load <= SimConstants::GOVERNANCE_LOAD_OVER) { return SimConstants::GOVERNANCE_EFFICIENCY_OVER; }
+        if ($load <= self::num(GameSetting::GOVERNANCE_LOAD_GOOD)) { return self::num(GameSetting::GOVERNANCE_EFFICIENCY_GOOD); }
+        if ($load <= self::num(GameSetting::GOVERNANCE_LOAD_TIGHT)) { return self::num(GameSetting::GOVERNANCE_EFFICIENCY_TIGHT); }
+        if ($load <= self::num(GameSetting::GOVERNANCE_LOAD_OVER)) { return self::num(GameSetting::GOVERNANCE_EFFICIENCY_OVER); }
 
-        return SimConstants::GOVERNANCE_EFFICIENCY_COLLAPSE;
+        return self::num(GameSetting::GOVERNANCE_EFFICIENCY_COLLAPSE);
     }
 
     // 运输负载(v3.2 §10.7):transportLoad = transportDemand / max(1, transportCapacity)。
@@ -115,17 +126,24 @@ class SimulationService
     // 且单调递减、到 load = 4 触及 0.25 下限。两条公式因此拼成一条无跳变的曲线,不需要再发明第三个常量
     public static function logisticsFactor(float $load): float
     {
-        if ($load <= SimConstants::TRANSPORT_LOAD_TIGHT) { return SimConstants::LOGISTICS_FACTOR_MAX; }
+        $tight = self::num(GameSetting::TRANSPORT_LOAD_TIGHT);
+        $over = self::num(GameSetting::TRANSPORT_LOAD_OVER);
+        $atOver = self::num(GameSetting::LOGISTICS_FACTOR_AT_OVER);
 
-        if ($load <= SimConstants::TRANSPORT_LOAD_OVER) {
-            $span = SimConstants::TRANSPORT_LOAD_OVER - SimConstants::TRANSPORT_LOAD_TIGHT; // 0.25
-            $drop = (SimConstants::LOGISTICS_FACTOR_MAX - SimConstants::LOGISTICS_FACTOR_AT_OVER)
-                * ($load - SimConstants::TRANSPORT_LOAD_TIGHT) / $span;
+        if ($load <= $tight) { return SimConstants::LOGISTICS_FACTOR_MAX; }
+
+        if ($load <= $over) {
+            // 两个拐点相等时(后台把 over 调到与 tight 一样)线性段退化成零宽度:
+            // 直接返回拐点值,不做 0 除
+            $span = $over - $tight;
+            if ($span <= 0.0) { return $atOver; }
+
+            $drop = (SimConstants::LOGISTICS_FACTOR_MAX - $atOver) * ($load - $tight) / $span;
 
             return SimConstants::LOGISTICS_FACTOR_MAX - $drop;
         }
 
-        return max(SimConstants::LOGISTICS_FACTOR_MIN, min(SimConstants::LOGISTICS_FACTOR_AT_OVER, 1.0 / $load));
+        return max(SimConstants::LOGISTICS_FACTOR_MIN, min($atOver, 1.0 / $load));
     }
 
     // 财政预警(v3.2 §10.5「财政储备 < 10分钟总维护 → 黄色预警;< 3分钟总维护 → 红色预警」)。
@@ -136,8 +154,8 @@ class SimulationService
 
         $minutes = max(0.0, $money) / $maintenanceMoneyPerMin;
 
-        if ($minutes < SimConstants::FISCAL_WARNING_RED_MINUTES) { return 'red'; }
-        if ($minutes < SimConstants::FISCAL_WARNING_YELLOW_MINUTES) { return 'yellow'; }
+        if ($minutes < self::num(GameSetting::FISCAL_WARNING_RED_MINUTES)) { return 'red'; }
+        if ($minutes < self::num(GameSetting::FISCAL_WARNING_YELLOW_MINUTES)) { return 'yellow'; }
 
         return 'none';
     }
@@ -153,8 +171,10 @@ class SimulationService
     {
         $lastSimulatedAt = Carbon::parse($lockedCity->last_simulated_at);
         $elapsed = max(0, $now->getTimestamp() - $lastSimulatedAt->getTimestamp());
-        // 离线封顶:超过上限的部分不结算(但 last_simulated_at 仍推进到 $now,否则会积压反复重算)
-        $elapsed = min($elapsed, SimConstants::MAX_OFFLINE_SECONDS);
+        // 离线封顶:超过上限的部分不结算(但 last_simulated_at 仍推进到 $now,否则会积压反复重算)。
+        // 取值走后台设定(默认 43200 = 12h);NPC / 工具 / 事件三条离线补算读的是同一个键,四处口径一致
+        $maxOfflineSeconds = (int) GameSetting::get(GameSetting::MAX_OFFLINE_SECONDS);
+        $elapsed = min($elapsed, $maxOfflineSeconds);
 
         // ---- M2-C5 施工 / 升级懒完工(v3.2 §16.3),必须先于下面的实例查询 ----
         //
@@ -205,7 +225,8 @@ class SimulationService
             ->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all();
         $money = (float) $lockedCity->money;
 
-        $storageCap = SimConstants::BASE_STORAGE;
+        // 基础仓储容量(无仓储建筑时的默认上限,后台可调,默认 1000)
+        $storageCap = self::num(GameSetting::BASE_STORAGE);
         $populationCap = 0.0;
         // 医疗容量 / 国防值:同样是容量类产出,M2-C2 起要用来算 health / security 与两项幸福覆盖加成(§10.2 / §10.8)。
         // 与仓储/人口容量一样在构建中间结构时提取到全局,不进 grossOut、不受乘区与满足率影响
@@ -281,7 +302,7 @@ class SimulationService
                 if ($res === ResourceCode::STORAGE_CAPACITY) { $storageCap += $r; continue; }
                 if ($res === ResourceCode::POPULATION_CAPACITY) {
                     // §3.2 明文的唯一打折项:升级中的住宅只保留旧等级容量的 50%
-                    $populationCap += $upgrading ? $r * SimConstants::UPGRADING_HOUSING_CAPACITY_RATE : $r;
+                    $populationCap += $upgrading ? $r * self::num(GameSetting::UPGRADING_HOUSING_CAPACITY_RATE) : $r;
                     continue;
                 }
                 if ($res === ResourceCode::MEDICAL_CAPACITY) { $medicalCapacity += $r; continue; }
@@ -332,6 +353,20 @@ class SimulationService
                 // 而是逐段由 applyLocked 改写、在 unitFactor 里单独乘在乘数积之后
                 'maintRate'   => 1.0,
             ];
+        }
+
+        // ---- 维护总开关(maintenance_enabled,运营止血阀)----
+        //
+        // 关闭后把每栋建筑的维护资金与维护粮食直接清零,而不是在欠费判定那里绕过去 ——
+        // 清零之后四件事自动同口径:欠费判定永远成立、不会半停工、财政预警恒 none、
+        // 返回给前端的 maintenance_money_per_min 也是 0(前端看到的和实际扣的是同一个数)。
+        // NPC 工资 / 口粮走的是总线的通用支出通道(下面的 EXPENSE_*),**不受本开关影响**:
+        // 那是「雇人要给钱」,与「楼要保养」是两笔账,一个开关不该同时免掉两者
+        if (GameSetting::get(GameSetting::MAINTENANCE_ENABLED) !== true) {
+            foreach ($units as $i => $u) {
+                $units[$i]['maintMoney'] = 0.0;
+                $units[$i]['maintFood'] = 0.0;
+            }
         }
 
         // 维护资金:不进配方,不受乘区与满足率影响(建筑闲置也照付),整段恒定
@@ -477,12 +512,16 @@ class SimulationService
 
         // ---- 分段结算 ----
         //
-        // 段划分:segments = min(ceil(经过分钟 / 30), 24),每段等长(12h 封顶时恰 24 段 × 30min)。
+        // 段划分:segments = min(ceil(经过分钟 / 段长), 段数上限),每段等长(默认 12h 封顶恰 24 段 × 30min)。
+        // 段长与离线封顶都是后台设定,段数上限由两者派生(SimConstants::maxSegments,再夹 240 段的性能硬顶)——
+        // 三个数不再需要手工保持一致。
         // elapsed 很短(<= 一段)时就一段,行为与单段结算一致 —— 守恒测试(单次 vs 分段)就是验这一点。
         $population = (float) $lockedCity->population;
         $totalMinutes = $elapsed / 60.0;
+        $segmentMinutes = (int) GameSetting::get(GameSetting::SEGMENT_MINUTES);
+        $maxSegments = SimConstants::maxSegments($maxOfflineSeconds, $segmentMinutes);
         $segments = $elapsed > 0
-            ? min((int) ceil($totalMinutes / SimConstants::SEGMENT_MINUTES), SimConstants::MAX_SEGMENTS)
+            ? min((int) ceil($totalMinutes / max(1, $segmentMinutes)), $maxSegments)
             : 1; // elapsed=0:跑一段 0 分钟,只为算出速率/容量返回给前端显示,不写库
         $segMinutes = $segments > 0 ? $totalMinutes / $segments : 0.0;
 
@@ -562,7 +601,7 @@ class SimulationService
         // 财政 / 治理的「最后一段口径」返回值(与 ratePerMin / growthPerMin 同一约定:
         // 它们描述的是最后一段实际生效的速率与状态,而不是结算后人口的重新推算)
         $governanceLoad = 0.0;
-        $governanceEfficiency = SimConstants::GOVERNANCE_EFFICIENCY_GOOD;
+        $governanceEfficiency = self::num(GameSetting::GOVERNANCE_EFFICIENCY_GOOD);
         $taxIncomePerMin = 0.0;
         $maintenanceRate = 1.0;
         $maintenanceArrears = false;
@@ -589,7 +628,7 @@ class SimulationService
             $maintenanceDue = $maintenanceMoneyPerMin * $span;
             $fundsAvailable = $money + $taxIncomePerMin * $span;
             $maintenanceArrears = $maintenanceDue > 0 && $fundsAvailable + 1e-9 < $maintenanceDue;
-            $maintenanceRate = $maintenanceArrears ? SimConstants::MAINTENANCE_ARREARS_FACTOR : 1.0;
+            $maintenanceRate = $maintenanceArrears ? self::num(GameSetting::MAINTENANCE_ARREARS_FACTOR) : 1.0;
             // 半停工只落在「有维护资金的建筑」上(住宅/仓库这类零维护建筑不可能欠费,恒 1.0)。
             // v3.2 只写了「对应欠费建筑 productionFactor *= 0.50」,没给「缺口如何分摊到具体哪几栋」的规则,
             // 这里按最简单也最保守的口径:本段一旦欠费,所有要交维护费的建筑一起半停工(见汇报的假设清单)
@@ -856,7 +895,7 @@ class SimulationService
         // 另减总线支出通道的口粮(§6.3 NPC 的 food_per_min):NPC 吃的是同一仓粮食,
         // 与人口粮耗一样不进配方、不受乘区与满足率影响,缺粮时由落库处的 max(0,…) 夹住
         $ratePerMin[ResourceCode::FOOD] = ($ratePerMin[ResourceCode::FOOD] ?? 0)
-            - $population * SimConstants::FOOD_PER_CAPITA_PER_MIN
+            - $population * self::num(GameSetting::FOOD_PER_CAPITA_PER_MIN)
             - $expenseFoodPerMin;
 
         return [$ratePerMin, $grossProduction, $grossConsumption];
@@ -890,15 +929,16 @@ class SimulationService
                 }
             }
 
-            // 饥荒时间 = 本段中落在「归零起点 + 10 分钟」之后的部分
-            $famineFrom = max($segStartOffset, $foodZeroOffset + SimConstants::FOOD_ZERO_GRACE_MINUTES);
+            // 饥荒时间 = 本段中落在「归零起点 + 宽限分钟数」之后的部分
+            $zeroLossPerMin = self::num(GameSetting::FOOD_ZERO_LOSS_PER_MIN);
+            $famineFrom = max($segStartOffset, $foodZeroOffset + self::num(GameSetting::FOOD_ZERO_GRACE_MINUTES));
             $famineMinutes = max(0.0, $segEndOffset - $famineFrom);
-            $newPopulation = self::applyLoss($population, SimConstants::FOOD_ZERO_LOSS_PER_MIN, $famineMinutes);
+            $newPopulation = self::applyLoss($population, $zeroLossPerMin, $famineMinutes);
 
             return [
                 'population'     => $newPopulation,
                 // 名义速率取本段实际发生的平均值:没触发饥荒时为 0
-                'growthPerMin'   => $famineMinutes > 0 ? $population * SimConstants::FOOD_ZERO_LOSS_PER_MIN : 0.0,
+                'growthPerMin'   => $famineMinutes > 0 ? $population * $zeroLossPerMin : 0.0,
                 'foodZeroOffset' => $foodZeroOffset,
             ];
         }
@@ -906,12 +946,16 @@ class SimulationService
         // 库存 > 0:归零计时清零(§10.1 的饥荒判定要求「持续」归零)
         $foodZeroOffset = null;
 
-        // 严重短缺:库存 < 3 分钟当前人口消耗(§10.1 用的是人口消耗口径,不含配方与维护)
-        $shortageLine = $population * SimConstants::FOOD_PER_CAPITA_PER_MIN * SimConstants::FOOD_SHORTAGE_MINUTES;
+        // 严重短缺:库存 < food_shortage_minutes 分钟的当前人口消耗(§10.1 用的是人口消耗口径,不含配方与维护)
+        $shortageLine = $population
+            * self::num(GameSetting::FOOD_PER_CAPITA_PER_MIN)
+            * self::num(GameSetting::FOOD_SHORTAGE_MINUTES);
         if ($foodAtSegmentEnd < $shortageLine) {
+            $shortageLossPerMin = self::num(GameSetting::FOOD_SHORTAGE_LOSS_PER_MIN);
+
             return [
-                'population'     => self::applyLoss($population, SimConstants::FOOD_SHORTAGE_LOSS_PER_MIN, $span),
-                'growthPerMin'   => $population * SimConstants::FOOD_SHORTAGE_LOSS_PER_MIN,
+                'population'     => self::applyLoss($population, $shortageLossPerMin, $span),
+                'growthPerMin'   => $population * $shortageLossPerMin,
                 'foodZeroOffset' => null,
             ];
         }
@@ -927,7 +971,8 @@ class SimulationService
         // healthFactor:§10.3 明确 M2 阶段恒为 1.0,M3 再接疾病/医疗
         $healthFactor = 1.0;
 
-        $rate = SimConstants::BASE_GROWTH_PER_MIN * $housingFactor * $foodFactor * $happinessFactor * $healthFactor;
+        $rate = self::num(GameSetting::POPULATION_BASE_GROWTH_PER_MIN)
+            * $housingFactor * $foodFactor * $happinessFactor * $healthFactor;
         $grown = $population * pow(1 + $rate, $span);
         // 夹到人口容量;但绝不因为容量低于现有人口而"夹掉"人口 ——
         // 超容时 housingFactor 已经是 0(不再增长),容量下降不该表现为人口凭空消失
@@ -957,26 +1002,46 @@ class SimulationService
     private static function housingFactor(float $population, float $populationCap): float
     {
         $usage = $population / max(1.0, $populationCap);
+        $full = self::num(GameSetting::HOUSING_USAGE_FULL);
 
-        if ($usage < SimConstants::HOUSING_USAGE_FULL) { return 1.0; }
+        if ($usage < $full) { return 1.0; }
         if ($usage >= 1.0) { return 0.0; }
 
-        $span = 1.0 - SimConstants::HOUSING_USAGE_FULL; // 0.20
-        $drop = (1.0 - SimConstants::HOUSING_FACTOR_AT_CAP) * ($usage - SimConstants::HOUSING_USAGE_FULL) / $span;
+        // 拐点被调到 1.0 时线性段退化成零宽度:上面两个分支已经把 usage 全覆盖了,这里只兜住 0 除
+        $span = 1.0 - $full; // 默认 0.20
+        if ($span <= 0.0) { return 0.0; }
+
+        $drop = (1.0 - self::num(GameSetting::HOUSING_FACTOR_AT_CAP)) * ($usage - $full) / $span;
 
         return 1.0 - $drop;
     }
 
     // happinessFactor(§10.3 分段函数):
-    //   >= 70 → 1.0;50 ~ 70 → clamp(0.5 + (happiness − 50) / 40, 0.5, 1.0);< 50 → 0
+    //   >= full_at → 1.0;zero_below ~ full_at → 从 at_floor 线性升到 1.0;< zero_below → 0
+    //   (默认口径:>= 70 → 1.0;50 ~ 70 → clamp(0.5 + (happiness − 50) / 40, 0.5, 1.0);< 50 → 0)
+    //
+    // 那个 40 原先是**裸字面量**,其实是三个常量派生出来的:
+    //     除数 = (full_at − zero_below) / (1 − at_floor) = (70 − 50) / (1 − 0.5) = 40
+    // 写死之后,只要有人调了三个拐点里的任何一个,线性段的终点就不再落在 1.0 上(曲线断裂)。
+    // 三个拐点开放成后台设定之前必须先把它改成派生式 —— 这是纯重构,默认值下逐位等于旧结果。
     public static function happinessFactor(float $happiness): float
     {
-        if ($happiness >= SimConstants::HAPPINESS_FACTOR_FULL_AT) { return 1.0; }
-        if ($happiness < SimConstants::HAPPINESS_FACTOR_ZERO_BELOW) { return 0.0; }
+        $zeroBelow = self::num(GameSetting::HAPPINESS_FACTOR_ZERO_BELOW);
+        $fullAt = self::num(GameSetting::HAPPINESS_FACTOR_FULL_AT);
+        $atFloor = self::num(GameSetting::HAPPINESS_FACTOR_AT_FLOOR);
 
-        $f = SimConstants::HAPPINESS_FACTOR_AT_FLOOR + ($happiness - SimConstants::HAPPINESS_FACTOR_ZERO_BELOW) / 40.0;
+        if ($happiness >= $fullAt) { return 1.0; }
+        if ($happiness < $zeroBelow) { return 0.0; }
 
-        return max(SimConstants::HAPPINESS_FACTOR_AT_FLOOR, min(1.0, $f));
+        $span = $fullAt - $zeroBelow;   // 默认 20
+        $rise = 1.0 - $atFloor;         // 默认 0.5
+        // 两拐点重合(span=0)或起点已经在 1.0(rise<=0):线性段退化成一个点,直接给起点值
+        if ($span <= 0.0 || $rise <= 0.0) { return max(0.0, min(1.0, $atFloor)); }
+
+        $divisor = $span / $rise;       // 默认 20 / 0.5 = 40.0
+        $f = $atFloor + ($happiness - $zeroBelow) / $divisor;
+
+        return max($atFloor, min(1.0, $f));
     }
 
     // 容量覆盖率(0~1):容量 / 人口,夹在 [0,1]。
@@ -1004,15 +1069,17 @@ class SimulationService
         // M3 开放可调税率后在这里接「每 5% 税率 → -2 happiness」,占位保留以免将来漏项
         $taxPenalty = 0.0;
 
-        // 粮食赤字惩罚(§10.1):连续赤字满 5 分钟起,每多 1 分钟目标 -1
-        $shortagePenalty = -SimConstants::HAPPINESS_DEFICIT_PENALTY_PER_MIN
-            * max(0.0, $deficitMinutes - SimConstants::FOOD_DEFICIT_GRACE_MINUTES);
+        // 粮食赤字惩罚(§10.1):连续赤字满 food_deficit_grace_minutes 起,每多 1 分钟目标 −happiness_deficit_penalty_per_min
+        $shortagePenalty = -self::num(GameSetting::HAPPINESS_DEFICIT_PENALTY_PER_MIN)
+            * max(0.0, $deficitMinutes - self::num(GameSetting::FOOD_DEFICIT_GRACE_MINUTES));
 
-        $target = SimConstants::HAPPINESS_BASE
+        // 医疗 / 治安两条覆盖加成原先共用一个常量(HAPPINESS_COVERAGE_BONUS = 5.0)。
+        // 搬成设定时拆成两键各读各的:两行本来就是两件事,共用一个数只是「碰巧相等」
+        $target = self::num(GameSetting::HAPPINESS_BASE)
             + self::housingHappinessBonus($population, $populationCap)
             + self::foodQualityHappinessBonus($population, $grossProduction)
-            + SimConstants::HAPPINESS_COVERAGE_BONUS * self::coverage($medicalCapacity, $population)
-            + SimConstants::HAPPINESS_COVERAGE_BONUS * self::coverage($defenseScore, $population)
+            + self::num(GameSetting::HAPPINESS_MEDICAL_BONUS) * self::coverage($medicalCapacity, $population)
+            + self::num(GameSetting::HAPPINESS_SECURITY_BONUS) * self::coverage($defenseScore, $population)
             + $taxPenalty
             + $shortagePenalty
             + $flatBonus;
@@ -1027,18 +1094,21 @@ class SimulationService
     private static function housingHappinessBonus(float $population, float $populationCap): float
     {
         $usage = $population / max(1.0, $populationCap);
-        $good = SimConstants::HAPPINESS_HOUSING_GOOD_USAGE;
+        $good = self::num(GameSetting::HAPPINESS_HOUSING_GOOD_USAGE);
+        $bonus = self::num(GameSetting::HAPPINESS_HOUSING_BONUS);
 
-        if ($usage <= $good) { return SimConstants::HAPPINESS_HOUSING_BONUS; }
+        if ($usage <= $good) { return $bonus; }
 
         if ($usage <= 1.0) {
-            // 0.90 → +10,1.00 → 0
-            return SimConstants::HAPPINESS_HOUSING_BONUS * (1.0 - ($usage - $good) / (1.0 - $good));
+            // 0.90 → +10,1.00 → 0(拐点被调到 1.0 时线性段零宽度,直接给 0,不做 0 除)
+            $span = 1.0 - $good;
+
+            return $span <= 0.0 ? 0.0 : $bonus * (1.0 - ($usage - $good) / $span);
         }
 
-        $over = min(1.0, ($usage - 1.0) / SimConstants::HAPPINESS_HOUSING_OVER_SPAN);
+        $over = min(1.0, ($usage - 1.0) / max(1e-9, self::num(GameSetting::HAPPINESS_HOUSING_OVER_SPAN)));
 
-        return SimConstants::HAPPINESS_HOUSING_OVER_PENALTY * $over;
+        return self::num(GameSetting::HAPPINESS_HOUSING_OVER_PENALTY) * $over;
     }
 
     // 食物品质幸福加成(§10.1 四档 → §10.2 加成),取满足条件的最高档:
@@ -1050,19 +1120,20 @@ class SimulationService
     private static function foodQualityHappinessBonus(float $population, array $grossProduction): float
     {
         $pop = max(1.0, $population);
+        $perCapita = max(1e-9, self::num(GameSetting::FOOD_PER_CAPITA_PER_MIN));
         $rate = fn (string $res) => (float) ($grossProduction[$res] ?? 0);
         // 覆盖率 = 该类食物养得起的人数 / 当前人口,夹在 [0,1]
-        $coverage = fn (float $r) => min(1.0, max(0.0, $r) / SimConstants::FOOD_PER_CAPITA_PER_MIN / $pop);
+        $coverage = fn (float $r) => min(1.0, max(0.0, $r) / $perCapita / $pop);
 
-        if ($coverage($rate(ResourceCode::HIGH_QUALITY_FOOD)) > SimConstants::FOOD_QUALITY_HIGH_COVERAGE) {
-            return SimConstants::FOOD_QUALITY_HIGH_BONUS;
+        if ($coverage($rate(ResourceCode::HIGH_QUALITY_FOOD)) > self::num(GameSetting::FOOD_QUALITY_HIGH_COVERAGE)) {
+            return self::num(GameSetting::FOOD_QUALITY_HIGH_BONUS);
         }
-        if ($coverage($rate(ResourceCode::PROCESSED_FOOD)) > SimConstants::FOOD_QUALITY_PROCESSED_COVERAGE) {
-            return SimConstants::FOOD_QUALITY_PROCESSED_BONUS;
+        if ($coverage($rate(ResourceCode::PROCESSED_FOOD)) > self::num(GameSetting::FOOD_QUALITY_PROCESSED_COVERAGE)) {
+            return self::num(GameSetting::FOOD_QUALITY_PROCESSED_BONUS);
         }
         $flourBread = $rate(ResourceCode::FLOUR) + $rate(ResourceCode::BREAD);
-        if ($coverage($flourBread) > SimConstants::FOOD_QUALITY_FLOUR_BREAD_COVERAGE) {
-            return SimConstants::FOOD_QUALITY_FLOUR_BREAD_BONUS;
+        if ($coverage($flourBread) > self::num(GameSetting::FOOD_QUALITY_FLOUR_BREAD_COVERAGE)) {
+            return self::num(GameSetting::FOOD_QUALITY_FLOUR_BREAD_BONUS);
         }
 
         return 0.0;
@@ -1083,9 +1154,9 @@ class SimulationService
     {
         if ($minutes > 0) {
             if ($target > $happiness) {
-                $happiness = min($target, $happiness + SimConstants::HAPPINESS_RISE_PER_MIN * $minutes);
+                $happiness = min($target, $happiness + self::num(GameSetting::HAPPINESS_RISE_PER_MIN) * $minutes);
             } elseif ($target < $happiness) {
-                $happiness = max($target, $happiness - SimConstants::HAPPINESS_FALL_PER_MIN * $minutes);
+                $happiness = max($target, $happiness - self::num(GameSetting::HAPPINESS_FALL_PER_MIN) * $minutes);
             }
         }
 

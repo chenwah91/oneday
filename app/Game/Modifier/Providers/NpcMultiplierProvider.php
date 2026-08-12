@@ -8,6 +8,7 @@ use App\Game\Modifier\ModifierTarget;
 use App\Game\Modifier\MultiplierProvider;
 use App\Game\NPC\NpcBonus;
 use App\Game\NPC\NpcCode;
+use App\Game\NPC\NpcTraitScale;
 use Illuminate\Support\Facades\DB;
 
 // npc 乘区(M3-D1 W2-A 接线,v3.2 §6.4)。
@@ -54,7 +55,9 @@ final class NpcMultiplierProvider extends MultiplierProvider
             ->whereIn('cn.status', NpcCode::ACTIVE_STATUSES)
             ->get([
                 'cn.id', 'cn.status', 'cn.skill_level', 'cn.assigned_instance_id',
-                'nd.npc_id', 'nd.primary_skill_id', 'nd.wage_per_min', 'nd.food_per_min', 'nd.trait_json',
+                // trait_multiplier:NPC 特性强度倍率(W11-B),下面解析 specs 时逐条乘上去
+                'nd.npc_id', 'nd.primary_skill_id', 'nd.wage_per_min', 'nd.food_per_min',
+                'nd.trait_json', 'nd.trait_multiplier',
             ]);
 
         if ($npcs->isEmpty()) {
@@ -88,7 +91,9 @@ final class NpcMultiplierProvider extends MultiplierProvider
             $grouped[(int) $n->assigned_instance_id][] = [
                 'primary_skill_id' => $n->primary_skill_id,
                 'skill_level'      => (int) $n->skill_level,
-                'specs'            => NpcBonus::specsFromJson($n->trait_json),
+                // 特性 specs 已乘过该 NPC 的强度倍率(W11-B);§6.4 的两层帽仍由 NpcBonus 夹,
+                // 倍率作用在**投稿值**上而不是帽上 —— 调强一位 NPC 不会顶穿单人 1.60 / NPC 侧 1.50
+                'specs'            => NpcTraitScale::specs($n->trait_json, $n->trait_multiplier),
             ];
         }
 

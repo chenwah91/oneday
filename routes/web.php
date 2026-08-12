@@ -203,6 +203,32 @@ Route::prefix('api/admin')->middleware(['auth:web', 'admin', 'throttle:api'])->g
     Route::get('/definitions/events', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'events'])->middleware('admin:edit_definition');
     Route::post('/definitions/event', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editEvent'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
 
+    // 建筑等级三个 JSON 列的**条目级**调整(W11-B):产出 / 投入速率与建造成本。
+    // 与 building-level 同权限、同限流 —— 改一条 rate_per_min 就是改全服该建筑的产量,
+    // 比七个外围列(工期 / 工人 / 维护)影响更大。只改已存在条目的数值,增删条目走迁移
+    Route::post('/definitions/building-level-json', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editBuildingLevelJson'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
+
+    // 科技定义(W11-B,v3.2 §4 的 50 行):查看 / 调整知识成本、研究时长。
+    // 前置 / 解锁 / 时代 / 分支四列只读下发 —— 那是科技树拓扑,改了会造出环或死锁
+    Route::get('/definitions/technologies', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'technologies'])->middleware('admin:edit_definition');
+    Route::post('/definitions/technology', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editTechnology'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
+
+    // 建筑定义(W11-B,v3.2 §3 的 94 行):查看 / 调整同类建造上限 max_count。
+    // footprint 只读 —— 改占地会让存量建筑瞬间互相重叠
+    Route::get('/definitions/buildings', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'buildings'])->middleware('admin:edit_definition');
+    Route::post('/definitions/building', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editBuilding'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
+
+    // NPC 等级曲线(W11-B,v3.2 §6.2 的 10 行):查看 / 调整升级经验、主技能加成、维护费减免上限。
+    // 主键 level 只读 —— 改它会让 city_npcs.skill_level 指向的那一级查不到(静默失去全部加成)
+    Route::get('/definitions/npc-skill-curve', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'npcSkillCurve'])->middleware('admin:edit_definition');
+    Route::post('/definitions/npc-skill-curve', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editNpcSkillCurve'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
+
+    // 时代升级门槛(W11-B,v3.2 §5.1 的 9 行):查看 / 调整七个数值门槛。
+    // ⚠️ defense 一列同时是**国防威胁需求**的来源,改它会连带影响全服威胁等级(响应带 warning)。
+    // buildings_json 只读 —— 必须建筑清单是升级路径拓扑,填一栋目标时代的建筑就是死锁
+    Route::get('/definitions/era-requirements', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'eraRequirements'])->middleware('admin:edit_definition');
+    Route::post('/definitions/era-requirements', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editEraRequirement'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
+
     // 管理员补偿(CLAUDE §80 / E7):查目标城市余额 / 提交补偿。
     // 权限 adjust_resource(game_master 及以上);写入端点再叠一层 admin_write 限流,
     // 「查」与「补」同权限:看得到余额才填得出 delta,不给低权角色留一个只读的经济窥探面
@@ -212,6 +238,34 @@ Route::prefix('api/admin')->middleware(['auth:web', 'admin', 'throttle:api'])->g
     // 规则开关(game_settings):开关改变全服规则,与改数值同级 → edit_definition(admin 及以上)
     Route::get('/settings', [\App\Http\Controllers\Admin\AdminSettingController::class, 'index'])->middleware('admin:edit_definition');
     Route::post('/settings', [\App\Http\Controllers\Admin\AdminSettingController::class, 'update'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
+
+    // ================= 运营端点(W11-C1)=================
+    //
+    // 与上面的 Definition 调整块分开:那一块回答「游戏数值该是多少」,这一块回答
+    // 「现在服上发生了什么 / 谁该被处置」—— 两类改动的评审人和上线节奏都不一样。
+    // 纯后端,UI 由下一波做。
+
+    // 全服仪表盘:玩家 / 城市 / 资源 / 建筑 / NPC / 事件 / 今日后台操作的一屏数字。
+    // 权限与玩家列表同档(read_player):它只是同一批只读数据的聚合视图,不含任何单个玩家的隐私字段。
+    // 限流走组级 throttle:api —— 内部是常量 7 条聚合 SQL,与玩家规模无关(见 Controller 顶部纪律)
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\AdminReadController::class, 'dashboard'])->middleware('admin:read_player');
+
+    // 单条审计详情:列表刻意不下发的 before/after/delta/metadata 四个 JSON 列在这里给全。
+    // 与列表同权限(read_audit):能看列表就能看详情,拆权限只会让客服查一半案子要找人代劳
+    Route::get('/audit/{id}', [\App\Http\Controllers\Admin\AdminReadController::class, 'auditDetail'])->whereNumber('id')->middleware('admin:read_audit');
+
+    // 封禁 / 解禁:权限 ban_player(admin 及以上),写入端点一律叠 admin_write 限流 ——
+    // 与补偿 / 定义调整同一纪律:管理员账号被盗时批量封号要先撞 20/min 上限。
+    // **绝不删除玩家数据**:封禁只写 users.banned_at / ban_reason 两列(见 AdminBanController 顶部)
+    Route::post('/players/{id}/ban', [\App\Http\Controllers\Admin\AdminBanController::class, 'ban'])->whereNumber('id')->middleware(['admin:ban_player', 'throttle:admin_write']);
+    Route::post('/players/{id}/unban', [\App\Http\Controllers\Admin\AdminBanController::class, 'unban'])->whereNumber('id')->middleware(['admin:ban_player', 'throttle:admin_write']);
+
+    // 手动触发事件(测试 / 线上复现):走与自然触发**同一条**落地路径,只跳过权重掷点与冷却,
+    // 并发上限照常尊重。权限 edit_definition —— 强制触发会真实改玩家资源,风险等同于改一行事件定义。
+    // 刻意不加 game_settings 开关(理由见 AdminEventTriggerController 顶部;生产要不要暴露写进 deploy checklist)
+    Route::post('/events/trigger', \App\Http\Controllers\Admin\AdminEventTriggerController::class)->middleware(['admin:edit_definition', 'throttle:admin_write']);
+
+    // ================= 运营端点结束 =================
 });
 
 // 仅测试环境:用于验证异常渲染,绝不在生产暴露

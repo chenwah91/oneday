@@ -106,9 +106,16 @@ final class DefenseService
         // 覆盖率按 1.0 记(= 安全档),绝不做 0 除
         $coverage = $demand > 0 ? $score / $demand : 1.0;
 
+        // 国防总开关(运营救急):关掉之后威胁档恒为安全(low),EVT_RAID 也就不会造成任何损失
+        //(raidLossPct 的安全档倍率是 0)。国防值 / 需求 / 覆盖率的读数照常算出来回传 ——
+        // 与物流 / 电力两个开关同一条口径:止血的同时还看得见「本来会是什么档」
+        $level = GameSetting::get(GameSetting::DEFENSE_GATE_ENABLED) === true
+            ? self::levelFor($coverage)
+            : self::LEVEL_LOW;
+
         return [
-            'threat_level'       => self::levelFor($coverage),
-            'threat_rank'        => self::LEVEL_RANKS[self::levelFor($coverage)],
+            'threat_level'       => $level,
+            'threat_rank'        => self::LEVEL_RANKS[$level],
             'defense_score'      => round($score, 4),
             // 建筑口径(= 内核从 output_json 聚合的容量值):快照里一并给出,
             // 玩家才看得出「我的国防有多少是常备的、多少是临时 buff」
@@ -156,6 +163,12 @@ final class DefenseService
     // 安全档恒 0:达标的城市不该被劫掠(EVT_RAID 的条件本来也进不来)。
     public static function raidLossPct(array $defense): float
     {
+        // 总开关关掉时直接 0:evaluate() 已经把威胁档压成 low(倍率 0),这里再拦一道是
+        // 为了「调用方自己拼了一个 defense 数组」的路径也照样不掉血(Fail Closed 的反向:止血要止得干净)
+        if (GameSetting::get(GameSetting::DEFENSE_GATE_ENABLED) !== true) {
+            return 0.0;
+        }
+
         $tierMultiplier = match ($defense['threat_level'] ?? self::LEVEL_LOW) {
             self::LEVEL_HIGH   => (float) GameSetting::get(GameSetting::DEFENSE_RAID_LOSS_MULT_HIGH),
             self::LEVEL_MEDIUM => (float) GameSetting::get(GameSetting::DEFENSE_RAID_LOSS_MULT_MEDIUM),

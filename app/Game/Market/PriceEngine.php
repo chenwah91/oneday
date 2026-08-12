@@ -134,8 +134,11 @@ final class PriceEngine
         // §8.1 原式:targetPrice = basePrice × (1 + elasticity × imbalance) × eventMultiplier
         $target = $def['base_price'] * (1.0 + $def['elasticity'] * $imbalance) * self::EVENT_MULTIPLIER_DEFAULT;
 
-        // 确定性扰动:noise ∈ [−volatility, +volatility]
-        $price = $target * (1.0 + self::noise($def['resource_id'], $epoch, $def['volatility']));
+        // 确定性扰动:noise ∈ [−volatility, +volatility]。
+        // volatility = 定义表逐资源的值 × 全局倍率(market_volatility_multiplier,默认 1)——
+        // 与 fee_rate / base_liquidity 的「定义值 × 全局系数」是同一种关系,不给同一个数第二个来源
+        $volatility = max(0.0, $def['volatility'] * (float) GameSetting::get(GameSetting::MARKET_VOLATILITY_MULTIPLIER));
+        $price = $target * (1.0 + self::noise($def['resource_id'], $epoch, $volatility));
 
         [$low, $high] = MarketDefinition::priceBounds($def);
 

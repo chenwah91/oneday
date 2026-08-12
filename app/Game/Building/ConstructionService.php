@@ -5,6 +5,7 @@ namespace App\Game\Building;
 use App\Game\Modifier\ConsumptionPoint;
 use App\Game\Modifier\ModifierTarget;
 use App\Game\Resource\ResourceCode;
+use App\Support\GameSetting;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
@@ -29,12 +30,26 @@ class ConstructionService
     public const STATUS_CONSTRUCTING = 'constructing';
     public const STATUS_UPGRADING = 'upgrading';
 
-    // 拆除返还:已完工等级的累计建造材料 × 50%(v3.2 §10.9)
+    // 拆除返还:已完工等级的累计建造材料 × 50%(v3.2 §10.9)。
+    // W11-A 起改成后台设定 demolish_refund_rate,本常量保留为**登记默认值的出处**,读取一律走下面的方法
     public const DEMOLISH_REFUND_RATE = 0.50;
 
     // 取消返还:该次未完工工程材料 × 70%(v3.2 §3.2 / §16.3)。
-    // 高于拆除的 50% 是刻意的 —— §10.9「拆除返还低于升级取消返还 70%,防止拆建套利」
+    // 高于拆除的 50% 是刻意的 —— §10.9「拆除返还低于升级取消返还 70%,防止拆建套利」。
+    // 两者的高低关系由 GameSetting 的跨键约束(demolish ≤ cancel)在写入时钉死,后台调不反
     public const CANCEL_REFUND_RATE = 0.70;
+
+    // ---- 返还比例的唯一读取口(后台可调)----
+
+    public static function demolishRefundRate(): float
+    {
+        return (float) GameSetting::get(GameSetting::DEMOLISH_REFUND_RATE);
+    }
+
+    public static function cancelRefundRate(): float
+    {
+        return (float) GameSetting::get(GameSetting::CANCEL_REFUND_RATE);
+    }
 
     // 施工加速的最低速度倍率(安全夹取):construction_speed_pct 合计到 −90% 以下就按 0.1 倍速算。
     // 现有数据里这条 target 只有正值(N008 +8% / N030 +25% / IT005 +8% / IT013 +15%),
@@ -58,12 +73,47 @@ class ConstructionService
 
     // 折减后的实际工期(秒)。$baseSeconds = building_level_definition.duration_seconds。
     //
+    // 顺序固定:基础秒数 × 全局工期倍率(construction_duration_multiplier)÷ (1 + 施工加速)。
+    // 先乘倍率再除加速 —— 倍率是「这张定义表整体贵/便宜多少」,加速是「这座城此刻快多少」,
+    // 反过来算(先除后乘)在数学上等价,但语义上会让人以为加速是作用在定义值上的。
+    //
     // 取整方向:round。工期不是资源,四舍五入不产生任何可套利的零头
     //(材料返还那种「玩家净收益」才需要 floor 的保守方向,见 scale() 的注释)。
     // 下限 0:后台把速度调到极限时至少还是「立刻完工」,不会出现负的完工时刻
     public static function plannedSeconds(int $cityId, int $baseSeconds): int
     {
-        return (int) max(0, round(max(0, $baseSeconds) / self::speedMultiplier($cityId)));
+        $scaled = max(0, $baseSeconds) * (float) GameSetting::get(GameSetting::CONSTRUCTION_DURATION_MULTIPLIER);
+
+        return (int) max(0, round($scaled / self::speedMultiplier($cityId)));
+    }
+
+    // ---- 成本全局倍率(build_cost_multiplier / upgrade_cost_multiplier)----
+
+    // cost_json 折算:资金与材料**同乘**同一个倍率(不给「材料涨价但资金不变」这种半吊子口径)。
+    //
+    // 倍率恰为 1.0 时**原样返回**:默认配置下这条路径一个字节都不改,老数据的整数成本不会被取整摸过一遍。
+    // 非 1.0 时向上取整 —— 与 §3.2 升级成本用 ceil 同一个保守方向:零头永远算玩家的,不给套利留缝。
+    public static function scaleCost(array $cost, float $multiplier): array
+    {
+        if ($multiplier === 1.0) {
+            return $cost;
+        }
+
+        $out = [];
+        foreach ($cost as $res => $amt) {
+            $out[$res] = ceil((float) $amt * $multiplier);
+        }
+
+        return $out;
+    }
+
+    // 某一级的成本倍率:L1 = 建造,L2/L3 = 升级。
+    // 返还路径也走它 —— 「按 0.3 倍价建、按原价的一半退」是一台印钞机,两侧必须同一个倍率
+    public static function costMultiplierForLevel(int $level): float
+    {
+        return (float) GameSetting::get(
+            $level <= 1 ? GameSetting::BUILD_COST_MULTIPLIER : GameSetting::UPGRADE_COST_MULTIPLIER
+        );
     }
 
     // ---- 懒完工 ----
@@ -122,7 +172,7 @@ class ConstructionService
 
     // ---- 材料与返还 ----
 
-    // 某一级的「建造 / 升级材料」= cost_json 去掉资金。
+    // 某一级的「建造 / 升级材料」= cost_json 去掉资金,再乘该级的成本全局倍率。
     // 资金不返还是 v3.2 的明文规则(§10.9「只返还建造材料 / 资金不返还」、§3.2「资金不返还」)
     public static function materialCost(string $buildingId, int $level): array
     {
@@ -136,7 +186,7 @@ class ConstructionService
         $cost = json_decode($row->cost_json ?: '[]', true) ?: [];
         unset($cost[ResourceCode::MONEY]);
 
-        return $cost;
+        return self::scaleCost($cost, self::costMultiplierForLevel($level));
     }
 
     // 「已完工等级」的累计建造材料:L1 建造 + 已完成的每一次升级(§10.9「原始建造材料」)。
@@ -149,14 +199,15 @@ class ConstructionService
 
         $rows = DB::table('building_level_definition')
             ->where('building_id', $buildingId)->where('level', '<=', $level)
-            ->get(['cost_json']);
+            ->get(['level', 'cost_json']);
 
         $total = [];
         foreach ($rows as $row) {
-            foreach (json_decode($row->cost_json ?: '[]', true) ?: [] as $res => $amt) {
-                if ($res === ResourceCode::MONEY) {
-                    continue;
-                }
+            // 逐级各乘自己那一档的倍率:L1 吃 build_cost_multiplier,L2/L3 吃 upgrade_cost_multiplier ——
+            // 玩家当初就是分别按这两个价付的,退也得分别按这两个价退
+            $cost = json_decode($row->cost_json ?: '[]', true) ?: [];
+            unset($cost[ResourceCode::MONEY]);
+            foreach (self::scaleCost($cost, self::costMultiplierForLevel((int) $row->level)) as $res => $amt) {
                 $total[$res] = ($total[$res] ?? 0) + (float) $amt;
             }
         }

@@ -5,6 +5,7 @@ namespace App\Game\NPC;
 use App\Game\Modifier\ModifierSpec;
 use App\Game\Modifier\ModifierTarget;
 use App\Game\Simulation\SimConstants;
+use App\Support\GameSetting;
 
 // §6.4 NPC 加成计算 —— 全项目唯一一份实现。
 //
@@ -41,7 +42,9 @@ final class NpcBonus
         // 不匹配不是 0,是 ×0.25(§6.4 明文)—— 派错岗位是效率问题,不是「白养」
         $required = NpcCode::requiredSkill($building['category'] ?? null, $building['series_key'] ?? null);
         $matched = $required !== null && $required === ($npc['primary_skill_id'] ?? null);
-        $primary = $matched ? $primaryBonus : $primaryBonus * SimConstants::NPC_JOB_MISMATCH_RATE;
+        $primary = $matched
+            ? $primaryBonus
+            : $primaryBonus * (float) GameSetting::get(GameSetting::NPC_JOB_MISMATCH_RATE);
 
         // 副技能通道(§6.4 的 ×0.50):v3.2 §6.3 没有副技能列 → 恒 0,见类注释①
         $secondary = (float) ($npc['secondary_bonus'] ?? 0.0) * SimConstants::NPC_SECONDARY_SKILL_RATE;
@@ -62,7 +65,7 @@ final class NpcBonus
             $product *= self::forNpc($npc, $building, $curve);
         }
 
-        return min($product, SimConstants::NPC_TOTAL_CAP);
+        return min($product, (float) GameSetting::get(GameSetting::NPC_TOTAL_CAP));
     }
 
     // 特性对**产量乘区**的贡献(§6.3 的 trait_json)。

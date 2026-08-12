@@ -147,12 +147,14 @@ class MarketAntiAbuseTest extends TestCase
 
     // 手续费单独就足以堵死「数量小到滑点可忽略」的纯噪声套利:
     // 往返回收率上限 = (1−f)/(1+f) = 0.97/1.03 ≈ 94.17%,永远够不到 100%
-    public function test_fee_alone_blocks_zero_slippage_arbitrage(): void
+    public function test_fee_alone_blocks_minimal_slippage_arbitrage(): void
     {
-        // 把滑点关掉,只留手续费 —— 这是四机制里最弱的配置,它都必须亏
+        // 把滑点压到登记下限 0.01,只剩手续费在起作用 —— 这是四机制里最弱的配置,它都必须亏。
+        // (W11-A 起下限就是 0.01,滑点关不掉:哪怕像这里一样绕过 set() 直接写库,
+        //  读取路径的区间校验也会把越界值打回登记默认值)
         DB::table('game_settings')->updateOrInsert(
             ['setting_key' => GameSetting::MARKET_SLIPPAGE_COEFFICIENT],
-            ['value_json' => json_encode(0.0), 'description' => GameSetting::DEFINITIONS[GameSetting::MARKET_SLIPPAGE_COEFFICIENT]['description'], 'updated_at' => now()]
+            ['value_json' => json_encode(0.01), 'description' => GameSetting::DEFINITIONS[GameSetting::MARKET_SLIPPAGE_COEFFICIENT]['description'], 'updated_at' => now()]
         );
         GameSetting::flush();
 

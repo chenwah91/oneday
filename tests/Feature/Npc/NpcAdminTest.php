@@ -126,7 +126,8 @@ class NpcAdminTest extends TestCase
 
         // 31 条 NPC 规则参数全部登记在案(A 区逐行 + 稀有度权重 + 两个救急开关)
         $npcKeys = $settings->keys()->filter(fn ($k) => str_starts_with($k, 'npc_'));
-        $this->assertCount(31, $npcKeys);
+        // 31 条 D1 规则参数 + W11-A 追加的两条 §6.4 合成参数(npc_total_cap / npc_job_mismatch_rate)
+        $this->assertCount(33, $npcKeys);
 
         $row = $settings[GameSetting::NPC_XP_PER_MIN];
         $this->assertSame('number', $row['type']);

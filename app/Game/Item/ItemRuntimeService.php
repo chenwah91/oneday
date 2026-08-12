@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\DB;
 //   懒结算挂在快照 / 端点上,不占结算内核的一段,也不新增每分钟 tick。本类照抄那条路径。
 //
 // 时钟:cities.item_settled_at 单独一列(既不复用 last_simulated_at 也不复用 npc_settled_at ——
-// 两个系统共用一个时钟会互相吃掉对方的经过时间)。离线封顶沿用 SimConstants::MAX_OFFLINE_SECONDS。
+// 两个系统共用一个时钟会互相吃掉对方的经过时间)。离线封顶沿用后台设定 max_offline_seconds。
 //
 // 「工作分钟」的口径(§7「生产 Tick 按工作时间扣耐久」+ backlog §4.3「只在建筑实际工作的分钟里扣
 // (停产 / 半停工 / 缺料的建筑不扣)」),逐条落成四道闸:
@@ -55,7 +55,7 @@ final class ItemRuntimeService
 
         $elapsed = max(0, $now->getTimestamp() - $last->getTimestamp());
         // 离线封顶:超出部分不补扣,但时钟照样推进到 $now(否则积压会被反复重算)
-        $elapsed = min($elapsed, SimConstants::MAX_OFFLINE_SECONDS);
+        $elapsed = min($elapsed, (int) GameSetting::get(GameSetting::MAX_OFFLINE_SECONDS));
 
         DB::table('cities')->where('id', $lockedCity->id)->update(['item_settled_at' => $now]);
         // 内存里的行同步推进:同一请求内如果再次结算(端点里先 settleLocked 再走业务),

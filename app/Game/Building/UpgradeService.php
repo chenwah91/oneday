@@ -10,6 +10,7 @@ use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
 use App\Support\GameRuleException;
+use App\Support\GameSetting;
 use App\Support\Idempotency;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -99,7 +100,12 @@ class UpgradeService
             if (! $lvl) {
                 throw new GameRuleException(ErrorCode::INVALID_BUILDING, 422);
             }
-            $cost = json_decode($lvl->cost_json, true) ?: [];
+            // 升级成本 = 定义 cost_json × upgrade_cost_multiplier(资金与材料同乘,倍率为 1 时原样不动)。
+            // 与建造同一条纪律:算一次、同时用于校验与扣款;幂等重放在上面已 return,不会按新倍率重算
+            $cost = ConstructionService::scaleCost(
+                json_decode($lvl->cost_json, true) ?: [],
+                (float) GameSetting::get(GameSetting::UPGRADE_COST_MULTIPLIER)
+            );
 
             // 资源足额:一律用结算后的最新余额(资金 money 单列在 cities.money)
             foreach ($cost as $res => $amt) {
@@ -249,7 +255,7 @@ class UpgradeService
             $targetLevel = $currentLevel + 1;
             $refund = ConstructionService::scale(
                 ConstructionService::materialCost($inst->building_id, $targetLevel),
-                ConstructionService::CANCEL_REFUND_RATE
+                ConstructionService::cancelRefundRate()
             );
 
             // 先回状态:status 进 where,并发的第二次取消只有一方能改成功
@@ -295,7 +301,7 @@ class UpgradeService
                 'metadata_json' => [
                     'buildingId'   => $inst->building_id,
                     'targetLevel'  => $targetLevel,
-                    'refundRate'   => ConstructionService::CANCEL_REFUND_RATE,
+                    'refundRate'   => ConstructionService::cancelRefundRate(),
                     'refundNominal' => $refund,
                     // 被仓储上限截掉的部分:事后能回答「玩家为什么少收到了材料」
                     'truncated'    => $truncated,

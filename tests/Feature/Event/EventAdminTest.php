@@ -154,8 +154,10 @@ class EventAdminTest extends EventTestCase
         [$city] = $this->makeCity('adminoff');
         $this->onlyEnable('EVT_FESTIVAL');
 
+        // disabled_reason 于 W11-B 起是停用的必填项(后台列表要显示「这条为什么是灰的」)
         $this->actingAs($this->admin())->postJson('/api/admin/definitions/event', [
-            'event_id' => 'EVT_FESTIVAL', 'field' => 'enabled', 'value' => 0, 'reason' => '临时下线',
+            'event_id' => 'EVT_FESTIVAL', 'field' => 'enabled', 'value' => 0,
+            'reason' => '临时下线', 'disabled_reason' => '庆典临时下线,等权重重算',
         ])->assertOk();
 
         $this->runSettle($city, 30);

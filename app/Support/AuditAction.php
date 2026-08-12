@@ -103,4 +103,13 @@ final class AuditAction
     // 管理员补偿(CLAUDE §80 / SECURITY.md「补偿统一使用 ADMIN.COMPENSATION」):
     // actor 是管理员,user_id / city_id 是被补偿的玩家与其城市,before/after/delta/reason 齐全
     public const ADMIN_COMPENSATION = 'ADMIN.COMPENSATION';
+
+    // 封禁 / 解禁(W11-C1 任务4):
+    // actor 是管理员(actor_type=admin),user_id 是被封 / 被解禁的玩家,
+    // before/after 记 banned_at 与 ban_reason 两列的前后值,reason_code 记管理员填的原因。
+    // 两个动作分成两个码而不是一个 ADMIN.PLAYER_BAN 带 after 判方向:
+    // 「这半年封了多少人 / 解了多少人」要能各自 COUNT,混成一个码就统计不出来了。
+    // **封禁绝不删除任何玩家数据**,这两条审计就是「账号状态被谁在什么时候改过」的唯一凭据
+    public const ADMIN_PLAYER_BAN = 'ADMIN.PLAYER_BAN';
+    public const ADMIN_PLAYER_UNBAN = 'ADMIN.PLAYER_UNBAN';
 }

@@ -15,6 +15,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // 安全响应头挂全局(append = 出站最后一道):所有 Laravel 响应统一带上,静态文件另由服务器配置
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->alias(['admin' => \App\Http\Middleware\EnsureAdmin::class]);
+        // 封禁拦截(W11-C1):挂在 web 组**末尾** —— 必须排在 StartSession 之后,
+        // 否则 $request->user() 恒为 null(session 还没起来就认不出被封的是谁)。
+        // 不挂全局 append:全局组跑在 session 之前,同样认不出人。
+        // 它自己只对 /api/* 且已登录的非后台账号生效,其余一律直接放行(见该中间件顶部注释)
+        $middleware->web(append: [\App\Http\Middleware\EnsureNotBanned::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {

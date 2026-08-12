@@ -29,6 +29,10 @@ final class MarketDefinition
     // 而且后台得看得见「它们为什么不能交易」),只是标记为不可交易
     public const TRADE_MODE_NON_TRADEABLE = 'non_tradeable';
 
+    // 有效手续费率的绝对上限:费率 ≥ 1 会让卖出变成「倒贴钱」,那不是手续费而是没收。
+    // 0.9 是安全夹子不是运营旋钮 —— 想调费率请改 market_fee_rate_multiplier 或定义表的 fee_rate
+    public const MAX_EFFECTIVE_FEE_RATE = 0.9;
+
     private const CACHE_KEY = 'market_definitions';
 
     // 整表(resource_id => 定义数组)。表不存在 / 未 seed 时返回空数组
@@ -90,7 +94,7 @@ final class MarketDefinition
     {
         $multiplier = (float) GameSetting::get(GameSetting::MARKET_FEE_RATE_MULTIPLIER);
 
-        return max(0.0, min(0.9, $def['fee_rate'] * $multiplier));
+        return max(0.0, min(self::MAX_EFFECTIVE_FEE_RATE, $def['fee_rate'] * $multiplier));
     }
 
     // 价格夹取区间 = 定义表 [min_price, max_price] 与 全局 [基础价×下限倍率, 基础价×上限倍率] 的**交集**。

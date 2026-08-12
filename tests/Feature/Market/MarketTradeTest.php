@@ -168,46 +168,64 @@ class MarketTradeTest extends TestCase
 
     // ---- §13 四机制:逐个「生效」+ 逐个「关掉就不生效」(假失败验证)----
 
-    // ① 手续费:关掉手续费(全局倍率 0)后,同一笔买入必须便宜出恰好一份手续费
-    public function test_fee_is_charged_and_disappears_when_multiplier_is_zero(): void
+    // ① 手续费:把全局倍率压到**登记下限** 0.01 之后,同一笔买入必须便宜出恰好那一份手续费之差。
+    //
+    // 为什么不是压到 0:§13 的四道反套利机制不许被后台关停,W11-A 起 market_fee_rate_multiplier
+    // 的登记下限就是 0.01(填 0 直接 VALIDATION_ERROR,连手改库都会在读取时被打回默认值)。
+    // 「假失败验证」的力度一点没丢 —— 费率小两个数量级时差额照样量得出来,而且永远大于 0
+    public function test_fee_is_charged_and_shrinks_to_the_registered_floor(): void
     {
         [$userA, $cityA] = $this->makeCity('feeon');
         $withFee = $this->expected('iron', 'buy', 10);
         $this->actingAs($userA)->postJson('/api/market/buy', ['resource_code' => 'iron', 'quantity' => 10])->assertOk();
 
-        $this->setSetting(GameSetting::MARKET_FEE_RATE_MULTIPLIER, 0.0);
+        $this->setSetting(GameSetting::MARKET_FEE_RATE_MULTIPLIER, 0.01);
 
-        [$userB, $cityB] = $this->makeCity('feeoff');
-        $noFee = $this->expected('iron', 'buy', 10);
+        [$userB, $cityB] = $this->makeCity('feefloor');
+        $atFloor = $this->expected('iron', 'buy', 10);
         $this->actingAs($userB)->postJson('/api/market/buy', ['resource_code' => 'iron', 'quantity' => 10])->assertOk();
 
         $paidWithFee = 100000.0 - $this->moneyOf($cityA);
-        $paidNoFee = 100000.0 - $this->moneyOf($cityB);
+        $paidAtFloor = 100000.0 - $this->moneyOf($cityB);
 
-        $this->assertGreaterThan($paidNoFee, $paidWithFee, '手续费没生效');
-        $this->assertEqualsWithDelta($withFee['fee'], $paidWithFee - $paidNoFee, 0.02, '差额必须恰好等于手续费');
-        $this->assertEqualsWithDelta(0.0, $noFee['fee'], 0.0001);
+        $this->assertGreaterThan($paidAtFloor, $paidWithFee, '手续费没生效');
+        $this->assertEqualsWithDelta($withFee['fee'] - $atFloor['fee'], $paidWithFee - $paidAtFloor, 0.02, '差额必须恰好等于两档手续费之差');
+        // §13:手续费永远关不掉 —— 压到下限也仍然收得到
+        $this->assertGreaterThan(0.0, $atFloor['fee']);
+        $this->assertLessThan($withFee['fee'], $atFloor['fee']);
     }
 
-    // ③ 滑点:关掉滑点(系数 0)后,同一笔买入必须便宜出恰好一份滑点(含其上的手续费)
-    public function test_slippage_is_charged_and_disappears_when_coefficient_is_zero(): void
+    // 手续费倍率 0 属于「关停 §13 机制」,登记下限拦住它(写入路径 422)
+    public function test_fee_multiplier_zero_is_rejected(): void
+    {
+        $this->expectException(\App\Support\GameRuleException::class);
+        GameSetting::set(GameSetting::MARKET_FEE_RATE_MULTIPLIER, 0, null, '试图免手续费');
+    }
+
+    // ③ 滑点:把系数压到**登记下限** 0.01 之后,同一笔买入必须便宜出那一份滑点差(含其上的手续费)。
+    //
+    // 同 ①:§13 不许关停滑点,W11-A 起 market_slippage_coefficient 的登记下限就是 0.01,
+    // 填 0 一律 422。压到下限时滑点小两个数量级,但仍然 > 0 —— 往返永远亏,这才是这条机制的意义
+    public function test_slippage_is_charged_and_shrinks_to_the_registered_floor(): void
     {
         [$userA, $cityA] = $this->makeCity('slipon');
         $this->actingAs($userA)->postJson('/api/market/buy', ['resource_code' => 'iron', 'quantity' => 100])->assertOk();
         $orderA = DB::table('city_market_orders')->where('city_id', $cityA->id)->first();
 
-        $this->setSetting(GameSetting::MARKET_SLIPPAGE_COEFFICIENT, 0.0);
+        $this->setSetting(GameSetting::MARKET_SLIPPAGE_COEFFICIENT, 0.01);
 
-        [$userB, $cityB] = $this->makeCity('slipoff');
+        [$userB, $cityB] = $this->makeCity('slipfloor');
         $this->actingAs($userB)->postJson('/api/market/buy', ['resource_code' => 'iron', 'quantity' => 100])->assertOk();
         $orderB = DB::table('city_market_orders')->where('city_id', $cityB->id)->first();
 
         $this->assertGreaterThan(0, (float) $orderA->slippage_rate, '滑点没生效');
-        $this->assertSame(0.0, (float) $orderB->slippage_rate, '系数调 0 后滑点必须消失');
+        // §13:滑点关不掉 —— 压到下限仍然 > 0,只是比默认档小得多
+        $this->assertGreaterThan(0.0, (float) $orderB->slippage_rate, '系数压到下限后滑点仍必须存在');
+        $this->assertLessThan((float) $orderA->slippage_rate, (float) $orderB->slippage_rate);
         $this->assertLessThan(
             100000.0 - $this->moneyOf($cityA),
             100000.0 - $this->moneyOf($cityB),
-            '关掉滑点后同样一笔买入必须更便宜(这就是滑点在收钱的证据)'
+            '滑点压到下限后同样一笔买入必须更便宜(这就是滑点在收钱的证据)'
         );
 
         // 滑点率 = 0.5 × 数量 / 有效流动性(9.C4)

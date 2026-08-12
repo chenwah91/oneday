@@ -4,8 +4,8 @@ namespace App\Game\Modifier;
 
 use App\Game\Item\ItemBonus;
 use App\Game\Item\ItemCode;
-use App\Game\NPC\NpcBonus;
 use App\Game\NPC\NpcCode;
+use App\Game\NPC\NpcTraitScale;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 //
 // 三个投稿来源(与 §6.3 特性 / §7 工具 / §9 事件三张表一一对应):
 //   ① city_active_modifiers 里 target 匹配、当前生效中的行(事件写的持续型效果);
-//   ② 在编 NPC(idle + assigned)的 trait_json;
+//   ② 在编 NPC(idle + assigned)的 trait_json,**每条 spec 乘该 NPC 的 trait_multiplier**(W11-B);
 //   ③ 已装备且耐久 > 0 的工具的 effect_json。
 //
 // 只认 **scope=city**:这类 target 描述的都是全城性的规则修正(工期 / 维护费 / 手续费 / 治理容量),
@@ -183,14 +183,16 @@ final class ConsumptionPoint
         $specs = [];
 
         if (DB::getSchemaBuilder()->hasTable('city_npcs')) {
+            // trait_multiplier 一并取出:NPC 特性的强度倍率(W11-B),每条 spec 的值统一乘它。
+            // **只乘 NPC 这一路** —— 下面的工具 specs 原样不动(见 NpcTraitScale 顶部的口径说明)
             $traits = DB::table('city_npcs as cn')
                 ->join('npc_definition as nd', 'cn.npc_id', '=', 'nd.npc_id')
                 ->where('cn.city_id', $cityId)
                 ->whereIn('cn.status', NpcCode::ACTIVE_STATUSES)
-                ->pluck('nd.trait_json');
+                ->get(['nd.trait_json', 'nd.trait_multiplier']);
 
-            foreach ($traits as $json) {
-                foreach (NpcBonus::specsFromJson($json) as $spec) {
+            foreach ($traits as $row) {
+                foreach (NpcTraitScale::specs($row->trait_json, $row->trait_multiplier) as $spec) {
                     $specs[] = $spec;
                 }
             }
@@ -240,14 +242,15 @@ final class ConsumptionPoint
         }
 
         $total = 0.0;
+        // trait_multiplier 一并取出(W11-B):与 citySpecs 逐字同口径,两处不许分叉
         $traits = DB::table('city_npcs as cn')
             ->join('npc_definition as nd', 'cn.npc_id', '=', 'nd.npc_id')
             ->where('cn.city_id', $cityId)
             ->whereIn('cn.status', NpcCode::ACTIVE_STATUSES)
-            ->pluck('nd.trait_json');
+            ->get(['nd.trait_json', 'nd.trait_multiplier']);
 
-        foreach ($traits as $json) {
-            $total += self::sumCitySpecs(NpcBonus::specsFromJson($json), $target);
+        foreach ($traits as $row) {
+            $total += self::sumCitySpecs(NpcTraitScale::specs($row->trait_json, $row->trait_multiplier), $target);
         }
 
         return $total;

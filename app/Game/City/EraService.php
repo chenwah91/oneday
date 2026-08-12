@@ -11,7 +11,9 @@ use App\Support\AuditLogger;
 use App\Support\ErrorCode;
 use App\Support\GameRuleException;
 use App\Support\Idempotency;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 // 时代升级(M2-B6):cities.era_key / era_order 是全项目唯一的「城市当前时代」口径。
 //
@@ -37,12 +39,25 @@ class EraService
     // 1e-13 的尾差被判成"差一点"
     private const EPSILON = 1e-9;
 
-    // ---- 升级条件矩阵 ----
+    // 门槛表的「每请求」缓存键。用 Context 而不是类内 static:跟随请求生命周期,
+    // 测试里每个用例会重建 Application 自动清空,不会跨用例串味(与 MarketDefinition 同一套路)
+    private const CACHE_KEY = 'era_upgrade_requirements';
+
+    // ---- 升级条件矩阵(⚠️ 已搬表,本常量的唯一消费方是迁移)----
+    //
+    // ══ 读这段之前先看清楚 ══════════════════════════════════════════════════
+    // 运行时的门槛**一律来自 era_upgrade_requirement 表**(requirementsFor()),不再读这个常量。
+    // 常量保留只为一件事:2026_08_13_100001 那支建表迁移反射读它、逐格灌进表里。
+    // 数字誊写第二遍就是抄错的机会,所以搬表时没有在迁移里重抄一份。
+    //
+    // **绝不要**在业务代码里再引用它。表与常量若各读各的,就是两套真相 ——
+    // 后台改了表而常量不动,「升代要 450 国防」与「威胁需求 450」会当场分叉,
+    // 正是 M2 governance_bonus 双口径踩过的坑。同理,想改门槛数值请改表(后台编辑器 /
+    // 迁移),改这里不会有任何效果,只会让后来的人以为它还在生效。
+    // ═══════════════════════════════════════════════════════════════════════
     //
     // 键 = 目标时代 era_order(2 表示 I→II),数值逐格抄自
     // docs/templates/v3.2.md §5.1「时代升级与科技的关系」表(2026-08-10 用户定稿),此处不做任何再平衡。
-    // 库内 era 表只有 era_key / era_order / name 三列,没有条件列,所以矩阵落在代码常量里;
-    // 将来若把条件搬进定义表,只需换掉 requirementsFor(),下游全部不动。
     //
     // 「必须建筑/条件」列是自然语言,这里只落地能唯一对应到 building_definition.building_id 的项,
     // 逐档映射与**跳过原因**见下方每一档的注释。跳过 = 该维度当前不校验(系统尚未实现),
@@ -113,6 +128,69 @@ class EraService
             'buildings'  => ['C04' => 1, 'K04' => 1, 'D09' => 1],
         ],
     ];
+
+    // ---- 门槛读取(era_upgrade_requirement 表是唯一真相)----
+
+    // 「升到时代 $targetOrder 需要什么」。没有这一档(例如已是最高时代 X)返回 null。
+    //
+    // 返回结构与原常量逐字同形 ——
+    //   ['population','knowledge','food','money','governance','happiness','defense','buildings']
+    // 下游(evaluate / defenseRequirement)因此一行都不用改判定逻辑。
+    public static function requirementsFor(int $targetOrder): ?array
+    {
+        return self::allRequirements()[$targetOrder] ?? null;
+    }
+
+    // 整表(era_order => 门槛数组),一次请求内只查一次(9 行),之后走 Context 缓存。
+    //
+    // ⚠️ Fail Closed(CLAUDE §41):表不存在 / 一行都没有时**抛异常**,绝不静默回退到 REQUIREMENTS 常量。
+    // 回退看起来"稳",实际上是最坏的失败方式:门槛悄悄换了一套来源,后台改的数值全部不生效,
+    // 而页面一切正常 —— 没人会发现,直到某天有人问「为什么我改了门槛玩家还是升不上去」。
+    // 定义数据缺失是部署事故(迁移没跑),就该当场炸出来。
+    private static function allRequirements(): array
+    {
+        if (Context::has(self::CACHE_KEY)) {
+            return Context::get(self::CACHE_KEY);
+        }
+
+        $rows = [];
+        if (DB::getSchemaBuilder()->hasTable('era_upgrade_requirement')) {
+            foreach (DB::table('era_upgrade_requirement')->orderBy('era_order')->get() as $row) {
+                // buildings_json 恒为 {building_id: 数量} 的映射;解析不出来当作「这一档不要求建筑」,
+                // 而不是让整档门槛失效 —— 少一个建筑条件仍然拦得住七个数值维度
+                $buildings = json_decode((string) $row->buildings_json, true);
+
+                $rows[(int) $row->era_order] = [
+                    'population' => (int) $row->population,
+                    'knowledge'  => (int) $row->knowledge,
+                    'food'       => (int) $row->food,
+                    'money'      => (int) $row->money,
+                    'governance' => (int) $row->governance,
+                    'happiness'  => (int) $row->happiness,
+                    'defense'    => (int) $row->defense,
+                    'buildings'  => is_array($buildings) ? $buildings : [],
+                ];
+            }
+        }
+
+        if ($rows === []) {
+            throw new RuntimeException(
+                '时代升级门槛表 era_upgrade_requirement 为空或不存在:'
+                . '门槛数据缺失一律 Fail Closed(绝不回退到 EraService::REQUIREMENTS 常量,那会造成两套真相)。'
+                . '请先跑 2026_08_13_100001 建表迁移。'
+            );
+        }
+
+        Context::add(self::CACHE_KEY, $rows);
+
+        return $rows;
+    }
+
+    // 清空请求级缓存(后台改完门槛后必须调用;测试里改库后同理)
+    public static function flushRequirements(): void
+    {
+        Context::forget(self::CACHE_KEY);
+    }
 
     // ---- 升级入口 ----
 
@@ -222,7 +300,8 @@ class EraService
     // $sim 必须是 applyLocked / simulate 的返回值:人口、幸福、国防值、资源余额一律取结算后的最新值
     public static function evaluate(int $cityId, int $fromOrder, array $sim): array
     {
-        $need = self::REQUIREMENTS[$fromOrder + 1] ?? null;
+        // 门槛来自 era_upgrade_requirement 表(W11-B 搬表),不再读 REQUIREMENTS 常量
+        $need = self::requirementsFor($fromOrder + 1);
         if ($need === null) {
             return [];
         }
@@ -292,15 +371,21 @@ class EraService
     //
     // 为什么开这个访问器而不是让 DefenseService 抄一份九档数字:抄第二份就有两个来源,
     // 后台改了时代门槛而威胁需求不动(或反过来)——正是 M2 governance_bonus 双口径踩过的坑。
+    //
+    // ⚠️ W11-B 搬表后这条复用关系不变,只是来源从常量换成 era_upgrade_requirement 表:
+    // 后台在 /api/admin/definitions/era-requirements 改一行 defense,升代门槛与威胁需求**同时**变。
+    // 那个端点的响应因此带一条 warning 点明这件事 —— 运营不该在改完门槛后才发现全服威胁等级也动了。
     public static function defenseRequirement(int $eraOrder): float
     {
+        $all = self::allRequirements();
         $key = max(1, $eraOrder) + 1;
 
-        if (isset(self::REQUIREMENTS[$key])) {
-            return (float) self::REQUIREMENTS[$key]['defense'];
+        if (isset($all[$key])) {
+            return (float) $all[$key]['defense'];
         }
 
-        return (float) self::REQUIREMENTS[max(array_keys(self::REQUIREMENTS))]['defense'];
+        // 最高时代没有下一档:沿用最后一档(不新造第十个数字)
+        return (float) $all[max(array_keys($all))]['defense'];
     }
 
     // era_key => era_order(建造/研究闸门共用;era 表只有 10 行,查一次很便宜)

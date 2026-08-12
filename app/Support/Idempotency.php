@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\DB;
 // 幂等统一入口(CLAUDE §49):请求指纹计算 / 命中判定 / 落键
 final class Idempotency
 {
+    // 幂等键的保留天数:超过之后清理命令可以删。
+    // 1 天足够覆盖「客户端断线重试」的全部现实场景(重试窗口是秒级到分钟级),
+    // 再长只是让 idempotency_keys 表白白变大。它是运维参数不是玩法参数,所以留在代码里
+    public const KEY_TTL_DAYS = 1;
+
     // 请求指纹:同一 key 必须对应同一 action 与同一组业务参数。
     // payload 只放业务参数(build: 建筑 ID 与坐标,upgrade/demolish: 实例 ID),
     // 绝不包含 expected_revision 与 idempotency_key 本身 ——
@@ -65,7 +70,7 @@ final class Idempotency
             'request_hash'    => $requestHash,
             'response_status' => 200,
             'created_at'      => now(),
-            'expires_at'      => now()->addDay(),
+            'expires_at'      => now()->addDays(self::KEY_TTL_DAYS),
         ]);
     }
 }

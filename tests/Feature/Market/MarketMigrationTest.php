@@ -31,8 +31,9 @@ class MarketMigrationTest extends TestCase
         $this->assertTrue(MarketDefinition::isTradeable(MarketDefinition::find('medicine')));
     }
 
-    // 14 条市场设定随迁移落库,否则后台设置页看不到市场参数,出事时无从调起
-    // (W5 追加两条贸易容量额度参数,由 2026_08_12_200001 补行)
+    // 15 条市场设定随迁移落库,否则后台设置页看不到市场参数,出事时无从调起
+    // (W5 追加两条贸易容量额度参数,由 2026_08_12_200001 补行;
+    //  W11-A 追加波动全局倍率,建表迁移在全新库上按 DEFINITIONS 灌行)
     public function test_migration_alone_registers_all_market_settings(): void
     {
         $keys = DB::table('game_settings')->where('setting_key', 'like', 'market%')->pluck('setting_key')->all();
@@ -53,6 +54,8 @@ class MarketMigrationTest extends TestCase
             // backlog §5.4:贸易容量 → 单城成交量上限的城市侧分母(W5)
             GameSetting::MARKET_TRADE_CAPACITY_BASE_PER_MIN,
             GameSetting::MARKET_TRADE_CAPACITY_FACTOR,
+            // W11-A:价格波动的全局倍率(定义表逐资源 volatility × 本值)
+            GameSetting::MARKET_VOLATILITY_MULTIPLIER,
         ];
 
         sort($keys);

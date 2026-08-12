@@ -220,5 +220,21 @@ class GameDataVersionSeeder extends Seeder
                 'notes'       => 'M3-W10 用户拍板三组数据改动:N001~N030 中文拟名回填(全表 150 名互异)+ EVT_CORRUPTION 选项 A 改为确定性解除、选项 B 净额折算为 -5%、EVT_PORT_CONGESTION 选项 A 追加拥堵解除 + 6 件工具改挂现有制作建筑(IT003/IT005→P02、IT004→P04、IT013→P05、IT016→K03、IT019→P08)',
             ]
         );
+
+        // W11-B 定义层扩容(定义数据的**形状**变了,吃次版本位)。
+        // 已有数据的库由 2026_08_13_100003 迁移递增到同一版本。
+        // 为什么不是补丁位:checksum 的表清单多了 era_upgrade_requirement(时代门槛 9 行,
+        // 同时是国防威胁需求的唯一来源),npc_definition 多了 trait_multiplier 列(150 行默认 1.0000)。
+        // 落地当刻行为零变化(门槛逐格搬自同一份常量、倍率默认 1.0),但两组数值从此后台可调,
+        // 半年后回查「他升代时门槛是多少」必须能看出版本分界(§64 / §65)。
+        // ⚠️ 版本号必须严格升序追加在末尾:current() 取 id 最大的一行,插反了「当前版本」会回退。
+        DB::table('game_data_versions')->updateOrInsert(
+            ['version' => 'V3.8.0'],
+            [
+                'deployed_at' => now(),
+                'deployed_by' => 'seed',
+                'notes'       => 'W11-B 定义层扩容:时代升级门槛搬表(era_upgrade_requirement 9 行 = §5.1,同时是国防威胁需求的唯一来源)+ npc_definition 新增 trait_multiplier 特性强度倍率 + 建筑等级 JSON 条目 / 科技 / 建筑上限 / NPC 等级曲线 / 时代门槛后台可编辑',
+            ]
+        );
     }
 }

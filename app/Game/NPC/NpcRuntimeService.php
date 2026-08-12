@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
 //   不占结算内核的一段,也不新增每分钟 tick。本类照抄那条路径。
 //
 // 时钟:cities.npc_settled_at 单独一列(不复用 last_simulated_at ——
-// 两者共用一个时钟会互相吃掉对方的经过时间)。离线封顶沿用 SimConstants::MAX_OFFLINE_SECONDS,
+// 两者共用一个时钟会互相吃掉对方的经过时间)。离线封顶沿用后台设定 max_offline_seconds,
 // 加上「单次最多补算 N 名自然增长」的上限,挡住 backlog §11.4 点名的「离线雪崩」。
 //
 // 随机数一律走 NpcRandom(CSPRNG,服务器权威,客户端不参与,§30 / §66 / §11.3)。
@@ -42,7 +42,7 @@ final class NpcRuntimeService
 
             $elapsed = max(0, $now->getTimestamp() - $last->getTimestamp());
             // 离线封顶:超出部分不补算,但时钟照样推进到 $now(否则积压会被反复重算)
-            $elapsed = min($elapsed, SimConstants::MAX_OFFLINE_SECONDS);
+            $elapsed = min($elapsed, (int) GameSetting::get(GameSetting::MAX_OFFLINE_SECONDS));
 
             DB::table('cities')->where('id', $city->id)->update(['npc_settled_at' => $now]);
 

@@ -13,6 +13,7 @@ use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
 use App\Support\GameRuleException;
+use App\Support\GameSetting;
 use App\Support\Idempotency;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
@@ -100,10 +101,12 @@ class TechService
                 );
             }
 
-            // 规则 2:同时只允许 1 项在研(v3.2 未描述并行研究,按单线处理)
-            $busy = DB::table('city_technologies')
-                ->where('city_id', $city->id)->where('status', self::STATUS_RESEARCHING)->exists();
-            if ($busy) {
+            // 规则 2:在研项数不得超过 research_parallel_limit(默认 1 = v3.2 的单线研究)。
+            // 从 exists() 改成 count():上限可调之后「有没有在研」不再等于「还能不能再开一项」
+            $parallelLimit = max(1, (int) GameSetting::get(GameSetting::RESEARCH_PARALLEL_LIMIT));
+            $researchingCount = DB::table('city_technologies')
+                ->where('city_id', $city->id)->where('status', self::STATUS_RESEARCHING)->count();
+            if ($researchingCount >= $parallelLimit) {
                 throw new GameRuleException(ErrorCode::RESEARCH_IN_PROGRESS, 422);
             }
 
@@ -165,9 +168,12 @@ class TechService
             // 在**城市行锁内取一次**,当场把 finished_at 算死写库。此后招人 / 辞退 / 后台改数值
             // 一律不追溯已在研的项目 —— 否则同一项研究会出现两套真相(下单时的口径 vs 结算时的口径),
             // 玩家还会看到进度条倒退。这与「不追溯在研中的」是同一句话。
+            // 全局工期倍率(tech_research_minutes_multiplier)先乘在定义值上,再走加速折减 ——
+            // 与 ConstructionService::plannedSeconds 的顺序逐字一致(倍率是定义表的贵贱,加速是这座城的快慢)
             $researchSpeedPct = ConsumptionPoint::pct(ModifierTarget::RESEARCH_SPEED_PCT, (int) $city->id, $now);
             $speedMultiplier = max(self::RESEARCH_SPEED_FLOOR, 1.0 + $researchSpeedPct);
-            $baseSeconds = (int) max(0, round(((float) $def->research_minutes) * 60));
+            $minutesMultiplier = (float) GameSetting::get(GameSetting::TECH_RESEARCH_MINUTES_MULTIPLIER);
+            $baseSeconds = (int) max(0, round(((float) $def->research_minutes) * $minutesMultiplier * 60));
             // 取整方向 round:工期不是资源,四舍五入不产生任何可套利的零头(与 plannedSeconds 同口径)
             $durationSeconds = (int) max(0, round($baseSeconds / $speedMultiplier));
             $finishedAt = $now->copy()->addSeconds($durationSeconds);
@@ -187,10 +193,10 @@ class TechService
             if ($neg > 0 || (float) DB::table('cities')->where('id', $city->id)->value('money') < 0) {
                 throw new GameRuleException(ErrorCode::INSUFFICIENT_RESOURCE, 422);
             }
-            // 不变量:全城至多一项在研(按落库后的真实行数复核,不信任上面的预检结果)
+            // 不变量:全城在研项数不超过上限(按落库后的真实行数复核,不信任上面的预检结果)
             $researching = DB::table('city_technologies')
                 ->where('city_id', $city->id)->where('status', self::STATUS_RESEARCHING)->count();
-            if ($researching > 1) {
+            if ($researching > $parallelLimit) {
                 throw new GameRuleException(ErrorCode::RESEARCH_IN_PROGRESS, 422);
             }
 
@@ -326,10 +332,16 @@ class TechService
         return json_decode($def->prerequisite_tech_ids ?: '[]', true) ?: [];
     }
 
-    // 定义里的研究成本(v3.2 §5 只有 knowledge_cost 一项)
+    // 定义里的研究成本(v3.2 §5 只有 knowledge_cost 一项)× 全局知识花费倍率。
+    //
+    // 倍率恰为 1.0 时原样返回定义值(默认配置下这条路径一个字节都不改);
+    // 非 1.0 时向上取整 —— 与建造 / 升级成本同一个保守方向,零头永远算玩家的
     private static function costOf(object $def): array
     {
-        return [ResourceCode::KNOWLEDGE => (int) $def->knowledge_cost];
+        $cost = (int) $def->knowledge_cost;
+        $multiplier = (float) GameSetting::get(GameSetting::TECH_KNOWLEDGE_COST_MULTIPLIER);
+
+        return [ResourceCode::KNOWLEDGE => $multiplier === 1.0 ? $cost : (int) ceil($cost * $multiplier)];
     }
 
     // 返回资源/revision/科技状态简要 diff(契约字段一律 snake_case 全小写)

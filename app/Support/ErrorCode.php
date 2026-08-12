@@ -19,6 +19,12 @@ final class ErrorCode
     // 登录
     public const BAD_CREDENTIALS = 'BAD_CREDENTIALS';
 
+    // 账号已被封禁(W11-C1 任务4)。与 BAD_CREDENTIALS 分开一个码是刻意的:
+    // 密码对了但账号被封,前端要给的是「你的账号已被停用,请联系客服」而不是「密码错误」——
+    // 后者会让被封玩家反复重试密码,把客服工单变成一堆「我密码明明是对的」。
+    // 泄漏面可接受:能拿到这个码的前提是**已经通过密码校验**,不构成账号枚举。
+    public const ACCOUNT_BANNED = 'ACCOUNT_BANNED';
+
     // 游戏经济 Mutation(建造/升级/拆除等)
     public const INSUFFICIENT_RESOURCE = 'INSUFFICIENT_RESOURCE';
     public const BUILDING_LIMIT_REACHED = 'BUILDING_LIMIT_REACHED';
@@ -120,4 +126,10 @@ final class ErrorCode
     // 事件系统已停用(后台开关 event_enabled = false)。
     // 只挡新事件的触发与结算,不影响已生效实例的到期消退
     public const EVENT_DISABLED = 'EVENT_DISABLED';
+
+    // 事件并发上限已满(W11-C1 任务5,管理员手动触发的唯一新增码)。
+    // 自然触发路径撞到上限时是「这一窗作废,不顺延」(静默),没有对外错误码;
+    // 手动触发必须给出明确回执 —— 否则管理员会以为是自己点错了而反复重试。
+    // details 会带 limit / current / 具体是哪一档(全局 max_active、灾害档、或同事件已生效)
+    public const EVENT_LIMIT_REACHED = 'EVENT_LIMIT_REACHED';
 }

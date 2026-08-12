@@ -56,6 +56,33 @@ class EventEffectTest extends EventTestCase
         $this->assertSame('direct_resource', json_decode($reward->metadata_json, true)['grant_mode']);
     }
 
+    // 全局效果强度倍率(W11-A 的 event_effect_multiplier_global):
+    // 最终强度 = 逐事件的 effect_multiplier × 本键。调到 0 = 事件照常触发、照常显示,但一律零效果 ——
+    // 事件算错时比整条 event_enabled 停用更温和的止血阀(停用会让玩家连已触发的都领不到)。
+    public function test_global_effect_multiplier_scales_the_grant(): void
+    {
+        GameSetting::set(GameSetting::EVENT_EFFECT_MULTIPLIER_GLOBAL, 0.5, null, 'W11-A 测试');
+
+        [$city] = $this->makeCity('grantscale', ['era_order' => 2, 'population' => 300]);
+        $this->addBuilding($city, 'F02', 4);
+        $this->addBuilding($city, 'F02', 4);
+        $this->addBuilding($city, 'F02', 4);
+        $this->setResource($city, 'food', 100);
+        $this->onlyEnable('EVT_HARVEST');
+
+        $sim = $this->runSettle($city, 5);
+        $instance = DB::table('city_events')->where('city_id', $city->id)->first();
+
+        // 与上一条用例同一场景,只是强度砍半:gross × (0.20 × 0.5) × 15
+        $expected = round((float) $sim['grossProductionPerMin']['food'] * 0.20 * 0.5 * 15, 4);
+        $applied = json_decode($instance->applied_json, true);
+
+        $this->assertEqualsWithDelta($expected, $applied['resources']['food'], 0.01);
+        $this->assertGreaterThan(0, $expected);
+        // 事件本身照常触发(止血的是效果,不是触发)
+        $this->assertSame('EVT_HARVEST', $instance->event_id);
+    }
+
     // 幂等:同一个实例只发一次。再结算多少次都不会重复发放
     public function test_grant_is_paid_only_once(): void
     {

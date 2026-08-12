@@ -162,21 +162,21 @@ class DemolishController extends Controller
         if ($inst->status === ConstructionService::STATUS_CONSTRUCTING) {
             return ConstructionService::scale(
                 ConstructionService::materialCost($inst->building_id, $level),
-                ConstructionService::CANCEL_REFUND_RATE
+                ConstructionService::cancelRefundRate()
             );
         }
 
         // 已完工等级的累计建造材料 × 50%(§10.9)
         $refund = ConstructionService::scale(
             ConstructionService::cumulativeMaterialCost($inst->building_id, $level),
-            ConstructionService::DEMOLISH_REFUND_RATE
+            ConstructionService::demolishRefundRate()
         );
 
         // 升级中:那笔已经付掉、还没变成等级的升级材料,按取消口径再退 70%
         if ($inst->status === ConstructionService::STATUS_UPGRADING) {
             $refund = ConstructionService::mergeRefund($refund, ConstructionService::scale(
                 ConstructionService::materialCost($inst->building_id, $level + 1),
-                ConstructionService::CANCEL_REFUND_RATE
+                ConstructionService::cancelRefundRate()
             ));
         }
 

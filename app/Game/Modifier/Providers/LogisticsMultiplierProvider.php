@@ -7,6 +7,7 @@ use App\Game\Modifier\ModifierTarget;
 use App\Game\Modifier\MultiplierProvider;
 use App\Game\Simulation\SimConstants;
 use App\Game\Simulation\SimulationService;
+use App\Support\GameSetting;
 
 // logistics 乘区(v3.2 §10.7,M2-C4 迁入)。
 //
@@ -49,16 +50,21 @@ final class LogisticsMultiplierProvider extends MultiplierProvider
         // distanceFactor:M2 恒 1.0(§10.7「M2:distanceFactor = 1.0」),地图距离惩罚留 M3 大地图
         $demand *= SimConstants::LOGISTICS_DISTANCE_FACTOR;
 
-        // era_order 由时代升级(M2-B6)维护;列缺失 / 为空由内核统一按时代 I 兜底后传进来
-        if ($context->eraOrder < SimConstants::LOGISTICS_MIN_ERA_ORDER) {
+        // era_order 由时代升级(M2-B6)维护;列缺失 / 为空由内核统一按时代 I 兜底后传进来。
+        // 起算时代改成后台设定(默认 2,与迁移前的 SimConstants::LOGISTICS_MIN_ERA_ORDER 同值)
+        if ($context->eraOrder < (int) GameSetting::get(GameSetting::LOGISTICS_MIN_ERA_ORDER)) {
             $demand = 0.0;
         }
 
         $this->demandPerMin = $demand;
         $this->load = SimulationService::transportLoad($demand, $context->capacity(ModifierContext::CAP_TRANSPORT));
-        $this->factor = SimulationService::logisticsFactor($this->load);
+        // 物流总开关(运营救急):关掉之后乘区恒 1.0,但需求 / 负载 / 拥堵警报的读数照常算 ——
+        // 止血的同时还看得见「到底堵成什么样」,不至于关了开关就两眼一抹黑
+        $this->factor = GameSetting::get(GameSetting::LOGISTICS_GATE_ENABLED) === true
+            ? SimulationService::logisticsFactor($this->load)
+            : SimConstants::LOGISTICS_FACTOR_MAX;
         // 拥堵警报(§10.7「> 1.25 → 产生拥堵警报」/ §15 回归表「出现拥堵警报」)
-        $this->congestion = $this->load > SimConstants::TRANSPORT_LOAD_OVER;
+        $this->congestion = $this->load > (float) GameSetting::get(GameSetting::TRANSPORT_LOAD_OVER);
     }
 
     public function multiplierFor(array $unit): float
