@@ -4,6 +4,10 @@
 // expected_revision)。**成交价一律由服务器计算**,请求里根本没有价格字段;这里的「预估」
 // 只是给玩家一个数量级的心理预期,任何与实际成交的差异一律以服务器返回的成交明细为准。
 //
+// W7 起预估把滑点与事件冲击也算进去了(价目端点补下发 slippage_coefficient /
+// max_slippage_rate / effective_liquidity / buy_price_pct)。公式与 TradeService 逐项对齐,
+// 但它仍然只是预估 —— 服务器成交时会在城市行锁内用最新窗口价与最新事件强度重算。
+//
 // 数据来源:GET /api/market/prices(全服共享的只读端点,刻意不在城市快照里)。
 // 窗口倒计时是纯视觉的:到点只做一件事 —— 重新拉一次价目表,绝不本地推算新价格(§30)。
 //
@@ -60,7 +64,8 @@ export class MarketPanel {
         this.skewMs = 0;
         this.quota = null;      // 上一笔成交回带的额度剩余 { resource_code, ... }
         this.limitInfo = null;  // 被额度挡下时的两口径说明 { resource_code, text }
-        this.eventImpact = null; // 成交回带的事件价格冲击 { resource_code, pct }
+        // 事件价格冲击不再单独存:W7 起价目端点逐行下发 buy_price_pct(只读口径),
+        // 横幅与行标记都直接从 prices 读,不必等成交响应回带
         this.refs = null;       // 倒计时 / 余额 / 预估的原地更新引用
         this.lastSignature = '';
         this.unsubscribed = false;
@@ -174,7 +179,8 @@ export class MarketPanel {
             this.busy ? 1 : 0,
             this.loading ? 1 : 0,
             this.limitInfo ? this.limitInfo.resource_code : '-',
-            this.eventImpact ? this.eventImpact.resource_code : '-',
+            // 事件冲击进指纹:它随价目刷新变化,变了要重画横幅与行标记
+            this.prices().filter((p) => Number(p.buy_price_pct) > 0).length,
         ].join('|');
     }
 
@@ -219,13 +225,16 @@ export class MarketPanel {
         this.refs.money = money;
         this.rootEl.appendChild(money);
 
-        // 事件价格冲击:后端只在**成交响应**里回带 event_price_pct(没有只读端点能提前查),
-        // 所以这条横幅是「买过一次之后」才出现的事后提示,详见交付汇报的契约清单
-        if (this.eventImpact && this.eventImpact.pct > 0) {
+        // 事件价格冲击:W7 起价目端点直接下发本城的 buy_price_pct(只读口径),
+        // 不再依赖「买过一次才知道」的成交响应 —— 横幅在下单之前就能给出
+        const impacted = this.prices().filter((p) => Number(p.buy_price_pct) > 0);
+        if (impacted.length) {
             const banner = document.createElement('div');
             banner.className = 'market-banner';
-            banner.textContent = '事件价格冲击生效中:' + resourceName(this.eventImpact.resource_code)
-                + ' 本城买入价 +' + fmtDec(this.eventImpact.pct * 100, 1) + '%(成交价已包含)';
+            banner.textContent = '事件价格冲击生效中:'
+                + impacted.map((p) => resourceName(p.resource_code)
+                    + ' +' + fmtDec(Number(p.buy_price_pct) * 100, 1) + '%').join(' · ')
+                + '(只影响本城买入价,卖出不受影响)';
             this.rootEl.appendChild(banner);
         }
 
@@ -302,6 +311,16 @@ export class MarketPanel {
         const name = document.createElement('span');
         name.className = 'market-cell c0';
         name.textContent = resourceName(p.resource_code);
+
+        // 事件价格冲击(W7 起只读可查):本城买入侧才有,卖出侧口径上恒 0。
+        // 标在资源名后面,让玩家在下单**之前**就知道「这一行为什么比别人贵」
+        if (Number(p.buy_price_pct)) {
+            const evt = document.createElement('span');
+            evt.className = 'market-tag is-event';
+            evt.textContent = '事件 +' + fmtDec(Number(p.buy_price_pct) * 100, 0) + '%';
+            name.appendChild(evt);
+        }
+
         if (!p.tradeable) {
             const tag = document.createElement('span');
             tag.className = 'market-tag';
@@ -427,9 +446,12 @@ export class MarketPanel {
 
         const note = document.createElement('div');
         note.className = 'market-note';
-        note.textContent = this.side === SIDE_BUY
-            ? '买入另有滑点(数量越大成交价越高),以服务器成交为准'
-            : '卖出另有滑点(数量越大成交价越低),以服务器成交为准';
+        const maxOrder = Number((this.market() || {}).market_max_order_quantity) || 0;
+        note.textContent = (this.side === SIDE_BUY
+            ? '滑点已计入预估(数量越大成交价越高)'
+            : '滑点已计入预估(数量越大成交价越低)')
+            + (maxOrder > 0 ? ' · 单笔上限 ' + fmt(maxOrder) : '')
+            + ' · 一切以服务器成交为准';
         box.appendChild(note);
 
         // 上一笔成交回带的额度剩余:让玩家知道这一窗还能做多少
@@ -471,29 +493,70 @@ export class MarketPanel {
     }
 
     // 「最大」只是显示层的便利值(买:资金 ÷ 参考买价;卖:当前持有),
-    // 真正能不能成交由服务器判(余额 / 库存 / 仓储 / 额度四道闸)
+    // 再夹一层服务器下发的单笔硬上限(§69,与流动性额度是两道独立的闸)。
+    // 真正能不能成交仍由服务器判(余额 / 库存 / 仓储 / 额度四道闸)
     maxQuantity(p) {
-        if (this.side === SIDE_SELL) return Math.floor(this.heldOf(p.resource_code));
+        const hardCap = Number((this.market() || {}).market_max_order_quantity) || 0;
+        const clamp = (n) => (hardCap > 0 ? Math.min(n, hardCap) : n);
+
+        if (this.side === SIDE_SELL) return clamp(Math.floor(this.heldOf(p.resource_code)));
+
         const unit = Number(p.buy_price) || Number(p.price) || 0;
         if (unit <= 0) return 0;
-        return Math.floor(this.heldOf('money') / unit);
+        return clamp(Math.floor(this.heldOf('money') / unit));
     }
 
-    // 前端预估:只用价目端点给出的基准价与费率算,**滑点算不出来**(系数与流动性都不下发),
-    // 所以只标方向不给数值。任何差异一律以服务器成交结果为准(§45)
+    // 滑点率(W7 起可算):min(上限, 系数 × 数量 / 有效流动性)。
+    // 三个数全部由服务器下发 —— 系数与上限是全局参数、有效流动性是逐资源的(定义值 × 全局倍率)。
+    // 参数缺失(老响应)时退回 0:宁可预估偏低也不自己编一个系数
+    slippageRate(p, qty) {
+        const m = this.market() || {};
+        const k = Number(m.slippage_coefficient) || 0;
+        const liquidity = Number(p.effective_liquidity) || 0;
+        const cap = Number(m.max_slippage_rate) || 0;
+        if (k <= 0 || liquidity <= 0 || qty <= 0) return 0;
+
+        const raw = k * qty / liquidity;
+        return cap > 0 ? Math.min(cap, raw) : raw;
+    }
+
+    // 前端预估:与 TradeService 的成交公式逐项对齐(W7 契约补齐之后才算得出来)
+    //   买:成交单价 = price × (1 + 滑点率) × max(0, 1 + buy_price_pct);应付 = 单价 × 数量 × (1 + 费率)
+    //   卖:成交单价 = price × (1 − 滑点率);可得 = 单价 × 数量 × (1 − 费率),夹 ≥ 0
+    // **仍然只是预估**:成交时服务器会在城市行锁内用最新的价格窗口与事件强度重算,
+    // 任何差异一律以服务器返回的成交明细为准(§45 / §66)。
+    // 已知会偏的一处:商人 NPC 的减费(market_fee_pct)不在价目端点的 fee_rate 里,
+    // 招了商人的城市实际手续费会比这里低 —— 交付汇报的「待下一步」已记下
+    estimate(p) {
+        const qty = this.quantity();
+        const base = Number(p.price) || 0;
+        const feeRate = Number(p.fee_rate) || 0;
+        const slip = this.slippageRate(p, qty);
+        const eventPct = this.side === SIDE_BUY ? (Number(p.buy_price_pct) || 0) : 0;
+
+        const unit = this.side === SIDE_BUY
+            ? base * (1 + slip) * Math.max(0, 1 + eventPct)
+            : base * (1 - slip);
+
+        const gross = unit * qty;
+        const fee = gross * feeRate;
+        const total = this.side === SIDE_BUY ? gross + fee : Math.max(0, gross - fee);
+
+        return { unit, gross, fee, total, slip, eventPct, feeRate };
+    }
+
     estimateText(p) {
         const qty = this.quantity();
         if (!p || qty <= 0) return '填入数量后显示预估';
 
-        const base = Number(p.price) || 0;
-        const feeRate = Number(p.fee_rate) || 0;
-        const gross = base * qty;
-        const fee = gross * feeRate;
-        const total = this.side === SIDE_BUY ? gross + fee : gross - fee;
+        const e = this.estimate(p);
+        const parts = ['预估单价 ' + price(e.unit) + ' × ' + fmt(qty) + ' = ' + fmtDec(e.gross)];
+        parts.push('手续费 ' + fmtDec(e.fee) + '(' + fmtDec(e.feeRate * 100, 1) + '%)');
+        parts.push('滑点 ' + (this.side === SIDE_BUY ? '+' : '−') + fmtDec(e.slip * 100, 2) + '%');
+        if (e.eventPct) parts.push('事件冲击 +' + fmtDec(e.eventPct * 100, 1) + '%');
+        parts.push((this.side === SIDE_BUY ? '约需支付 ' : '约可收到 ') + fmtDec(e.total));
 
-        return '预估:' + price(base) + ' × ' + fmt(qty) + ' = ' + fmtDec(gross)
-            + ' · 手续费 ' + fmtDec(fee) + '(' + fmtDec(feeRate * 100, 1) + '%)'
-            + ' · ' + (this.side === SIDE_BUY ? '约需支付 ' : '约可收到 ') + fmtDec(total);
+        return parts.join(' · ');
     }
 
     // 指纹未变时的轻量同步:只改随时间/输入漂移的文本,不动 DOM 结构
@@ -611,11 +674,6 @@ export class MarketPanel {
                     window_remaining: t.window_remaining,
                     hourly_remaining: t.hourly_remaining,
                 };
-                // 事件价格冲击:只有成交响应里才拿得到,拿到就记下来给横幅用
-                this.eventImpact = Number(t.event_price_pct) > 0
-                    ? { resource_code: t.resource_id, pct: Number(t.event_price_pct) }
-                    : (this.eventImpact && this.eventImpact.resource_code === t.resource_id ? null : this.eventImpact);
-
                 notifySuccess((side === SIDE_BUY ? '买入 ' : '卖出 ') + resourceName(t.resource_id)
                     + ' ×' + fmt(t.quantity)
                     + ' · 成交单价 ' + price(t.unit_price)

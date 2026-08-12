@@ -17,11 +17,10 @@ import { notifySuccess, notifyError } from './notification.js';
 import { updateHud } from './hud.js';
 import { fmt, fmtDec } from '../utils/format.js';
 
-// 离职警示线:士气低于本值的 NPC 开始有离职风险。
-// 权威值是后台设定 npc_morale_leave_threshold(默认 30),但它**没有任何玩家侧端点下发**,
-// 所以这里按默认值写一个「只用于上色」的显示常量 —— 与 hud.js 的 HAPPINESS_ALERT 同一处理。
-// 后台调过这个设定后,警示色会与服务端判定错位(不影响任何结算),契约缺口已写进交付汇报。
-const MORALE_ALERT = 30;
+// 离职警示线的兜底值:快照 city.npcs.morale_leave_threshold 才是权威(W7 起后端已下发,
+// 来源是后台设定 npc_morale_leave_threshold)。这里的 30 只在老响应 / 字段缺失时用 ——
+// 后台调过设定后前端立刻跟着变,不再有「面板画红线、服务端按另一个数判」的两套真相
+const MORALE_ALERT_FALLBACK = 30;
 
 // 招募语境的错误码覆盖:泛化文案说不清「为什么抽不到人」
 const RECRUIT_ERRORS = {
@@ -76,6 +75,8 @@ export class NpcPanel {
         this.assignTarget = null; // 从建筑详情进来的派驻目标(building_instance_id)
         this.pickerFor = null;    // 正在展开「选建筑」的 city_npc_id
         this.confirm = null;      // { type: 'recruit' } | { type: 'dismiss', id }
+        this.poolOpen = false;    // 招募池预览的展开状态(默认收起:它是 150 行的参考资料,不是主操作)
+        this.defsLoading = false;
         this.valueRefs = null;    // 士气 / XP 的原地更新引用
         this.lastSignature = '';
         this.unsubscribed = false;
@@ -122,7 +123,7 @@ export class NpcPanel {
     }
 
     // buildingInstanceId:可选。从建筑详情面板的「派驻 NPC」进来时带上,进入派驻模式
-    open(buildingInstanceId) {
+    async open(buildingInstanceId) {
         if (this.onOpen) this.onOpen(this);
 
         this.opened = true;
@@ -135,6 +136,12 @@ export class NpcPanel {
         this.fabEl.classList.add('active');
         this.rootEl.hidden = false;
         this.render();
+
+        // 定义(招募池 + 等级曲线)只拉一次,失败不打断面板 —— 运行时数据全在快照里,
+        // 定义没到只是少了「预览」与「距下级还需」两处显示
+        await this.loadDefs();
+        if (!this.opened) return;
+        this.render();
     }
 
     close() {
@@ -143,6 +150,7 @@ export class NpcPanel {
         this.assignTarget = null;
         this.pickerFor = null;
         this.confirm = null;
+        this.poolOpen = false;
         this.valueRefs = null;
         if (this.fabEl) this.fabEl.classList.remove('active');
         if (this.rootEl) {
@@ -176,9 +184,31 @@ export class NpcPanel {
             foodPerMin: Number(n.food_per_min) || 0,
             slots: Number(n.slots_per_building) || 0,
             slotsL3: Number(n.slots_per_building_l3) || 0,
+            // 离职阈值:W7 起由服务器下发(后台设定的唯一口径),缺失才退回常量
+            moraleAlert: Number(n.morale_leave_threshold) || MORALE_ALERT_FALLBACK,
             list: Array.isArray(n.list) ? n.list : [],
             assignments: n.assignments || {},
         };
+    }
+
+    // 定义数据(GET /api/definitions/npcs):招募池原型 / 技能表 / 等级曲线
+    defs() {
+        return this.state.npcDefs || null;
+    }
+
+    pool() {
+        const d = this.defs();
+        return d && Array.isArray(d.npcs) ? d.npcs : [];
+    }
+
+    // 升到下一级还需要多少 XP。曲线里的 xp_to_next 是**增量**(10 级为 0 = 满级),
+    // 快照里的 xp 是**当前等级内**的累计 —— 两者口径对得上才敢相减
+    xpToNext(npc) {
+        const d = this.defs();
+        const curve = d && Array.isArray(d.level_curve) ? d.level_curve : [];
+        const row = curve.filter((c) => Number(c.level) === Number(npc.skill_level))[0];
+        if (!row || !(Number(row.xp_to_next) > 0)) return null;
+        return Math.max(0, Number(row.xp_to_next) - (Number(npc.xp) || 0));
     }
 
     buildings() {
@@ -221,6 +251,9 @@ export class NpcPanel {
             this.pickerFor === null ? '-' : this.pickerFor,
             this.confirm ? this.confirm.type + (this.confirm.id || '') : '-',
             this.busy ? 1 : 0,
+            this.poolOpen ? 1 : 0,
+            this.pool().length,
+            this.defsLoading ? 1 : 0,
         ].join('|');
     }
 
@@ -347,6 +380,8 @@ export class NpcPanel {
         hint.textContent = '盲抽:抽到谁由服务器掷点决定,价格按稀有度与工资浮动,资金不足会被拒绝。';
         box.appendChild(hint);
 
+        box.appendChild(this.makePoolPreview());
+
         if (this.confirm && this.confirm.type === 'recruit') {
             box.appendChild(this.makeConfirm(
                 '确定花钱招募一名 NPC?抽到的稀有度与实际价格以服务器为准,招进来后每分钟要付工资与口粮。',
@@ -354,6 +389,110 @@ export class NpcPanel {
                 () => this.doRecruit()
             ));
         }
+
+        return box;
+    }
+
+    // 招募池预览(W7 契约补齐:GET /api/definitions/npcs)。
+    //
+    // 只是**参考资料**,不是选人界面 —— 招募入参里根本没有 npc_id,抽到谁由服务器掷点(§30 / §66)。
+    // 所以这里不给任何「选中 / 招这个」的交互,只回答「这一版数值里都有些什么人」。
+    // 默认收起:150 行放在主操作上面会把招募按钮挤下去
+    makePoolPreview() {
+        const box = document.createElement('div');
+        box.className = 'npc-pool';
+
+        const head = document.createElement('button');
+        head.type = 'button';
+        head.className = 'npc-pool-head';
+        head.setAttribute('aria-expanded', this.poolOpen ? 'true' : 'false');
+
+        const label = document.createElement('span');
+        label.textContent = '招募池预览';
+        head.appendChild(label);
+
+        const arrow = document.createElement('span');
+        arrow.className = 'npc-pool-arrow';
+        arrow.textContent = this.poolOpen ? '收起 ▲' : '展开 ▼';
+        head.appendChild(arrow);
+
+        head.addEventListener('click', () => {
+            this.poolOpen = !this.poolOpen;
+            this.render();
+        });
+        box.appendChild(head);
+
+        if (!this.poolOpen) return box;
+
+        if (this.defsLoading) {
+            const loading = document.createElement('div');
+            loading.className = 'npc-hint';
+            loading.textContent = 'NPC 定义加载中...';
+            box.appendChild(loading);
+            return box;
+        }
+
+        const list = this.pool();
+        if (!list.length) {
+            const empty = document.createElement('div');
+            empty.className = 'npc-hint';
+            empty.textContent = '招募池加载失败,关掉面板重开可重试。';
+            box.appendChild(empty);
+            return box;
+        }
+
+        // 按时代排序:当前时代之内的排前面,超时代的原型现在抽不到(服务端按 min_era 过滤候选池)
+        const eraOrder = Number(((this.state.city || {}).era || {}).era_order) || 1;
+        const rows = list.slice().sort((a, b) => Number(a.min_era_order) - Number(b.min_era_order));
+
+        const scroll = document.createElement('div');
+        scroll.className = 'npc-pool-list';
+
+        rows.forEach((n) => {
+            const locked = Number(n.min_era_order) > eraOrder;
+
+            const row = document.createElement('div');
+            row.className = 'npc-pool-row' + (locked ? ' is-locked' : '');
+
+            const rowHead = document.createElement('div');
+            rowHead.className = 'npc-pool-row-head';
+
+            const name = document.createElement('span');
+            name.className = 'npc-pool-name';
+            // name_zh 为 null 时回落 npc_id:服务端刻意不编占位名(拟名待批),前端也不编
+            name.textContent = n.name_zh || n.npc_id;
+            rowHead.appendChild(name);
+
+            const rarity = document.createElement('span');
+            rarity.className = 'npc-rarity is-' + (n.rarity || 'common');
+            rarity.textContent = npcRarityName(n.rarity);
+            rowHead.appendChild(rarity);
+
+            row.appendChild(rowHead);
+
+            const meta = document.createElement('div');
+            meta.className = 'npc-pool-meta';
+            meta.textContent = '时代 ' + n.min_era + (locked ? '(未到)' : '')
+                + ' · ' + npcSkillName(n.primary_skill_id)
+                + ' · 工资 ' + fmtDec(n.wage_per_min) + '/分 · 口粮 ' + fmtDec(n.food_per_min) + '/分';
+            row.appendChild(meta);
+
+            if (n.trait_desc_zh) {
+                const trait = document.createElement('div');
+                trait.className = 'npc-pool-trait';
+                trait.textContent = n.trait_desc_zh;
+                row.appendChild(trait);
+            }
+
+            scroll.appendChild(row);
+        });
+
+        box.appendChild(scroll);
+
+        const note = document.createElement('div');
+        note.className = 'npc-hint';
+        note.textContent = '共 ' + rows.length + ' 个原型;能不能抽到还要看时代与招募来源,实际由服务器掷点决定。';
+        box.appendChild(note);
 
         return box;
     }
@@ -439,11 +578,11 @@ export class NpcPanel {
 
         item.appendChild(head);
 
-        // 主技能 / 等级 / XP:等级曲线(升级还差多少 XP)没有玩家侧端点,所以只给绝对值不画进度比例
+        // 主技能 / 等级 / XP。W7 起等级曲线由 /api/definitions/npcs 下发,
+        // 所以能多给一句「距下级还需」;曲线没到(或已满级)就照旧只给绝对值,不编分母
         const meta = document.createElement('div');
         meta.className = 'npc-item-meta';
-        meta.textContent = npcSkillName(npc.primary_skill_id) + ' · Lv' + npc.skill_level
-            + ' · 技能值 ' + fmt(npc.skill_value) + ' · XP ' + fmt(npc.xp);
+        meta.textContent = this.metaText(npc);
         item.appendChild(meta);
 
         const moraleRow = document.createElement('div');
@@ -453,14 +592,16 @@ export class NpcPanel {
         moraleLabel.textContent = '士气 ';
         moraleRow.appendChild(moraleLabel);
 
+        const alert = this.npcState().moraleAlert;
+
         const moraleValue = document.createElement('span');
-        moraleValue.className = 'npc-morale' + (Number(npc.morale) < MORALE_ALERT ? ' is-low' : '');
+        moraleValue.className = 'npc-morale' + (Number(npc.morale) < alert ? ' is-low' : '');
         moraleValue.textContent = fmtDec(npc.morale, 1);
         moraleRow.appendChild(moraleValue);
 
         const moraleNote = document.createElement('span');
         moraleNote.className = 'npc-morale-note';
-        moraleNote.textContent = Number(npc.morale) < MORALE_ALERT ? ' 有离职风险' : '';
+        moraleNote.textContent = Number(npc.morale) < alert ? ' 有离职风险(低于 ' + fmtDec(alert, 0) + ')' : '';
         moraleRow.appendChild(moraleNote);
 
         item.appendChild(moraleRow);
@@ -600,17 +741,18 @@ export class NpcPanel {
         const byId = {};
         this.npcState().list.forEach((n) => { byId[n.id] = n; });
 
+        const alert = this.npcState().moraleAlert;
+
         refs.forEach((ref) => {
             const n = byId[ref.id];
             if (!n) return;
-            const meta = npcSkillName(n.primary_skill_id) + ' · Lv' + n.skill_level
-                + ' · 技能值 ' + fmt(n.skill_value) + ' · XP ' + fmt(n.xp);
+            const meta = this.metaText(n);
             if (ref.meta.textContent !== meta) ref.meta.textContent = meta;
 
-            const low = Number(n.morale) < MORALE_ALERT;
+            const low = Number(n.morale) < alert;
             ref.morale.textContent = fmtDec(n.morale, 1);
             ref.morale.className = 'npc-morale' + (low ? ' is-low' : '');
-            ref.note.textContent = low ? ' 有离职风险' : '';
+            ref.note.textContent = low ? ' 有离职风险(低于 ' + fmtDec(alert, 0) + ')' : '';
         });
     }
 
@@ -622,7 +764,33 @@ export class NpcPanel {
         this.badgeEl.hidden = idle <= 0;
     }
 
+    // 一行 NPC 的技能 / 等级 / XP 文案(渲染与原地刷新共用一份,免得两处写法漂移)
+    metaText(npc) {
+        const base = npcSkillName(npc.primary_skill_id) + ' · Lv' + npc.skill_level
+            + ' · 技能值 ' + fmt(npc.skill_value) + ' · XP ' + fmt(npc.xp);
+        const need = this.xpToNext(npc);
+        return need === null ? base : base + ' · 距下级还需 ' + fmt(need);
+    }
+
     // ---- 请求 ----
+
+    // NPC 定义:150 原型 + 技能表 + 等级曲线,一次拉够。
+    // 失败静默降级(招募池预览与「距下级还需」两处不显示),不弹错误 —— 它不影响任何操作
+    async loadDefs() {
+        if (this.pool().length || this.defsLoading) return;
+
+        this.defsLoading = true;
+        if (this.opened) this.render();
+
+        try {
+            const data = await this.api.get('/api/definitions/npcs');
+            setState({ npcDefs: data || null });
+        } catch (e) {
+            // 定义拉不到不影响面板主体功能(运行时数据全在城市快照里)
+        } finally {
+            this.defsLoading = false;
+        }
+    }
 
     async refreshCity() {
         try {

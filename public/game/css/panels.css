@@ -425,6 +425,10 @@
     width: 340px;
     max-width: calc(100% - 24px);
     max-height: calc(100% - 80px);
+    /* 兜底裁剪:面板内某一块(展开的招募池 / 制作清单)撑得比 max-height 还高时,
+       flex 子项默认不会缩到内容以下,溢出的部分会画到面板外面 —— 直接盖住底部导航条。
+       裁在这里 + 让可长高的那几块自己能缩能滚(见下面的 min-height: 0),两条一起才算修好 */
+    overflow: hidden;
     background: #1b212b;
     border: 1px solid #2a3140;
     border-radius: 12px;
@@ -573,6 +577,8 @@
 
 .tech-list {
     flex: 1 1 auto;
+    /* flex 子项默认 min-height:auto,不补这一行就缩不到内容以下,滚动条永远不出现 */
+    min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 0 12px 12px;
@@ -847,7 +853,15 @@
     font-size: 12px;
 }
 
+/* 招募区展开招募池后会很高:给它一个高度上限并自己滚,不许把下面的筛选与在编清单挤出面板。
+   flex-shrink 取 0 是关键 —— 留 1 的话收起状态下这一条也会被压掉几像素,凭空多出一根滚动条;
+   高度上限让位给下面的清单,清单自己也能滚(min-height: 0) */
 .npc-recruit {
+    flex: 0 0 auto;
+    min-height: 0;
+    max-height: 55%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 8px 12px 10px;
     border-bottom: 1px solid #2a3140;
 }
@@ -923,6 +937,8 @@
 
 .npc-list {
     flex: 1 1 auto;
+    /* flex 子项默认 min-height:auto,不补这一行就缩不到内容以下,滚动条永远不出现 */
+    min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 0 12px 12px;
@@ -1129,6 +1145,8 @@
 
 .market-list {
     flex: 1 1 auto;
+    /* flex 子项默认 min-height:auto,不补这一行就缩不到内容以下,滚动条永远不出现 */
+    min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 0 8px 8px;
@@ -1208,6 +1226,12 @@
     border-radius: 8px;
     color: #6b7484;
     font-size: 10px;
+}
+
+/* 事件价格冲击标记(W7):本城买入价被事件抬高的那几行 */
+.market-tag.is-event {
+    border-color: #d99a3c;
+    color: #ffc061;
 }
 
 /* 买卖表单:面板底部固定区(列表滚动,表单常驻可见) */
@@ -1383,6 +1407,81 @@
     }
 }
 
+/* ---- NPC 招募池预览(W7 契约补齐)---- */
+
+.npc-pool {
+    margin-top: 8px;
+    border-top: 1px dashed #2a3140;
+}
+
+.npc-pool-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: #9aa4b2;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+}
+
+.npc-pool-arrow {
+    margin-left: auto;
+    font-weight: 400;
+}
+
+/* 150 行是参考资料,给它自己的滚动区,不让它把整块面板顶长 */
+.npc-pool-list {
+    max-height: 220px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.npc-pool-row {
+    margin-bottom: 6px;
+    padding: 6px 8px;
+    border: 1px solid #2a3140;
+    border-radius: 8px;
+    background: #1e2530;
+}
+
+/* 时代未到:现在抽不到(服务端按 min_era 过滤候选池) */
+.npc-pool-row.is-locked {
+    opacity: 0.5;
+}
+
+.npc-pool-row-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.npc-pool-name {
+    font-size: 12px;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.npc-pool-meta {
+    margin-top: 3px;
+    color: #9aa4b2;
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.npc-pool-trait {
+    margin-top: 2px;
+    color: #6b7484;
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
 /* ---- 工具面板(M3-D2 前端)---- */
 
 .item-header {
@@ -1428,7 +1527,13 @@
 }
 
 /* 制作区:默认收起(窄屏先让玩家看到库存),整条标题是展开开关 */
+/* 制作清单展开后会很高:与招募区同一条修法(理由见 .npc-recruit 的注释) */
 .item-craft {
+    flex: 0 0 auto;
+    min-height: 0;
+    max-height: 55%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     border-bottom: 1px solid #2a3140;
 }
 
@@ -1560,6 +1665,8 @@
 
 .item-list {
     flex: 1 1 auto;
+    /* flex 子项默认 min-height:auto,不补这一行就缩不到内容以下,滚动条永远不出现 */
+    min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     padding: 0 12px 12px;

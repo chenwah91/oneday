@@ -7,6 +7,7 @@ use App\Game\Modifier\ModifierTarget;
 use App\Game\Resource\ResourceCode;
 use App\Game\Simulation\SimulationService;
 use App\Models\City;
+use App\Support\ApiResponse;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
@@ -392,9 +393,10 @@ final class TradeService
     {
         $diff = [
             'revision'  => (int) $city->revision,
-            'resources' => DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all(),
+            // map 型(键为资源 code)一律过 ApiResponse::map:空时也要是 `{}` 不是 `[]`(见 BuildService::snapshotDiff)
+            'resources' => ApiResponse::map(DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all()),
             'money'     => (float) $city->money,
-            'delta'     => $delta,
+            'delta'     => ApiResponse::map($delta),
         ];
 
         if ($trade !== null) {

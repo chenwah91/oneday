@@ -139,11 +139,13 @@ class DemolishController extends Controller
             return [
                 'revision'      => $rev,
                 'demolished_id' => $instanceId,
-                'resources'     => DB::table('city_resources')->where('city_id', $city->id)
-                    ->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all(),
+                // resources / delta / truncated 三个都是资源 code => 数量的 map:统一过 ApiResponse::map,
+                // 空时序列化成 `{}` 而不是 `[]`(与 BuildService::snapshotDiff 同一条口径)
+                'resources'     => ApiResponse::map(DB::table('city_resources')->where('city_id', $city->id)
+                    ->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all()),
                 'money'         => (float) DB::table('cities')->where('id', $city->id)->value('money'),
-                'delta'         => $granted,
-                'truncated'     => $truncated,
+                'delta'         => ApiResponse::map($granted),
+                'truncated'     => ApiResponse::map($truncated),
             ];
         });
 
@@ -187,11 +189,12 @@ class DemolishController extends Controller
         return [
             'revision'      => (int) DB::table('cities')->where('id', $city->id)->value('revision'),
             'demolished_id' => $instanceId,
-            'resources'     => DB::table('city_resources')->where('city_id', $city->id)
-                ->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all(),
+            // 幂等重放路径的 delta / truncated 恒为空 —— 这里最容易漏,不包就永远输出 `[]`
+            'resources'     => ApiResponse::map(DB::table('city_resources')->where('city_id', $city->id)
+                ->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all()),
             'money'         => (float) DB::table('cities')->where('id', $city->id)->value('money'),
-            'delta'         => [],
-            'truncated'     => [],
+            'delta'         => ApiResponse::map([]),
+            'truncated'     => ApiResponse::map([]),
         ];
     }
 }

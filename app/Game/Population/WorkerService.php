@@ -136,7 +136,9 @@ class WorkerService
                 'metadata_json' => ['buildingId' => $inst->building_id, 'level' => (int) $inst->level, 'workerRequired' => $required],
             ]);
 
-            // 返回 diff:契约字段一律 snake_case 全小写(用户 2026-08-10 拍板)
+            // 返回 diff:契约字段一律 snake_case 全小写(用户 2026-08-10 拍板)。
+            // 本 diff **没有 map 型字段** —— 工人分配不动资源,故没有 resources / delta,
+            // 全是标量与单个建筑对象,不需要 ApiResponse::map(查过了,别再来包一遍)
             return [
                 'revision'          => $newRevision,
                 'building'          => ['id' => $instanceId, 'assigned_workers' => $workers, 'worker_required' => $required],

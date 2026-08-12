@@ -7,6 +7,7 @@ use App\Game\Resource\ResourceCode;
 use App\Game\Simulation\SimulationService;
 use App\Game\Technology\TechService;
 use App\Models\City;
+use App\Support\ApiResponse;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
@@ -194,9 +195,12 @@ class BuildService
     {
         $diff = [
             'revision'  => (int) $city->revision,
-            'resources' => DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all(),
+            // resources / delta 都是 map 型(键为资源 code):必须过 ApiResponse::map。
+            // 空关联数组会被 json_encode 编成 `[]` 而不是 `{}`(尤其 delta —— 幂等重放路径恒为空),
+            // 前端就得为空态另写一条分支。快照侧 W7 已统一,diff 侧同一条口径
+            'resources' => ApiResponse::map(DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all()),
             'money'     => (float) $city->money,
-            'delta'     => $delta,
+            'delta'     => ApiResponse::map($delta),
         ];
 
         if ($building !== null) {

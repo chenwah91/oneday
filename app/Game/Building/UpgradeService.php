@@ -5,6 +5,7 @@ namespace App\Game\Building;
 use App\Game\Resource\ResourceCode;
 use App\Game\Simulation\SimulationService;
 use App\Models\City;
+use App\Support\ApiResponse;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
@@ -176,9 +177,10 @@ class UpgradeService
                     'status'                   => ConstructionService::STATUS_UPGRADING,
                     'construction_finished_at' => $finishedAt->toIso8601String(),
                 ],
-                'resources' => DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all(),
+                // map 型(键为资源 code)一律过 ApiResponse::map:空时也要是 `{}` 不是 `[]`(见 BuildService::snapshotDiff)
+                'resources' => ApiResponse::map(DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all()),
                 'money'     => (float) DB::table('cities')->where('id', $city->id)->value('money'),
-                'delta'     => $delta,
+                'delta'     => ApiResponse::map($delta),
             ];
         });
     }
@@ -308,10 +310,12 @@ class UpgradeService
                     'status'                   => ConstructionService::STATUS_ACTIVE,
                     'construction_finished_at' => null,
                 ],
-                'resources' => DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all(),
+                // resources / delta / truncated 三个都是资源 code => 数量的 map:统一过 ApiResponse::map。
+                // truncated 尤其要包 —— 没被仓储截断时它天然为空,不包就是「正常退款时是 [],被截时才是 {}」
+                'resources' => ApiResponse::map(DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all()),
                 'money'     => (float) DB::table('cities')->where('id', $city->id)->value('money'),
-                'delta'     => $granted,
-                'truncated' => $truncated,
+                'delta'     => ApiResponse::map($granted),
+                'truncated' => ApiResponse::map($truncated),
             ];
         });
     }
@@ -331,9 +335,10 @@ class UpgradeService
                     ? Carbon::parse($inst->construction_finished_at)->toIso8601String()
                     : null,
             ],
-            'resources' => DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all(),
+            // 幂等重放的 delta 恒为空 —— 这正是「空 map 必须是 {}」最容易被忽略的一条路径
+            'resources' => ApiResponse::map(DB::table('city_resources')->where('city_id', $city->id)->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all()),
             'money'     => (float) $city->money,
-            'delta'     => [],
+            'delta'     => ApiResponse::map([]),
         ];
     }
 }

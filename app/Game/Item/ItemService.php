@@ -465,10 +465,12 @@ final class ItemService
     {
         $diff = [
             'revision'  => (int) $city->revision,
-            'resources' => DB::table('city_resources')->where('city_id', $city->id)
-                ->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all(),
+            // map 型(键为资源 code)一律过 ApiResponse::map:空时也要是 `{}` 不是 `[]`。
+            // 装备 / 卸下不动资源,delta 恒为空,是最容易退化成 `[]` 的一条路径
+            'resources' => ApiResponse::map(DB::table('city_resources')->where('city_id', $city->id)
+                ->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all()),
             'money'     => (float) $city->money,
-            'delta'     => $delta,
+            'delta'     => ApiResponse::map($delta),
         ];
 
         if ($item !== null) {

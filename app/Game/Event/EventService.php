@@ -7,6 +7,7 @@ use App\Game\Modifier\ModifierTarget;
 use App\Game\NPC\NpcBonus;
 use App\Game\Simulation\SimulationService;
 use App\Models\City;
+use App\Support\ApiResponse;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
@@ -427,12 +428,14 @@ final class EventService
     {
         $diff = [
             'revision'  => (int) $city->revision,
-            'resources' => DB::table('city_resources')->where('city_id', $city->id)
-                ->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all(),
+            // map 型(键为资源 code)一律过 ApiResponse::map:空时也要是 `{}` 不是 `[]`(见 BuildService::snapshotDiff)。
+            // 纯人口/幸福度类事件不动资源,delta 恒为空 —— 正是这条路径最容易退化成 `[]`
+            'resources' => ApiResponse::map(DB::table('city_resources')->where('city_id', $city->id)
+                ->pluck('amount', 'resource_id')->map(fn ($a) => (float) $a)->all()),
             'money'     => (float) $city->money,
             'population' => (int) $city->population,
             'happiness'  => (float) $city->happiness,
-            'delta'     => $delta,
+            'delta'     => ApiResponse::map($delta),
         ];
 
         if ($event !== null) {
