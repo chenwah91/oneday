@@ -346,11 +346,11 @@
 /* ---- 科技面板(M2-B1)---- */
 
 /* 入口按钮:横排停在舞台底部(建筑详情面板在右上,互不遮挡);触控区 >= 44px(CLAUDE §22)。
-   .game-fab 是 M3 加进来的 NPC / 市场入口,与科技入口共用同一套外观,只有 left 不同。
-   为什么横排而不是竖排:三块面板都从左下角展开(z-index 30 盖住 z-index 18 的入口),
+   .game-fab 是 M3 加进来的 NPC / 市场 / 工具入口,与科技入口共用同一套外观,只有 left 不同。
+   为什么横排而不是竖排:四块面板都从左下角展开(z-index 30 盖住 z-index 18 的入口),
    竖排会被打开的面板整条盖住,玩家没法从一个面板直接切到另一个 —— 横排 + 面板上抬 64px
-   让三个入口始终露在面板下方,等于 CLAUDE §21 的 Bottom Navigation。
-   宽度定死 96px:三个按钮的 left 是硬坐标,靠内容撑宽会在不同字体下互相压到 */
+   让四个入口始终露在面板下方,等于 CLAUDE §21 的 Bottom Navigation。
+   宽度定死 96px:四个按钮的 left 是硬坐标,靠内容撑宽会在不同字体下互相压到 */
 .tech-fab,
 .game-fab {
     position: absolute;
@@ -377,13 +377,19 @@
     background: rgba(91, 141, 239, 0.22);
 }
 
-/* 三个入口从左到右排:科技 12 / NPC 116 / 市场 220(96px 宽 + 8px 间距) */
+/* 四个入口从左到右排:科技 12 / NPC 116 / 市场 220 / 工具 324(96px 宽 + 8px 间距)。
+   工具排在最后一个:它是四块里最「进阶」的一块(要先有材料与制作建筑才用得上),
+   而科技 / NPC / 市场是开局就要反复点的。窄屏的排布见文件末尾的 480px 断点 */
 .npc-fab {
     left: 116px;
 }
 
 .market-fab {
     left: 220px;
+}
+
+.item-fab {
+    left: 324px;
 }
 
 /* 未派驻 NPC 的红点(§11 的 npc_unassigned) */
@@ -407,10 +413,11 @@
 /* 面板:从左下角向上展开,绝对定位在地图舞台内,不占用底部建造面板的空间 */
 .tech-panel,
 .npc-panel,
-.market-panel {
+.market-panel,
+.item-panel {
     position: absolute;
     left: 12px;
-    /* 68 = 入口按钮 44 + 上下各 12 的留白:面板从入口上方展开,三个入口始终露在外面 */
+    /* 68 = 入口按钮 44 + 上下各 12 的留白:面板从入口上方展开,四个入口始终露在外面 */
     bottom: 68px;
     z-index: 30;
     display: flex;
@@ -426,7 +433,8 @@
 
 .tech-panel[hidden],
 .npc-panel[hidden],
-.market-panel[hidden] {
+.market-panel[hidden],
+.item-panel[hidden] {
     display: none;
 }
 
@@ -699,7 +707,8 @@
     /* 手机:面板铺满宽度、限高 70%,上半屏地图仍可见;入口按钮贴左下 */
     .tech-panel,
     .npc-panel,
-    .market-panel {
+    .market-panel,
+    .item-panel {
         left: 8px;
         right: 8px;
         bottom: 60px;
@@ -708,19 +717,28 @@
         max-height: calc(100% - 72px);
     }
 
+    /* 第四项加进来之后 92px 宽会溢出 360~400px 的窄屏(8 + 92×4 + 8×3 = 400 正好顶到边),
+       所以窄屏统一收到 84px:8 + 84×4 + 8×3 = 368,最窄的 360 屏也还剩得下右边距。
+       两个字的标签在 84px / 12px 字号下仍完整显示,不靠省略号 */
     .tech-fab,
     .game-fab {
         left: 8px;
         bottom: 8px;
-        width: 92px;
+        width: 84px;
+        padding: 0 4px;
+        font-size: 12px;
     }
 
     .npc-fab {
-        left: 108px;
+        left: 100px;
     }
 
     .market-fab {
-        left: 208px;
+        left: 192px;
+    }
+
+    .item-fab {
+        left: 284px;
     }
 
     .tech-chip {
@@ -1362,5 +1380,640 @@
     /* 窄屏把「现价 / 涨跌 / 波动」三列压窄,给资源名留出空间,不出现横向滚动 */
     .market-row {
         grid-template-columns: minmax(0, 1fr) 56px 62px 40px;
+    }
+}
+
+/* ---- 工具面板(M3-D2 前端)---- */
+
+.item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #2a3140;
+}
+
+.item-title {
+    flex: 0 0 auto;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.item-counts {
+    margin-left: auto;
+    color: #9aa4b2;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.item-close {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #9aa4b2;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.item-summary {
+    padding: 8px 12px;
+    border-bottom: 1px solid #2a3140;
+    background: #1e2530;
+    color: #9aa4b2;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 制作区:默认收起(窄屏先让玩家看到库存),整条标题是展开开关 */
+.item-craft {
+    border-bottom: 1px solid #2a3140;
+}
+
+.item-craft-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 12px;
+    border: none;
+    background: transparent;
+    color: #e8eaed;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+}
+
+.item-craft-label {
+    flex: 0 0 auto;
+}
+
+.item-craft-arrow {
+    margin-left: auto;
+    color: #9aa4b2;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.item-craft-row {
+    margin: 0 12px 8px;
+    padding: 8px 10px;
+    border: 1px solid #2a3140;
+    border-radius: 10px;
+    background: #232a36;
+}
+
+/* 材料不够:整条淡一点,配合逐项标橙 —— 但按钮不禁用,服务器才是最终判定方 */
+.item-craft-row.is-short {
+    opacity: 0.75;
+}
+
+.item-craft-row-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.item-craft-name {
+    font-size: 13px;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.item-craft-era {
+    margin-left: auto;
+    flex: 0 0 auto;
+    color: #6b7484;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.item-craft-effect {
+    margin-top: 4px;
+    color: #8bd17c;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.item-craft-cost {
+    margin-top: 4px;
+    color: #9aa4b2;
+    font-size: 11px;
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+.item-cost-cell.is-missing {
+    color: #ffa94d;
+    font-weight: 600;
+}
+
+.item-craft-source {
+    margin-top: 4px;
+    color: #6b7484;
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.item-craft-source.is-missing {
+    color: #ffa94d;
+}
+
+.item-craft-row .item-btn {
+    width: 100%;
+    margin-top: 8px;
+}
+
+.item-hint {
+    padding: 0 12px 10px;
+    color: #6b7484;
+    font-size: 12px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.item-filters {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px 0;
+}
+
+.item-chip {
+    flex: 1 1 0;
+    min-height: 36px;
+    border: 1px solid #2a3140;
+    border-radius: 8px;
+    background: #232a36;
+    color: #9aa4b2;
+    font-size: 12px;
+}
+
+.item-chip.active {
+    border-color: #5b8def;
+    background: rgba(91, 141, 239, 0.18);
+    color: #e8eaed;
+}
+
+.item-list {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 12px 12px;
+}
+
+.item-empty {
+    padding: 16px 0;
+    color: #6b7484;
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+.item-card {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border: 1px solid #2a3140;
+    border-radius: 10px;
+    background: #232a36;
+}
+
+.item-card.is-equipped {
+    border-color: #3a7d5c;
+}
+
+.item-card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.item-card-name {
+    font-size: 13px;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.item-tag {
+    margin-left: auto;
+    flex: 0 0 auto;
+    padding: 1px 7px;
+    border: 1px solid #3a4354;
+    border-radius: 9px;
+    color: #6b7484;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.item-card-effect {
+    margin-top: 4px;
+    color: #8bd17c;
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+/* 耐久条:归零即损毁,所以预警色要够醒目 */
+.item-durability {
+    margin-top: 6px;
+}
+
+.item-dura-bar {
+    height: 6px;
+    border-radius: 3px;
+    background: #12161c;
+    overflow: hidden;
+}
+
+.item-dura-fill {
+    width: 0;
+    height: 100%;
+    background: #5b8def;
+}
+
+.item-dura-fill.is-warning {
+    background: #ff8c42;
+}
+
+.item-dura-text {
+    margin-top: 4px;
+    color: #9aa4b2;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+.item-dura-text.is-warning {
+    color: #ffa94d;
+    font-weight: 600;
+}
+
+.item-card-meta {
+    margin-top: 4px;
+    color: #6b7484;
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.item-card-status {
+    margin-top: 4px;
+    color: #ffb84d;
+    font-size: 12px;
+    word-break: break-word;
+}
+
+.item-card-status.is-on-duty {
+    color: #8bd17c;
+}
+
+.item-card-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* 触控区固定 >= 44px(CLAUDE §22),桌面端同样适用,避免两套尺寸 */
+.item-btn {
+    flex: 1 1 0;
+    min-height: 44px;
+    padding: 6px 8px;
+    border: 1px solid #2a3140;
+    border-radius: 8px;
+    background: #232a36;
+    color: #e8eaed;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.item-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.item-btn-primary {
+    border-color: #5b8def;
+    background: #5b8def;
+    color: #fff;
+}
+
+/* 选建筑:展开在工具卡片里,槽位满的置灰 */
+.item-picker {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed #2a3140;
+}
+
+.item-picker-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 6px;
+    padding: 6px 10px;
+    border: 1px solid #2a3140;
+    border-radius: 8px;
+    background: #1e2530;
+    color: #e8eaed;
+    font-size: 12px;
+    text-align: left;
+}
+
+.item-picker-item:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.item-picker-slot {
+    margin-left: auto;
+    flex: 0 0 auto;
+    color: #9aa4b2;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* ---- 事件弹窗(M3-D4 前端)---- */
+
+/* 非阻塞浮层:没有全屏遮罩,地图照常拖拽缩放。
+   z-index 40 压过四个面板(30),但停在顶部 —— 面板从底部展开,两者刻意不重叠 */
+.event-dialog {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    width: 340px;
+    max-width: calc(100% - 24px);
+    max-height: calc(100% - 96px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background: #1b212b;
+    border: 1px solid #3a4354;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.event-dialog[hidden] {
+    display: none;
+}
+
+.event-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #2a3140;
+    background: #1b212b;
+}
+
+.event-title {
+    flex: 0 0 auto;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.event-counts {
+    margin-left: auto;
+    color: #9aa4b2;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.event-close {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #9aa4b2;
+    font-size: 20px;
+    line-height: 1;
+}
+
+/* 多条事件:上方一排切页按钮(同时最多 3 条,§9.1 的并发上限) */
+.event-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 12px 0;
+}
+
+.event-chip {
+    flex: 1 1 auto;
+    min-height: 36px;
+    padding: 0 10px;
+    border: 1px solid #2a3140;
+    border-radius: 8px;
+    background: #232a36;
+    color: #9aa4b2;
+    font-size: 12px;
+}
+
+.event-chip.active {
+    border-color: #5b8def;
+    background: rgba(91, 141, 239, 0.18);
+    color: #e8eaed;
+}
+
+.event-card {
+    padding: 10px 12px 12px;
+}
+
+.event-card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.event-name {
+    font-size: 15px;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.event-type {
+    margin-left: auto;
+    flex: 0 0 auto;
+    padding: 1px 8px;
+    border: 1px solid #3a4354;
+    border-radius: 9px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.event-type.is-positive {
+    border-color: #3a7d5c;
+    color: #57c46b;
+}
+
+.event-type.is-negative {
+    border-color: #a04747;
+    color: #ff8f8f;
+}
+
+.event-meta {
+    margin-top: 4px;
+    color: #6b7484;
+    font-size: 11px;
+}
+
+.event-countdown {
+    margin-top: 6px;
+    color: #9aa4b2;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 剩余不到一分钟:过期就领不到了(§70 ③),这时必须显眼 */
+.event-countdown.is-urgent {
+    color: #ff6b6b;
+    font-weight: 700;
+}
+
+.event-section {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.event-section-key {
+    flex: 0 0 60px;
+    color: #6b7484;
+}
+
+.event-section-value {
+    flex: 1 1 auto;
+    color: #e8eaed;
+    word-break: break-word;
+}
+
+/* 服务器诚实下发的 unmapped:这段文案不会真的生效,必须让玩家看见 */
+.event-note {
+    margin-top: 8px;
+    padding: 6px 8px;
+    border: 1px solid rgba(217, 154, 60, 0.4);
+    border-radius: 8px;
+    color: #ffc061;
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.event-hint {
+    padding: 12px;
+    color: #6b7484;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+.event-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+/* 选项按钮:两行(名称 + 代价 / 效果),整块可点,触控区远超 44px */
+.event-option {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px 10px;
+    border: 1px solid #5b8def;
+    border-radius: 10px;
+    background: rgba(91, 141, 239, 0.12);
+    color: #e8eaed;
+    font-size: 13px;
+    text-align: left;
+}
+
+.event-option:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.event-option-label {
+    font-weight: 600;
+}
+
+.event-option-desc {
+    color: #9aa4b2;
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.event-option-warn {
+    color: #ffc061;
+    font-size: 11px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.event-btn {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 10px;
+    border: 1px solid #2a3140;
+    border-radius: 8px;
+    background: #232a36;
+    color: #e8eaed;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.event-btn-primary {
+    border-color: #5b8def;
+    background: #5b8def;
+    color: #fff;
+}
+
+.event-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* 结算结果:资源 delta 一律是服务器返回值 */
+.event-result {
+    padding: 10px 12px 12px;
+}
+
+.event-result-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #8bd17c;
+    word-break: break-word;
+}
+
+@media (max-width: 480px) {
+    /* 手机:筛选与切页的触控区按 CLAUDE §22 的 44px 走 */
+    .item-chip,
+    .event-chip {
+        min-height: 44px;
+        font-size: 13px;
+    }
+
+    /* 事件弹窗铺满宽度,限高避免把整张地图盖死(非阻塞的前提是地图还看得见) */
+    .event-dialog {
+        top: 8px;
+        left: 8px;
+        right: 8px;
+        transform: none;
+        width: auto;
+        max-width: none;
+        max-height: 72%;
     }
 }

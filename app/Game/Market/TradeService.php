@@ -21,7 +21,8 @@ use Illuminate\Support\Facades\DB;
 // 结构与 BuildService 逐段对齐 —— 经济类 Mutation 只有一个模板,不另起一套。
 //
 // ══ §13 四机制(「手续费、成交量上限、滑点和移动平均价格必须同时存在」)在本文件的落点 ══
-//   ① 手续费    → feeRate = 定义表 fee_rate × 全局倍率,买卖两个方向都是**玩家出**;
+//   ① 手续费    → feeRate = 定义表 fee_rate × 全局倍率 × max(0, 1 + Σmarket_fee_pct),
+//                 买卖两个方向都是**玩家出**、共用同一个费率(W7 接线,见第 11 步);
 //   ② 成交量上限 → 单笔 ≤ 单窗额度,且 本窗累计 / 本小时累计 都不得超额(city_market_quota);
 //   ③ 滑点      → 9.C4:slippage = k × 本笔数量 / 有效流动性,买价上抬、卖价下压;
 //   ④ 移动平均   → PriceEngine::movingAverage,最近 N 个已结束窗口的全服供需。
@@ -34,14 +35,26 @@ use Illuminate\Support\Facades\DB;
 //   往返回收率 = (1 − s)(1 − f) / [(1 + s)(1 + f)]。对任意 s ≥ 0、f > 0 恒 < 1。
 //   即使 s = 0(数量小到滑点可忽略),f = 0.03 也留下 1 − 0.97/1.03 ≈ 5.83% 的净损失。
 //   这就是 §13 要求四机制「同时存在」的原因:手续费管住小单,滑点管住大单。
+//
+//   ── W7 接入 market_fee_pct 之后这条结论**不变** ────────────────────────────────
+//   商人 NPC 只能把有效费率压到 f' = max(0, f × (1 + Σpct)),**下限就是 0、绝不为负**。
+//   把 f 换成 f' 重走一遍化简:净额 = −2·P·q·(s + f')。f' = 0 时净额 = −2·P·q·s,
+//   只要成交量 q > 0 且滑点系数 k > 0,滑点就独自把往返按在负数上 ——
+//   减费能让玩家少亏,但永远不可能让他赚(MarketFeePctTest 用最大减免直接验这条)。
 final class TradeService
 {
     public const SIDE_BUY = 'buy';
     public const SIDE_SELL = 'sell';
 
     // 滑点率的硬夹取上限。后台把系数调到 5、又赶上满额单时,理论滑点率可达 0.5;
-    // 夹在 0.95 是为了「卖出价永不为负、买入价永不翻到天上」的绝对兜底,正常参数下够不着
-    private const MAX_SLIPPAGE_RATE = 0.95;
+    // 夹在 0.95 是为了「卖出价永不为负、买入价永不翻到天上」的绝对兜底,正常参数下够不着。
+    // public(W7):GET /api/market/prices 要把它下发给前端,前端的买卖预估才和服务器夹在同一处
+    public const MAX_SLIPPAGE_RATE = 0.95;
+
+    // 有效费率的下限。market_fee_pct 累加到 −100% 以下时费率被夹成 0(白嫖手续费),
+    // 但**绝不允许变成负数** —— 负费率 = 交易所倒贴钱,同窗往返立刻转正,那是一台印钞机。
+    // 反套利的闭式因此仍然成立:净额 = −2·P·q·(s + f'),f' ≥ 0(见类顶部的证明)
+    public const MIN_FEE_RATE = 0.0;
 
     // 买入。返回资源/资金 diff + 本次成交明细
     public static function buy(City $city, string $resourceId, int $quantity, ?string $idempotencyKey, ?int $expectedRevision): array
@@ -164,8 +177,24 @@ final class TradeService
                 (float) GameSetting::get(GameSetting::MARKET_SLIPPAGE_COEFFICIENT) * $quantity / $liquidity
             );
 
-            // ---- 11. 四机制之①:手续费 ----
-            $feeRate = MarketDefinition::effectiveFeeRate($def);
+            // ---- 11. 四机制之①:手续费(D0.3 的 market_fee_pct,**唯一消费点就是这里**)----
+            //
+            // 投稿者:§6.3 的 7 位商人类 NPC(N046 −6% / N065 −8% / N086 −10% / N099 −5% /
+            // N114 −7% / N127 −10% / N146 −10%,specs 里是**负值 = 减费**)。
+            //
+            // 口径:有效费率 = 定义表 fee_rate × 全局倍率 × max(0, 1 + Σpct)。
+            //   · 一处算、买卖两侧共用同一个 $feeRate —— 只减买入侧的话,「卖出免费」会立刻变成
+            //     单边套利的方向盘;§6.3 的文案也是「市场手续费 −X%」,没有分侧的语义;
+            //   · 夹到 ≥ 0(MIN_FEE_RATE):七位商人全招齐 Σ = −0.56 还够不着 −1,但事件 / 后台
+            //     可以填出更负的数。负费率 = 交易所倒贴,同窗往返当场转正 —— 那正是 §13 四机制要堵的缝。
+            //     夹了之后闭式仍然是 净额 = −2·P·q·(s + f'),f' ≥ 0:**滑点独自兜底**,
+            //     免费手续费也刷不出钱(MarketFeePctTest 把这条钉成用例)。
+            //
+            // 取数在**城市行锁内、任何写入之前**一次性取值(与三步之前的 tradeCapacity 同一批读数):
+            // 本方法没有分段循环,但纪律照旧 —— 一次成交只读一次投稿,不许边算边查。
+            $feePct = ConsumptionPoint::pct(ModifierTarget::MARKET_FEE_PCT, (int) $city->id);
+            $baseFeeRate = MarketDefinition::effectiveFeeRate($def);
+            $feeRate = max(self::MIN_FEE_RATE, $baseFeeRate * max(0.0, 1.0 + $feePct));
 
             // ---- 11'. 事件价格冲击(D0.3 的 market_price_pct,**唯一消费点就是这里**)----
             //
@@ -314,7 +343,12 @@ final class TradeService
                     'unit_price'    => round($unitPrice, 4),
                     'mid_price'     => round($midPrice, 4),
                     'fee'           => round($fee, 4),
+                    // fee_rate 记的是**实际**费率(已含商人减免);base_fee_rate 是定义表 × 全局倍率的原值,
+                    // fee_pct 是本次吃到的减免比例。三个都记 —— 与建造的 durationSeconds /
+                    // baseDurationSeconds 同一条理由:半年后要能回答「他这笔为什么只收了这么点手续费」
                     'fee_rate'      => round($feeRate, 6),
+                    'base_fee_rate' => round($baseFeeRate, 6),
+                    'fee_pct'       => round($feePct, 6),
                     'slippage'      => round($slippageAmount, 4),
                     'slippage_rate' => round($slippageRate, 6),
                     'money_delta'   => round($moneyDelta, 4),
@@ -334,6 +368,9 @@ final class TradeService
                 'mid_price'        => round($midPrice, 4),
                 'unit_price'       => round($unitPrice, 4),
                 'fee'              => round($fee, 4),
+                // 实际费率与本次吃到的减免:前端要能解释「为什么这笔比价目表上的 fee_rate 便宜」
+                'fee_rate'         => round($feeRate, 6),
+                'fee_pct'          => round($feePct, 6),
                 'slippage'         => round($slippageAmount, 4),
                 'slippage_rate'    => round($slippageRate, 6),
                 'money_delta'      => round($moneyDelta, 4),

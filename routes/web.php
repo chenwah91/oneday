@@ -56,6 +56,11 @@ Route::prefix('api')->group(function () {
         // 科技定义:50 个节点的时代/分支/费用/时长/前置,供前端科技面板显示
         Route::get('/definitions/technologies', [\App\Http\Controllers\City\DefinitionController::class, 'technologies'])->middleware('throttle:api');
 
+        // NPC 定义(M3-W7):150 个原型 + 12 条技能 + 10 级曲线,供前端招募池预览与经验条显示。
+        // 与其它 definitions 端点同一档(auth:web + throttle:api):它是全服共享的静态定义,不含任何玩家数据。
+        // **不下发 trait_json 的 specs 结构**(理由见 DefinitionController::npcs 的注释)
+        Route::get('/definitions/npcs', [\App\Http\Controllers\City\DefinitionController::class, 'npcs'])->middleware('throttle:api');
+
         // 建造:完整安全链(幂等/Revision/占地/上限/资源/审计)
         Route::post('/city/build', \App\Http\Controllers\City\BuildController::class)->middleware('throttle:api');
 

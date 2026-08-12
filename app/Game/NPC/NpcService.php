@@ -6,6 +6,7 @@ use App\Game\City\EraService;
 use App\Game\Resource\ResourceCode;
 use App\Game\Simulation\SimulationService;
 use App\Models\City;
+use App\Support\ApiResponse;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
@@ -543,8 +544,15 @@ final class NpcService
             // 槽位规则(后台可调),前端据此画「x / y 槽」
             'slots_per_building'    => self::slotsFor(1),
             'slots_per_building_l3' => self::slotsFor(3),
+            // 离职阈值(A4,后台可调):士气低于本值的 NPC 开始有离职风险。
+            // W7 补下发 —— 在此之前前端把 30 硬编码在面板里(见 backlog 的契约缺口清单),
+            // 后台一改设定就成了两套真相。阈值属于数值规格,只该有 game_settings 这一份口径
+            'morale_leave_threshold' => (float) GameSetting::get(GameSetting::NPC_MORALE_LEAVE_THRESHOLD),
             'list'        => $list,
-            'assignments' => $assignments,
+            // map 型:building_instance_id => [city_npc_id…]。
+            // 必须过 ApiResponse::map —— 没派任何人时 PHP 会把空关联数组编成 `[]` 而不是 `{}`,
+            // 前端就得为空态另写一条分支(理由见该方法的注释)
+            'assignments' => ApiResponse::map($assignments),
         ];
     }
 

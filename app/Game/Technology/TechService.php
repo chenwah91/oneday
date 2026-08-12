@@ -3,6 +3,8 @@
 namespace App\Game\Technology;
 
 use App\Game\City\EraService;
+use App\Game\Modifier\ConsumptionPoint;
+use App\Game\Modifier\ModifierTarget;
 use App\Game\Resource\ResourceCode;
 use App\Game\Simulation\SimulationService;
 use App\Models\City;
@@ -30,6 +32,13 @@ class TechService
 {
     public const STATUS_RESEARCHING = 'researching';
     public const STATUS_UNLOCKED = 'unlocked';
+
+    // 研究加速的最低速度倍率(安全夹取):research_speed_pct 合计到 −90% 以下就按 0.1 倍速算。
+    // 与 ConstructionService::CONSTRUCTION_SPEED_FLOOR 逐字同一个值、同一条理由 ——
+    // 除数不能是 0 或负数,否则工期会变成无穷大或负数(负工期 = 研究瞬间完成,那是能被刷的)。
+    // 现有数据里这条 target 只有正值(N048 +8% / N070 +16% / N080 +25% / N106 +8% /
+    // N130 +17% / N140 +28%),这个夹子是为「将来有负面事件投稿 −100% 甚至更负」准备的
+    public const RESEARCH_SPEED_FLOOR = 0.1;
 
     // ---- 研究入口 ----
 
@@ -140,8 +149,27 @@ class TechService
                 $delta[$res] = -$amt;
             }
 
-            // 计时:finished_at = now + research_minutes(定义里是 DECIMAL 分钟,换算成整秒)
-            $finishedAt = $now->copy()->addSeconds((int) round(((float) $def->research_minutes) * 60));
+            // 计时:finished_at = now + 折减后的研究时长(定义里是 DECIMAL 分钟,换算成整秒)。
+            //
+            // ---- 研究加速(D0.3 的 research_speed_pct,**唯一消费点就是这里**,W7 接线)----
+            //
+            // 投稿者:§6.3 的 6 位学者类 NPC(N048 +8% / N070 +16% / N080 +25% /
+            // N106 +8% / N130 +17% / N140 +28%,§6.1 的 SKILL_RESEARCH 也指向这条 target)。
+            //
+            // 口径与施工加速**逐字一致** —— 时长 ÷ (1 + Σpct),不是 × (1 − Σpct):
+            // 后者在 Σpct ≥ 1 时会把时长打成 0 或负数(两位学者 +28% 与几件加成叠起来就够得着),
+            // 而速度式无论加成多大都只是趋近于 0、永远到不了 0。下限另夹 RESEARCH_SPEED_FLOOR。
+            //
+            // 取值时机(v3.2 附录 A.3「研究一经开始不受建筑变动影响」):
+            // 在**城市行锁内取一次**,当场把 finished_at 算死写库。此后招人 / 辞退 / 后台改数值
+            // 一律不追溯已在研的项目 —— 否则同一项研究会出现两套真相(下单时的口径 vs 结算时的口径),
+            // 玩家还会看到进度条倒退。这与「不追溯在研中的」是同一句话。
+            $researchSpeedPct = ConsumptionPoint::pct(ModifierTarget::RESEARCH_SPEED_PCT, (int) $city->id, $now);
+            $speedMultiplier = max(self::RESEARCH_SPEED_FLOOR, 1.0 + $researchSpeedPct);
+            $baseSeconds = (int) max(0, round(((float) $def->research_minutes) * 60));
+            // 取整方向 round:工期不是资源,四舍五入不产生任何可套利的零头(与 plannedSeconds 同口径)
+            $durationSeconds = (int) max(0, round($baseSeconds / $speedMultiplier));
+            $finishedAt = $now->copy()->addSeconds($durationSeconds);
 
             DB::table('city_technologies')->insert([
                 'city_id'     => $city->id,
@@ -180,7 +208,14 @@ class TechService
                 'metadata_json' => [
                     'branch'          => $def->branch,
                     'era'             => $def->era_key,
+                    // researchMinutes 是定义值(基础口径,保留原字段名不动)。
+                    // durationSeconds 记的是**实际**时长(已含研究加速),baseDurationSeconds 是折减前的秒数,
+                    // researchSpeedPct 是本次吃到的加成 —— 三个都记,照 BuildService 的先例:
+                    // 半年后要能回答「他这条科技为什么只花了 47 分钟」
                     'researchMinutes' => (float) $def->research_minutes,
+                    'durationSeconds' => $durationSeconds,
+                    'baseDurationSeconds' => $baseSeconds,
+                    'researchSpeedPct' => round($researchSpeedPct, 6),
                     'finishedAt'      => $finishedAt->toIso8601String(),
                 ],
             ]);

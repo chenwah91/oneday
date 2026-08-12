@@ -73,6 +73,86 @@
     font-weight: 700;
 }
 
+/* 可点开的状态块(电力 / 国防 / 治理)与事件角标:它们是按钮,不是纯读数,
+   所以给一圈边框做出「可点」的暗示;触控区在窄屏断点里加到 44px(CLAUDE §22) */
+.hud-item.hud-tap {
+    border: 1px solid #333c4a;
+    color: #e8eaed;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.hud-item.hud-tap[aria-expanded="true"] {
+    border-color: #5b8def;
+    background: rgba(91, 141, 239, 0.18);
+}
+
+.hud-power .hud-value,
+.hud-governance .hud-value {
+    color: #9db4ff;
+}
+
+.hud-defense .hud-value {
+    color: #c9b6ff;
+}
+
+/* 活跃事件角标:有事件才显示,红底提醒(过期就领不到了) */
+.hud-event {
+    border-color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.14);
+}
+
+.hud-event[hidden] {
+    display: none;
+}
+
+.hud-event .hud-value {
+    color: #ff8f8f;
+    font-weight: 700;
+}
+
+/* 展开说明:跟在 HUD 条后面的普通块(不用绝对定位,避免被地图 canvas 裁掉),
+   一次只展开一块,再点一次收起 */
+.hud-detail {
+    padding: 8px 12px;
+    background: #161c25;
+    border-bottom: 1px solid #2a3140;
+}
+
+.hud-detail[hidden] {
+    display: none;
+}
+
+.hud-detail-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 2px 0;
+    font-size: 12px;
+}
+
+.hud-detail-key {
+    flex: 0 0 auto;
+    color: #9aa4b2;
+}
+
+.hud-detail-value {
+    margin-left: auto;
+    color: #e8eaed;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 说明行:整行一句话,没有右侧数值 */
+.hud-detail-row.is-note {
+    color: #6b7484;
+    line-height: 1.5;
+}
+
+.hud-detail-row.is-note .hud-detail-key {
+    flex: 1 1 auto;
+    word-break: break-word;
+}
+
 .hud-revision {
     margin-left: auto;
     color: #6b7484;
@@ -90,6 +170,18 @@
     .hud-item {
         padding: 3px 7px;
         font-size: 12px;
+    }
+
+    /* 手机:可点的四块(电力 / 国防 / 治理 / 事件)触控区拉到 44px。
+       只有它们变高,纯读数的资源块保持原尺寸 —— 全条都拉高会把地图挤掉一大截 */
+    .hud-item.hud-tap {
+        min-height: 44px;
+        padding: 3px 9px;
+        font-size: 12px;
+    }
+
+    .hud-detail {
+        padding: 8px 10px;
     }
 
     .hud-revision {

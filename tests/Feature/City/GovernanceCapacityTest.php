@@ -453,10 +453,10 @@ class GovernanceCapacityTest extends EventTestCase
     //   · 接线了某一条 → 这里变红,提醒把 `wired` 改成 true 并从名单里划掉;
     //   · 新登记了一条没有消费点的 target → 这里也变红,逼作者显式承认「这条暂时不生效」。
     //
-    // W6 收官时的名单(全仓核对过):
-    //   market_fee_pct      —— 8 位商人类 NPC + 1 件贸易工具已投稿,MarketService 没有读取方;
-    //   research_speed_pct  —— 7 位学者类 NPC 已投稿,TechService 算 research_minutes 时没有读取方。
-    // 两条的接线落点都写在 ModifierTarget 对应条目的注释里,下一波照着接即可。
+    // **W7 收官时名单已清空**:最后两条(market_fee_pct → TradeService 的手续费、
+    // research_speed_pct → TechService 的 finished_at)在 W7 一并接线,登记表 19 条全部 wired。
+    // 名单空了不等于这条用例可以删 —— 它现在的作用是**守住零**:
+    // 以后任何人新登记一条没有消费点的 target,这里立刻变红,逼他显式承认「这条暂时不生效」。
     public function test_remaining_unwired_targets_are_exactly_the_known_list(): void
     {
         $unwired = [];
@@ -468,9 +468,9 @@ class GovernanceCapacityTest extends EventTestCase
         sort($unwired);
 
         $this->assertSame(
-            [ModifierTarget::MARKET_FEE_PCT, ModifierTarget::RESEARCH_SPEED_PCT],
+            [],
             $unwired,
-            '未接线 target 名单变了:接线了就把 wired 改成 true 并更新本用例;新增死 target 请在此显式登记'
+            '登记表里出现了没有消费点的 target:要么接线并把 wired 改成 true,要么在本用例里显式登记它'
         );
 
         // 未接线的条目必须在 desc 里说清楚,后台与后来人据此区分「还没接」与「接了但没效果」
@@ -480,6 +480,14 @@ class GovernanceCapacityTest extends EventTestCase
                 ModifierTarget::CONSUMPTION_POINTS[$target]['desc'],
                 "{$target} 未接线就必须在 desc 里写明"
             );
+        }
+
+        // 反过来也守一道:已接线的条目里不许再出现「尚无消费点」这句话(改了 wired 却忘了改 desc,
+        // 后台面板会照着 desc 显示,那就成了「代码接了、说明还写着没接」的第三种真相)
+        foreach (ModifierTarget::CONSUMPTION_POINTS as $target => $entry) {
+            if ($entry['wired'] ?? false) {
+                $this->assertStringNotContainsString('尚无消费点', $entry['desc'], "{$target} 已接线,desc 不该再写「尚无消费点」");
+            }
         }
     }
 

@@ -7,6 +7,7 @@ use App\Game\City\EraService;
 use App\Game\Resource\ResourceCode;
 use App\Game\Simulation\SimulationService;
 use App\Models\City;
+use App\Support\ApiResponse;
 use App\Support\AuditAction;
 use App\Support\AuditLogger;
 use App\Support\ErrorCode;
@@ -452,7 +453,9 @@ final class ItemService
             // 槽位规则(后台可调),前端据此画「x / y 槽」
             'slots_per_building' => self::slotsPerBuilding(),
             'list'       => $list,
-            'equipment'  => $equipment,
+            // map 型:building_instance_id => [city_item_id…]。与 npcs.assignments 同一个坑、
+            // 同一条修法 —— 空关联数组会被 json_encode 编成 `[]`,前端得为空态另写分支(W7)
+            'equipment'  => ApiResponse::map($equipment),
         ];
     }
 

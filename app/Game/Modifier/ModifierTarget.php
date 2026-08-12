@@ -175,15 +175,16 @@ final class ModifierTarget
                 . 'NPC 工资走 EXPENSE_MONEY_PER_MIN,不吃这个折扣',
         ],
         self::MARKET_FEE_PCT => [
-            'consumer' => 'App\Game\Market\MarketService',
-            'wave'     => 'W2-B',
-            // ⚠️ **仍是死 target**(W6 全仓核对):登记在册,但 app/Game/Market 里没有任何一处读它。
-            // 投稿方已经就位:§6.3 的 8 位商人类 NPC(N029/N086/N146 等「市场手续费 −10%」)与 §7 的 1 件贸易工具。
-            // 与 governance 清偿前一模一样的形态 —— 数据写好了、缺的只是一个消费点。
-            // 接线落点:TradeService 算 fee 的那一行(fee_rate × max(0, 1 + pct)),取数走 ConsumptionPoint::pct()。
-            // 本波次不接:市场代码归并行波次所有(backlog §10.2 文件所有权互斥)。**下一波请清这一条。**
-            'wired'    => false,
-            'desc'     => '市场成交手续费:商人类 NPC 与贸易工具降低 fee_rate(⚠️ 尚无消费点,登记未接线)',
+            // W7 清偿:消费点从登记时写的 MarketService(该类从未存在)落到**真实存在**的 TradeService。
+            // 教训照抄一遍 —— 登记表里的 consumer 只有在真被测试断言过之后才等于事实
+            'consumer' => 'App\Game\Market\TradeService',
+            'wave'     => 'W7',
+            'wired'    => true,
+            'desc'     => '市场成交手续费:§6.3 的 7 位商人类 NPC(N046/N065/N086/N099/N114/N127/N146,'
+                . 'specs 里是负值 = 减费)降低 fee_rate。'
+                . '口径 = 定义表 fee_rate × 全局倍率 × max(0, 1 + Σpct),**买卖两侧共用同一个费率**;'
+                . '消费点 TradeService::trade 的第 11 步(城市行锁内取值一次)。'
+                . '费率夹到 ≥ 0 —— 负费率会让同窗往返转正,反套利闭式 净额 = −2Pq(s+f\') 靠这个夹子成立',
         ],
         // 治理容量两条(W6 清偿):消费点都是**结算内核的容量提取之后那一处**,与容量类三条同一处。
         // 两条共用同一次 ConsumptionPoint::sumsMany(三查一趟,分段循环之外),
@@ -207,15 +208,14 @@ final class ModifierTarget
         ],
         self::RESEARCH_SPEED_PCT => [
             'consumer' => 'App\Game\Technology\TechService',
-            'wave'     => 'W2-A',
-            // ⚠️ **仍是死 target**(W6 全仓核对):TechService 算 finished_at 时没有读它。
-            // 投稿方已就位:§6.3 的 7 位学者类 NPC(「研究速度 +X%」)。
-            // 接线落点:TechService::research 计算 research_minutes 的那一行,
-            // 口径与建造加速逐字一致 —— **除以 (1 + pct)**(速度口径),不是乘 (1 − pct):
-            // 后者在 pct ≥ 1 时会把研究时长算成 0 或负数(建造那一处的注释里有同一条说明)。
-            // 下限同样要夹(如 0.1 倍时长),防止后台把加成填成天文数字后瞬间完成研究。
-            'wired'    => false,
-            'desc'     => '研究时长:学者类 NPC 与研究工具缩短 research_minutes(⚠️ 尚无消费点,登记未接线)',
+            'wave'     => 'W7',
+            'wired'    => true,
+            'desc'     => '研究时长:§6.3 的 6 位学者类 NPC(N048 +8% / N070 +16% / N080 +25% / '
+                . 'N106 +8% / N130 +17% / N140 +28%)缩短 research_minutes。'
+                . '口径与施工加速逐字一致 = 时长 ÷ (1 + Σpct)(速度口径,不是乘 (1 − pct):'
+                . '后者在 Σpct ≥ 1 时会把时长算成 0 或负数),下限夹 TechService::RESEARCH_SPEED_FLOOR。'
+                . '消费点 TechService::research 算 finished_at 的那一行 —— **锁内取一次、当场算死**,'
+                . '不追溯已在研的项目(v3.2 附录 A.3)',
         ],
         self::EVENT_LOSS_REDUCTION_PCT => [
             'consumer' => 'App\Game\Event\EventService',

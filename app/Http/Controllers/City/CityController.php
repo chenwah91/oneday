@@ -132,8 +132,12 @@ class CityController extends Controller
                 'map_height'          => $city->map_height,
                 'storage_capacity'    => $sim['storageCapacity'],
                 'last_simulated_at'   => $city->last_simulated_at->toIso8601String(),
-                'resources'           => $resources,
-                'rates_per_min'       => $sim['ratesPerMin'],
+                // 两个 map 型字段(资源 code => 数量 / 资源 code => 速率)统一走 ApiResponse::map:
+                // 空时必须是 `{}` 而不是 `[]`(W7)。rates_per_min 在 elapsed == 0 的那次快照上
+                // 确实会是空的(分段循环一段都没跑),resources 在极端情况下同理 ——
+                // 形状随数据变化的契约字段,前端每处都得写一条空态分支才安全
+                'resources'           => ApiResponse::map($resources),
+                'rates_per_min'       => ApiResponse::map($sim['ratesPerMin']),
                 'buildings'           => $buildings,
                 // 时代(M2-B6):当前时代 + 下一时代的逐维升级条件(已是最高时代时 next 为 null)。
                 // 条件里的当前值全部取自本次结算结果 $sim,与升级端点锁内判定的口径完全一致

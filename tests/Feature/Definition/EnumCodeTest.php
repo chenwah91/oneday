@@ -270,7 +270,12 @@ class EnumCodeTest extends TestCase
         // v10:M3 前端面板一 —— 新增 npc-panel.js/market-panel.js 进预缓存清单,
         //      三个 FAB 改横排底部导航(竖排会被面板遮挡),面板 bottom 12→68px 让位导航条,
         //      enum-names.js 扩充 NPC 状态/稀有度/技能中文表。同属一波,只 bump 一次
-        $this->assertStringContainsString("const CACHE = 'apg-v10'", $sw);
+        // v11:M3 前端面板二 —— 新增 item-panel.js(工具:制作/装备/卸下/耐久)与
+        //      event-dialog.js(事件弹窗:自动弹出/选项结算/结算结果)进预缓存清单;
+        //      底部导航加第四项「工具」(窄屏 FAB 宽度 92→84px 防溢出);
+        //      HUD 新增电力/国防/治理三块可展开状态与活跃事件角标;
+        //      enum-names.js 扩充工具与事件中文表。同属一波,只 bump 一次
+        $this->assertStringContainsString("const CACHE = 'apg-v11'", $sw);
         $this->assertStringContainsString("'/game/js/core/enum-names.js'", $sw);
     }
 

@@ -136,6 +136,47 @@ final class ConsumptionPoint
             ->sum('value');
     }
 
+    // 某条 target 对**一批资源**的合计比例:返回 [资源 => 比例],入参里的资源一个都不会缺(没投稿就是 0.0)。
+    //
+    // 每一项的口径与 pctForResource 逐字一致(全城作用域 + 该资源作用域相加),差别只在查询次数:
+    //   pctForResource 是「问一个资源查一次」(三张表 + 一次资源作用域查询);
+    //   本方法是「三张表查一次 + 资源作用域一次分组查询」。
+    // GET /api/market/prices 要给 28 个资源逐个附上价格冲击,逐个调 pctForResource 会打出
+    // 上百条查询(§38 明文反 N+1),而口径完全一样 —— 省的纯粹是往返。
+    //
+    // 只读用途:唯一调用方是价目表端点的 buy_price_pct(玩家看到的「本城买入侧要贵多少」)。
+    // **成交仍然走 pctForResource**(TradeService 的消费点),因为成交必须在城市行锁内当场取值,
+    // 不能用一份可能已经过期的批量快照 —— 两处口径一致但取值时机不同,这一条不许混用。
+    public static function pctByResource(string $target, int $cityId, array $resourceIds, ?Carbon $now = null): array
+    {
+        $now ??= now();
+
+        $cityWide = self::pct($target, $cityId, $now);
+        $totals = array_fill_keys($resourceIds, $cityWide);
+
+        if ($resourceIds === [] || ! DB::getSchemaBuilder()->hasTable('city_active_modifiers')) {
+            return $totals;
+        }
+
+        // MySQL 5.7 兼容:纯 GROUP BY,不用窗口函数 / CTE
+        $rows = DB::table('city_active_modifiers')
+            ->where('city_id', $cityId)
+            ->where('target', $target)
+            ->where('op', ModifierSpec::OP_PCT)
+            ->where('scope', ModifierSpec::SCOPE_RESOURCE)
+            ->whereIn('scope_key', $resourceIds)
+            ->where('starts_at', '<=', $now)
+            ->where('ends_at', '>', $now)
+            ->groupBy('scope_key')
+            ->get(['scope_key', DB::raw('SUM(value) as total')]);
+
+        foreach ($rows as $row) {
+            $totals[(string) $row->scope_key] += (float) $row->total;
+        }
+
+        return $totals;
+    }
+
     // 在编 NPC 特性 + 已装备工具的全部 specs(pctMany 用;逐条口径与 fromNpcTraits / fromEquippedItems 一致)
     private static function citySpecs(int $cityId): array
     {

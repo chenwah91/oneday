@@ -31,6 +31,21 @@ export const ERROR_MESSAGES = {
     RESOURCE_NOT_TRADEABLE: '这种资源不能在现货市场买卖',
     MARKET_CLOSED: '市场已停市,暂时无法买卖',
 
+    // 工具 / 道具(M3-D2)
+    // 注意 ITEM_SLOT_FULL 的语义:同 category 装第二件**不是错误**(§7「只取最高」,第二件不生效也不报错),
+    // 只有槽位真的占满才会拿到这个码,所以文案只说槽位不说同类
+    ITEM_SLOT_FULL: '这栋建筑的工具槽位已满,先卸下一件或选别的建筑',
+    ITEM_BROKEN: '这件工具已损毁(耐久归零),不能再装备,只能重新制作',
+    ITEM_ALREADY_EQUIPPED: '这件工具已装在别的建筑上,先卸下才能换楼',
+    CRAFTING_BUILDING_MISSING: '缺少制作这件工具的建筑,先把对应建筑建好',
+    ITEM_CRAFT_DISABLED: '工具制作已暂停,稍后再试',
+
+    // 随机事件(M3-D4)
+    EVENT_EXPIRED: '这个事件已经过期了,选项不能再领',
+    EVENT_ALREADY_RESOLVED: '这个事件已经结算过了',
+    EVENT_OPTION_INVALID: '这个选项不可用,请刷新事件后重选',
+    EVENT_DISABLED: '事件系统已暂停,暂时不能结算',
+
     // 科技研究(M2-B1)
     TECH_NOT_UNLOCKED: '前置科技尚未解锁',
     RESEARCH_IN_PROGRESS: '已有科技在研究中,完成后才能开始下一项',
