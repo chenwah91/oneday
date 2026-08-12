@@ -51,7 +51,6 @@ export class MarketPanel {
         this.onOpen = onOpen || null;
 
         this.rootEl = null;
-        this.fabEl = null;
         this.opened = false;
         this.busy = false;
         this.loading = false;
@@ -71,17 +70,9 @@ export class MarketPanel {
         this.unsubscribed = false;
     }
 
-    // el:挂载容器(#stage,已是 position:relative,入口与面板都绝对定位其中)
+    // el:挂载容器(#stage,已是 position:relative,面板绝对定位其中)。
+    // W12 起入口在底部导航(main.js 接线),本面板不再创建自己的 FAB 按钮
     mount(el) {
-        this.fabEl = document.createElement('button');
-        this.fabEl.type = 'button';
-        this.fabEl.className = 'game-fab market-fab';
-        this.fabEl.title = '市场';
-        this.fabEl.setAttribute('aria-label', '打开市场面板');
-        this.fabEl.textContent = '🏪 市场';
-        this.fabEl.addEventListener('click', () => (this.opened ? this.close() : this.open()));
-        el.appendChild(this.fabEl);
-
         this.rootEl = document.createElement('div');
         this.rootEl.className = 'market-panel';
         this.rootEl.hidden = true;
@@ -103,7 +94,6 @@ export class MarketPanel {
         if (this.onOpen) this.onOpen(this);
 
         this.opened = true;
-        this.fabEl.classList.add('active');
         this.rootEl.hidden = false;
         this.render();
 
@@ -119,7 +109,6 @@ export class MarketPanel {
         this.opened = false;
         this.stopTicker();
         this.refs = null;
-        if (this.fabEl) this.fabEl.classList.remove('active');
         if (this.rootEl) {
             this.rootEl.hidden = true;
             this.rootEl.innerHTML = '';
@@ -130,9 +119,7 @@ export class MarketPanel {
         this.unsubscribed = true;
         this.stopTicker();
         if (this.rootEl && this.rootEl.parentNode) this.rootEl.parentNode.removeChild(this.rootEl);
-        if (this.fabEl && this.fabEl.parentNode) this.fabEl.parentNode.removeChild(this.fabEl);
         this.rootEl = null;
-        this.fabEl = null;
     }
 
     // ---- 数据 ----

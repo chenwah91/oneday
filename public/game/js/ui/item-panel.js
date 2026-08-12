@@ -79,8 +79,6 @@ export class ItemPanel {
         this.onOpen = onOpen || null;
 
         this.rootEl = null;
-        this.fabEl = null;
-        this.badgeEl = null;   // 耐久预警红点(B4 的 durability_warning)
         this.listEl = null;
         this.opened = false;
         this.busy = false;
@@ -94,36 +92,18 @@ export class ItemPanel {
         this.unsubscribed = false;
     }
 
-    // el:挂载容器(#stage,已是 position:relative,入口与面板都绝对定位其中)
+    // el:挂载容器(#stage,已是 position:relative,面板绝对定位其中)。
+    // W12 起入口在底部导航(main.js 接线),耐久预警红点也移到导航角标(main.js 的 syncNavBadges)
     mount(el) {
-        this.fabEl = document.createElement('button');
-        this.fabEl.type = 'button';
-        this.fabEl.className = 'game-fab item-fab';
-        this.fabEl.title = '工具';
-        this.fabEl.setAttribute('aria-label', '打开工具面板');
-        this.fabEl.textContent = '🧰 工具';
-
-        this.badgeEl = document.createElement('span');
-        this.badgeEl.className = 'fab-badge';
-        this.badgeEl.hidden = true;
-        this.fabEl.appendChild(this.badgeEl);
-
-        this.fabEl.addEventListener('click', () => (this.opened ? this.close() : this.open()));
-        el.appendChild(this.fabEl);
-
         this.rootEl = document.createElement('div');
         this.rootEl.className = 'item-panel';
         this.rootEl.hidden = true;
         el.appendChild(this.rootEl);
 
-        this.syncBadge();
-
         // 快照更新后:结构没变就只原地刷耐久(每 10 秒轮询一次,耐久一直在掉),
         // 免得把展开中的「选建筑」列表和滚动位置每 10 秒打断一次
         onChange(() => {
-            if (this.unsubscribed) return;
-            this.syncBadge();
-            if (!this.opened) return;
+            if (this.unsubscribed || !this.opened) return;
             if (this.signature() === this.lastSignature) {
                 this.syncValues();
                 return;
@@ -137,7 +117,6 @@ export class ItemPanel {
 
         this.opened = true;
         this.pickerFor = null;
-        this.fabEl.classList.add('active');
         this.rootEl.hidden = false;
         this.render();
 
@@ -151,7 +130,6 @@ export class ItemPanel {
         this.opened = false;
         this.pickerFor = null;
         this.valueRefs = null;
-        if (this.fabEl) this.fabEl.classList.remove('active');
         if (this.rootEl) {
             this.rootEl.hidden = true;
             this.rootEl.innerHTML = '';
@@ -162,10 +140,7 @@ export class ItemPanel {
     destroy() {
         this.unsubscribed = true;
         if (this.rootEl && this.rootEl.parentNode) this.rootEl.parentNode.removeChild(this.rootEl);
-        if (this.fabEl && this.fabEl.parentNode) this.fabEl.parentNode.removeChild(this.fabEl);
         this.rootEl = null;
-        this.fabEl = null;
-        this.badgeEl = null;
         this.listEl = null;
     }
 
@@ -673,14 +648,6 @@ export class ItemPanel {
             ref.text.textContent = '耐久 ' + fmtDec(left, 1) + ' / ' + fmt(max)
                 + (warn ? ' · 快报废了,归零即损毁' : '');
         });
-    }
-
-    // 入口红点:耐久预警件数(B4)。面板关着也要更新
-    syncBadge() {
-        if (!this.badgeEl) return;
-        const warn = this.itemsState().warning;
-        this.badgeEl.textContent = warn > 99 ? '99+' : String(warn);
-        this.badgeEl.hidden = warn <= 0;
     }
 
     // ---- 请求 ----

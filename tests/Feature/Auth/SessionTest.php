@@ -27,6 +27,16 @@ class SessionTest extends TestCase
             ->assertJson(['success' => true, 'data' => ['user' => ['username' => 'meuser']]]);
     }
 
+    // W12:me 响应补注册时间 created_at(ISO 8601,由 Carbon 序列化);id/username/email 契约不变
+    public function test_me_includes_created_at(): void
+    {
+        $user = User::create(['username' => 'meuser2', 'name' => 'meuser2', 'email' => 'me2@e.com', 'password' => 'password123']);
+
+        $res = $this->actingAs($user)->getJson('/api/me')->assertOk();
+        $this->assertNotNull($res->json('data.user.created_at'));
+        $this->assertSame($user->created_at->toJSON(), $res->json('data.user.created_at'));
+    }
+
     public function test_logout_ends_session(): void
     {
         $user = User::create(['username' => 'logoutuser', 'name' => 'logoutuser', 'email' => 'lo@e.com', 'password' => 'password123']);

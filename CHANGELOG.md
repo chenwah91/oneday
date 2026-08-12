@@ -4,6 +4,18 @@
 
 > 本文件是项目第一份正式 CHANGELOG——在此之前各阶段版本号只体现在 git commit message 里(`vX.Y.Z ...`),未集中记录。下方「更早里程碑」一节按 commit 顺序补录这些历史版本供追溯,详细条目从 `v1.0.0` 开始按标准 CHANGELOG 格式维护。
 
+## [v1.6.0] — W12 玩家界面波(2026-08-13)
+
+玩家侧界面按用户五点需求重组(简单可用版,视觉美化留给 codex),三路并行交付,浏览器实测全流程通过。
+
+- **分类底部导航(8 tab)**:建造🏗️ / 科技🔬 / 市场🏪 / 工具🧰 / 招募👥 / 背包🎒 / 统计📊 / 我的👤。替换原先 4 个悬浮按钮 + 常驻建造条;面板互斥开合、高亮同步、44px 触控、safe-area 适配;原 FAB 红点(闲置 NPC / 耐久预警)移到对应 tab 角标(`ui/nav.js` 新组件,面板与导航互不相识,装配全在 main.js)。
+- **建造面板改开合 sheet**:默认收起;进入放置模式自动收起并显示浮动「取消放置」按钮,放置中不再遮地图。
+- **背包面板**(`backpack-panel.js`):资金单列 + 全资源清单(定义顺序,数量 + 每分钟速率)+ 仓储上限(每种资源各自计)。
+- **村庄统计面板**(`stats-panel.js`):概览 / 人口 / 经济(含财政预警着色) / 电力 / 国防 / 治理 / 建筑分类计数,全部只读快照字段,前端零推算。
+- **玩家资料 + 退出登录**(`profile-panel.js`):用户名 / 邮箱 / 注册时间(`/api/me` 新增 `created_at`),退出登录实测回登录页。
+- **建造缺料明细**:`INSUFFICIENT_RESOURCE` 响应新增 `details.missing[]`(逐项 `resource_id`/`required`/`have`/`missing`,一次列全),前端拼中文明细如「资源不足:木材还差30、石料还差5」;老响应无 details 时回落原文案(升级路径的同款明细随 v1.7.0 的 UpgradeService 一并落地)。
+- Service Worker **v12**(预缓存补入 nav/三新面板/新 CSS),EnumCodeTest 同步;修资料面板首帧闪空值。
+
 ## [v1.5.2] — 死列清理(2026-08-13)
 
 用户拍板「按建议删」的落地:`building_definition` **物理删除五个零引用死列**(`population_min` / `governance_ratio_min` / `happiness_min` 三个建造门槛列——恒 0 且无代码读取;`base_workers` / `base_build_seconds`——被 level 表逐级列取代),照 V3.2.1 删三列先例。**保留三个**:`upgrade_to_building_id`(跨代升级链数据地基,测试守护,仍不可编辑)与 `resource_definition` 两个未来系统预留标记。`game_data_version` → **V3.8.1**(列集变更,checksum 对账需要);迁移 74 → **76 支**;`buildings.json` 保留两个历史键(seeder 已停读,注释说明)。测试保持 **1018** 全绿(死列只读用例改为「五列确实不存在 + 保留列仍被挡」)。

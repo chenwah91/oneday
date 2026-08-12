@@ -1,6 +1,6 @@
 // PWA Service Worker:缓存 /game/ 静态资源,永不缓存 /api/*(玩家数据以服务器为准)
 // 版本号:每次静态资源有实质变更时递增,触发旧缓存清理
-const CACHE = 'apg-v11';
+const CACHE = 'apg-v12';
 
 // 预缓存的静态资源清单(HTML/CSS/JS/vendor/manifest/图标)
 const PRECACHE_URLS = [
@@ -12,6 +12,7 @@ const PRECACHE_URLS = [
   '/game/css/auth.css',
   '/game/css/hud.css',
   '/game/css/panels.css',
+  '/game/css/player-panels.css',
   '/game/css/components.css',
   '/game/js/main.js',
   '/game/js/core/config.js',
@@ -23,6 +24,10 @@ const PRECACHE_URLS = [
   '/game/js/utils/format.js',
   '/game/js/ui/auth.js',
   '/game/js/ui/hud.js',
+  '/game/js/ui/nav.js',
+  '/game/js/ui/profile-panel.js',
+  '/game/js/ui/stats-panel.js',
+  '/game/js/ui/backpack-panel.js',
   '/game/js/ui/build-panel.js',
   '/game/js/ui/building-panel.js',
   '/game/js/ui/technology-panel.js',

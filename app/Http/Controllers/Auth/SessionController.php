@@ -19,7 +19,8 @@ class SessionController extends Controller
         $user = $request->user();
 
         return ApiResponse::ok([
-            'data' => ['user' => ['id' => $user->id, 'username' => $user->username, 'email' => $user->email]],
+            // created_at 直接给 Carbon 实例,由 Laravel 序列化成 ISO 8601(W12:前端个人资料要显示注册时间)
+            'data' => ['user' => ['id' => $user->id, 'username' => $user->username, 'email' => $user->email, 'created_at' => $user->created_at]],
         ]);
     }
 

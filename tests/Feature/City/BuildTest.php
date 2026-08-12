@@ -75,6 +75,65 @@ class BuildTest extends TestCase
         $this->assertDatabaseMissing('city_building_instances', ['city_id' => $city->id]);
     }
 
+    // ---- 缺料明细(W12):INSUFFICIENT_RESOURCE 带 details.missing,一次列全所有缺口 ----
+
+    // 多种资源同时不足:每一项缺口一条,required/have/missing 都是服务器现值(F02 建造:木材20/石料5/资金12)
+    public function test_build_insufficient_resource_lists_every_shortfall(): void
+    {
+        $u = User::create(['username' => 'shortall', 'name' => 'shortall', 'email' => 'sa@x.com', 'password' => 'password123']);
+        $city = CityFactory::createForUser($u);
+        $this->setEra($city->id, 'II', 2);      // 时代/科技闸门都排在材料之前,先垫够才验得到缺料明细
+        $this->unlockTechFor($city->id, 'F02');
+        DB::table('city_resources')->where('city_id', $city->id)->update(['amount' => 0]);
+        DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => 'wood'], ['amount' => 5]);
+        DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => 'stone'], ['amount' => 1]);
+        DB::table('cities')->where('id', $city->id)->update(['money' => 2]);
+
+        $res = $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 1, 'y' => 1]);
+        $res->assertStatus(422)->assertJson(['error' => 'INSUFFICIENT_RESOURCE']);
+
+        // 三种都缺 → 三条;不按顺序断言,按 resource_id 取行(契约只约定"每项缺口一条",不约定顺序)
+        $missing = collect($res->json('details.missing'))->keyBy('resource_id');
+        $this->assertCount(3, $missing);
+        foreach ([
+            'wood'  => ['required' => 20.0, 'have' => 5.0, 'missing' => 15.0],
+            'stone' => ['required' => 5.0,  'have' => 1.0, 'missing' => 4.0],
+            'money' => ['required' => 12.0, 'have' => 2.0, 'missing' => 10.0],
+        ] as $rid => $want) {
+            $row = $missing[$rid];
+            $this->assertSame($want['required'], (float) $row['required'], "$rid required");
+            $this->assertSame($want['have'], (float) $row['have'], "$rid have");
+            $this->assertSame($want['missing'], (float) $row['missing'], "$rid missing");
+        }
+
+        // 拒绝即整体回滚:不落实例、不扣资源、不涨 revision
+        $this->assertDatabaseMissing('city_building_instances', ['city_id' => $city->id]);
+        $this->assertSame(5.0, (float) DB::table('city_resources')->where('city_id', $city->id)->where('resource_id', 'wood')->value('amount'));
+        $this->assertSame(0, (int) DB::table('cities')->where('id', $city->id)->value('revision'));
+    }
+
+    // 只缺一种:明细只列缺的那一条,足额项不出现
+    public function test_build_insufficient_resource_lists_only_lacking_items(): void
+    {
+        $u = User::create(['username' => 'shortone', 'name' => 'shortone', 'email' => 'so@x.com', 'password' => 'password123']);
+        $city = CityFactory::createForUser($u);
+        $this->setEra($city->id, 'II', 2);
+        $this->unlockTechFor($city->id, 'F02');
+        DB::table('city_resources')->where('city_id', $city->id)->update(['amount' => 1000]);
+        DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => 'wood'], ['amount' => 5]);
+        DB::table('cities')->where('id', $city->id)->update(['money' => 1000]);
+
+        $res = $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 1, 'y' => 1]);
+        $res->assertStatus(422)->assertJson(['error' => 'INSUFFICIENT_RESOURCE']);
+
+        $missing = $res->json('details.missing');
+        $this->assertCount(1, $missing);
+        $this->assertSame('wood', $missing[0]['resource_id']);
+        $this->assertSame(20.0, (float) $missing[0]['required']);
+        $this->assertSame(5.0, (float) $missing[0]['have']);
+        $this->assertSame(15.0, (float) $missing[0]['missing']);
+    }
+
     // ---- 时代闸门(M2-B6,v3.2 §4「时代 → 科技 → …→ 土地 → 材料」) ----
 
     // 新城默认时代 I:时代 II 的 F02 一律拒绝,且不扣资源、不涨 revision

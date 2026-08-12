@@ -116,10 +116,19 @@ class BuildService
                 throw new GameRuleException(ErrorCode::BUILDING_LIMIT_REACHED, 422);
             }
 
-            // 资源足额:一律用结算后的最新余额(资金 money 单列在 cities.money)
+            // 资源足额:一律用结算后的最新余额(资金 money 单列在 cities.money)。
+            // W12:走完全部成本项收集所有缺口后一次性抛,前端一次就能列全「还差什么、各差多少」,
+            // 不必玩家补一样再撞一样。details 只含成本(定义公开数据)与玩家自己的余额,
+            // 符合 GameRuleException 注释的边界;数值一律服务器现值,与 UpgradeService 同一契约
+            $missing = [];
             foreach ($cost as $res => $amt) {
                 $have = $res === ResourceCode::MONEY ? (float) $sim['money'] : (float) ($sim['resources'][$res] ?? 0);
-                if ($have < $amt) { throw new GameRuleException(ErrorCode::INSUFFICIENT_RESOURCE, 422); }
+                if ($have < $amt) {
+                    $missing[] = ['resource_id' => $res, 'required' => (float) $amt, 'have' => $have, 'missing' => (float) $amt - $have];
+                }
+            }
+            if ($missing !== []) {
+                throw new GameRuleException(ErrorCode::INSUFFICIENT_RESOURCE, 422, ['missing' => $missing]);
             }
 
             // 扣资源

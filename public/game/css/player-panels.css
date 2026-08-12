@@ -1,0 +1,280 @@
+/* ---- 玩家资料 / 村庄统计 / 背包 三面板(W12 前端波)---- */
+/* 与 panels.css 里四个 FAB 面板同一套外观:340px 浮层、#stage 内绝对定位、同色系。
+   区别:本波起面板由底部导航开合,不再各自带 FAB 入口按钮,所以这里没有入口样式。
+   bottom 取 12px(窄屏 8px)与既有面板对齐 —— 导航条在 #stage 之外的 flex 第三行,
+   舞台底边即导航条上沿,面板贴舞台底边即可;窄屏断点见文件末尾 */
+
+.profile-panel,
+.stats-panel,
+.backpack-panel {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    width: 340px;
+    max-width: calc(100% - 24px);
+    max-height: calc(100% - 80px);
+    overflow: hidden;
+    background: #1b212b;
+    border: 1px solid #2a3140;
+    border-radius: 12px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.profile-panel[hidden],
+.stats-panel[hidden],
+.backpack-panel[hidden] {
+    display: none;
+}
+
+/* 标题栏:与 tech/npc/market 面板同构 */
+.profile-header,
+.stats-header,
+.backpack-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #2a3140;
+}
+
+.profile-title,
+.stats-title,
+.backpack-title {
+    flex: 0 0 auto;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.profile-close,
+.stats-close,
+.backpack-close {
+    margin-left: auto;
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #9aa4b2;
+    font-size: 20px;
+    line-height: 1;
+}
+
+/* ---- 玩家资料 ---- */
+
+.profile-body {
+    padding: 4px 12px 8px;
+}
+
+.profile-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 13px;
+}
+
+.profile-row-key {
+    flex: 0 0 auto;
+    color: #9aa4b2;
+    font-size: 12px;
+}
+
+.profile-row-value {
+    margin-left: auto;
+    text-align: right;
+    word-break: break-all; /* 邮箱可能很长,不许把面板撑出横向滚动 */
+}
+
+.profile-empty {
+    padding: 16px 0;
+    color: #6b7484;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* 退出登录:危险语义用红色描边(与拆除按钮同一色系),触控区 >= 44px(CLAUDE §22) */
+.profile-logout {
+    margin: 4px 12px 12px;
+    min-height: 44px;
+    border: 1px solid #ff6b6b;
+    border-radius: 8px;
+    background: rgba(255, 107, 107, 0.12);
+    color: #ff6b6b;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.profile-logout:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* ---- 村庄统计 ---- */
+
+.stats-body {
+    flex: 1 1 auto;
+    /* flex 子项默认 min-height:auto,不补这一行就缩不到内容以下,滚动条永远不出现 */
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 12px 12px;
+}
+
+.stats-section-title {
+    margin: 12px 0 2px;
+    color: #6b7484;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.stats-section {
+    padding: 4px 10px;
+    border: 1px solid #2a3140;
+    border-radius: 10px;
+    background: #232a36;
+}
+
+.stats-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 4px 0;
+    font-size: 13px;
+}
+
+.stats-row-key {
+    flex: 0 0 auto;
+    color: #9aa4b2;
+    font-size: 12px;
+}
+
+.stats-row-value {
+    margin-left: auto;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    word-break: break-word;
+}
+
+/* 财政预警两档着色:与 hud.css 的 .hud-warn / .hud-alert 同色值(黄 <10 分钟 / 红 <3 分钟) */
+.stats-warn {
+    color: #ff9500;
+    font-weight: 700;
+}
+
+.stats-alert {
+    color: #ff5f56;
+    font-weight: 700;
+}
+
+.stats-empty {
+    padding: 16px 0;
+    color: #6b7484;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* ---- 背包 ---- */
+
+/* 仓储上限说明条:与 npc-upkeep / market-money 同构 */
+.backpack-summary {
+    padding: 8px 12px;
+    border-bottom: 1px solid #2a3140;
+    background: #1e2530;
+    color: #9aa4b2;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 资金单列一行:不进资源清单(资金不占仓储) */
+.backpack-money {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #2a3140;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.backpack-money .backpack-amount {
+    margin-left: auto;
+}
+
+.backpack-list {
+    flex: 1 1 auto;
+    /* flex 子项默认 min-height:auto,不补这一行就缩不到内容以下,滚动条永远不出现 */
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 12px 4px;
+}
+
+/* 一行资源:名称 / 数量 / 速率(速率列定宽,数字右对齐好比对) */
+.backpack-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 76px;
+    align-items: baseline;
+    gap: 8px;
+    padding: 6px 0;
+    border-bottom: 1px solid #232a36;
+    font-size: 13px;
+}
+
+.backpack-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.backpack-amount {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.backpack-rate {
+    text-align: right;
+    color: #6b7484;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* 产出为正绿、净消耗红:与 NPC 面板的士气色 / 拆除警示色同一色系 */
+.backpack-rate.is-up {
+    color: #57c46b;
+}
+
+.backpack-rate.is-down {
+    color: #ff6b6b;
+}
+
+.backpack-empty {
+    padding: 16px 0;
+    color: #6b7484;
+    font-size: 12px;
+    text-align: center;
+}
+
+.backpack-note {
+    padding: 8px 12px 12px;
+    border-top: 1px solid #2a3140;
+    color: #6b7484;
+    font-size: 12px;
+}
+
+@media (max-width: 480px) {
+    /* 手机:面板铺满宽度、限高,上半屏地图仍可见(与 panels.css 的四面板同一断点规则) */
+    .profile-panel,
+    .stats-panel,
+    .backpack-panel {
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        width: auto;
+        max-width: none;
+        max-height: calc(100% - 72px);
+    }
+}

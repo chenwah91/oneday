@@ -275,7 +275,11 @@ class EnumCodeTest extends TestCase
         //      底部导航加第四项「工具」(窄屏 FAB 宽度 92→84px 防溢出);
         //      HUD 新增电力/国防/治理三块可展开状态与活跃事件角标;
         //      enum-names.js 扩充工具与事件中文表。同属一波,只 bump 一次
-        $this->assertStringContainsString("const CACHE = 'apg-v11'", $sw);
+        // v12:W12 玩家界面波 —— 操作入口改分类底部导航(nav.js,8 tab:建造/科技/市场/工具/招募/背包/统计/我的),
+        //      四面板去 FAB、建造面板改开合 sheet;新增 profile-panel.js(资料/登出)、
+        //      stats-panel.js(村庄统计)、backpack-panel.js(背包)与 player-panels.css 进预缓存清单。
+        //      同属一波,只 bump 一次
+        $this->assertStringContainsString("const CACHE = 'apg-v12'", $sw);
         $this->assertStringContainsString("'/game/js/core/enum-names.js'", $sw);
     }
 

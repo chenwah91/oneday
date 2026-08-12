@@ -1,5 +1,7 @@
 // 后端稳定错误码 -> 中文提示的唯一来源(CLAUDE §32:前端按 Error Code 显示本地文案)
 // 与 app/Support/ErrorCode.php 对应;新增错误码时只改这一张表,不要在各面板里另建副本
+import { resourceName } from '../modules/resources.js';
+import { fmt } from '../utils/format.js';
 
 export const ERROR_MESSAGES = {
     // 游戏经济 Mutation(建造/升级/拆除)
@@ -71,4 +73,28 @@ export function errorText(err, fallback, overrides) {
     if (code && overrides && overrides[code]) return overrides[code];
     if (code && ERROR_MESSAGES[code]) return ERROR_MESSAGES[code];
     return fallback || '操作失败,请重试';
+}
+
+// INSUFFICIENT_RESOURCE 的缺料明细(W12):后端本波给这个码补了 details,契约:
+//   { error: "INSUFFICIENT_RESOURCE", details: { missing: [ { resource_id, required, have, missing } ] } }
+// 这里把 missing 数组拼成中文明细,如「资源不足:木材还差30、石料还差5」。
+// details 在 api.js 抛出的 err.body.details 上;err.details 一并容错(响应形状变动时不至于哑掉)。
+// 拿不到明细(老响应 / details 缺失 / 数组为空)一律返回 '',由调用方回落 errorText 的笼统文案。
+// 缺口数量向上取整显示:差 0.2 也得凑满 1 个才够,显示 0 反而说不通;money 也走 resourceName 翻译。
+// 共用函数放这里(不放某个面板里):modules/build.js 与 ui/building-panel.js 两处都要用,不复制两份
+export function insufficientDetailText(err) {
+    if (!err || err.error !== 'INSUFFICIENT_RESOURCE') return '';
+
+    const details = (err.body && err.body.details) || err.details || null;
+    const missing = details && Array.isArray(details.missing) ? details.missing : null;
+    if (!missing || !missing.length) return '';
+
+    const parts = missing.map((m) => {
+        const code = m && m.resource_id;
+        const lack = Math.ceil(Number(m && m.missing) || 0);
+        if (!code || lack <= 0) return '';
+        return resourceName(code) + '还差' + fmt(lack);
+    }).filter(Boolean);
+
+    return parts.length ? '资源不足:' + parts.join('、') : '';
 }

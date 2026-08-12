@@ -2,7 +2,7 @@
 import { api } from '../core/api.js';
 import { newIdempotencyKey } from '../core/idempotency.js';
 import { state, setState } from '../core/state.js';
-import { errorText } from '../core/error-messages.js';
+import { errorText, insufficientDetailText } from '../core/error-messages.js';
 import { render as renderBuildings } from '../renderer/buildings.js';
 import { updateHud } from '../ui/hud.js';
 import { notifyError } from '../ui/notification.js';
@@ -59,7 +59,9 @@ export async function handleTileClick(gx, gy) {
         if (worldRef) renderBuildings(worldRef, state.city.buildings);
         updateHud(state.city);
     } catch (err) {
-        notifyError(errorText(err, '建造失败,请重试'));
+        // 缺料时优先给逐项明细(W12:后端给 INSUFFICIENT_RESOURCE 补了 details.missing),
+        // 拿不到明细(老响应)回落 errorText 的笼统文案
+        notifyError(insufficientDetailText(err) || errorText(err, '建造失败,请重试'));
     }
 }
 

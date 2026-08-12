@@ -12,22 +12,89 @@
     touch-action: none; /* 交给 Pixi 自行处理拖拽/缩放手势,避免浏览器默认滚动干扰 */
 }
 
-#panel {
-    flex: 0 0 auto; /* 底部面板固定,不被 stage 挤出视口 */
+/* ---- 底部导航条(W12)---- */
+
+/* 布局第三段(hud / stage / nav):固定停在视口底部;iOS 刘海屏留出底部安全区(CLAUDE §21/§22) */
+#nav {
+    flex: 0 0 auto;
+    background: #1b212b;
+    border-top: 1px solid #2a3140;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-bar {
+    display: flex;
+}
+
+/* 单个 tab:图标 + 两字标签竖排;8 个均分(400px 宽屏下每个 50px),触控高度 ≥ 44px(CLAUDE §22) */
+.nav-item {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 50px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 5px 0 4px;
+    border: none;
+    background: transparent;
+    color: #9aa4b2;
+}
+
+.nav-item.active {
+    color: #5b8def;
+    background: rgba(91, 141, 239, 0.12);
+}
+
+.nav-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.nav-label {
+    font-size: 10px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+/* 角标(闲置 NPC / 耐久预警这类计数):压在图标右上角,与原 FAB 红点同一口径 */
+.nav-badge {
+    position: absolute;
+    top: 3px;
+    left: 50%;
+    margin-left: 8px;
+    min-width: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: #ff6b6b;
+    color: #fff;
+    font-size: 10px;
+    line-height: 16px;
+    text-align: center;
+}
+
+.nav-badge[hidden] {
+    display: none;
+}
+
+/* 建造 sheet(W12 起可开合,默认收起):绝对定位停靠在舞台底部,横向可滚动的建筑按钮列表 */
+.build-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30; /* 与其它面板同层:互斥打开,不会同时在场 */
+    display: flex;
+    flex-direction: column;
     max-height: 40vh;
     background: #1b212b;
     border-top: 1px solid #2a3140;
 }
 
-#panel:empty {
+.build-panel[hidden] {
     display: none;
-}
-
-/* 建造面板:底部停靠,横向可滚动的建筑按钮列表(移动端友好) */
-.build-panel {
-    display: flex;
-    flex-direction: column;
-    max-height: 40vh;
 }
 
 .build-panel-header {
@@ -43,14 +110,40 @@
     font-weight: 600;
 }
 
-.build-cancel-btn {
+.build-close {
     margin-left: auto;
-    padding: 5px 12px;
-    border: 1px solid #ff6b6b;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
+    border: none;
     border-radius: 8px;
-    background: rgba(255, 107, 107, 0.12);
+    background: transparent;
+    color: #9aa4b2;
+    font-size: 20px;
+    line-height: 1;
+}
+
+/* 浮动「取消放置」:放置模式常显(sheet 已自动收起),点了退出放置模式 */
+.build-cancel-float {
+    position: absolute;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%);
+    z-index: 32;
+    min-height: 44px;
+    padding: 0 20px;
+    border: 1px solid #ff6b6b;
+    border-radius: 22px;
+    background: #1b212b;
     color: #ff6b6b;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.build-cancel-float[hidden] {
+    display: none;
 }
 
 .build-list {
@@ -345,86 +438,21 @@
 
 /* ---- 科技面板(M2-B1)---- */
 
-/* 入口按钮:横排停在舞台底部(建筑详情面板在右上,互不遮挡);触控区 >= 44px(CLAUDE §22)。
-   .game-fab 是 M3 加进来的 NPC / 市场 / 工具入口,与科技入口共用同一套外观,只有 left 不同。
-   为什么横排而不是竖排:四块面板都从左下角展开(z-index 30 盖住 z-index 18 的入口),
-   竖排会被打开的面板整条盖住,玩家没法从一个面板直接切到另一个 —— 横排 + 面板上抬 64px
-   让四个入口始终露在面板下方,等于 CLAUDE §21 的 Bottom Navigation。
-   宽度定死 96px:四个按钮的 left 是硬坐标,靠内容撑宽会在不同字体下互相压到 */
-.tech-fab,
-.game-fab {
-    position: absolute;
-    left: 12px;
-    bottom: 12px;
-    z-index: 18;
-    width: 96px;
-    min-height: 44px;
-    padding: 0 8px;
-    overflow: hidden;
-    border: 1px solid #2a3140;
-    border-radius: 22px;
-    background: #232a36;
-    color: #e8eaed;
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-}
-
-.tech-fab.active,
-.game-fab.active {
-    border-color: #5b8def;
-    background: rgba(91, 141, 239, 0.22);
-}
-
-/* 四个入口从左到右排:科技 12 / NPC 116 / 市场 220 / 工具 324(96px 宽 + 8px 间距)。
-   工具排在最后一个:它是四块里最「进阶」的一块(要先有材料与制作建筑才用得上),
-   而科技 / NPC / 市场是开局就要反复点的。窄屏的排布见文件末尾的 480px 断点 */
-.npc-fab {
-    left: 116px;
-}
-
-.market-fab {
-    left: 220px;
-}
-
-.item-fab {
-    left: 324px;
-}
-
-/* 未派驻 NPC 的红点(§11 的 npc_unassigned) */
-.fab-badge {
-    display: inline-block;
-    min-width: 18px;
-    margin-left: 6px;
-    padding: 0 5px;
-    border-radius: 9px;
-    background: #ff6b6b;
-    color: #fff;
-    font-size: 11px;
-    line-height: 18px;
-    text-align: center;
-}
-
-.fab-badge[hidden] {
-    display: none;
-}
-
-/* 面板:从左下角向上展开,绝对定位在地图舞台内,不占用底部建造面板的空间 */
+/* 面板:从左下角向上展开,绝对定位在地图舞台内。
+   W12 起入口收进底部导航(#nav 在舞台之外),面板可以贴到舞台底边 */
 .tech-panel,
 .npc-panel,
 .market-panel,
 .item-panel {
     position: absolute;
     left: 12px;
-    /* 68 = 入口按钮 44 + 上下各 12 的留白:面板从入口上方展开,四个入口始终露在外面 */
-    bottom: 68px;
+    bottom: 12px;
     z-index: 30;
     display: flex;
     flex-direction: column;
     width: 340px;
     max-width: calc(100% - 24px);
-    max-height: calc(100% - 80px);
+    max-height: calc(100% - 24px);
     /* 兜底裁剪:面板内某一块(展开的招募池 / 制作清单)撑得比 max-height 还高时,
        flex 子项默认不会缩到内容以下,溢出的部分会画到面板外面 —— 直接盖住底部导航条。
        裁在这里 + 让可长高的那几块自己能缩能滚(见下面的 min-height: 0),两条一起才算修好 */
@@ -710,41 +738,17 @@
 }
 
 @media (max-width: 480px) {
-    /* 手机:面板铺满宽度、限高 70%,上半屏地图仍可见;入口按钮贴左下 */
+    /* 手机:面板铺满宽度、限高留出顶部一条地图;入口都在底部导航,面板贴到舞台底边 */
     .tech-panel,
     .npc-panel,
     .market-panel,
     .item-panel {
         left: 8px;
         right: 8px;
-        bottom: 60px;
+        bottom: 8px;
         width: auto;
         max-width: none;
-        max-height: calc(100% - 72px);
-    }
-
-    /* 第四项加进来之后 92px 宽会溢出 360~400px 的窄屏(8 + 92×4 + 8×3 = 400 正好顶到边),
-       所以窄屏统一收到 84px:8 + 84×4 + 8×3 = 368,最窄的 360 屏也还剩得下右边距。
-       两个字的标签在 84px / 12px 字号下仍完整显示,不靠省略号 */
-    .tech-fab,
-    .game-fab {
-        left: 8px;
-        bottom: 8px;
-        width: 84px;
-        padding: 0 4px;
-        font-size: 12px;
-    }
-
-    .npc-fab {
-        left: 100px;
-    }
-
-    .market-fab {
-        left: 192px;
-    }
-
-    .item-fab {
-        left: 284px;
+        max-height: calc(100% - 16px);
     }
 
     .tech-chip {

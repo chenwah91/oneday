@@ -66,8 +66,6 @@ export class NpcPanel {
         this.onOpen = onOpen || null;
 
         this.rootEl = null;     // 面板根节点
-        this.fabEl = null;      // 打开/关闭入口按钮
-        this.badgeEl = null;    // 闲置 NPC 红点(§11 的 npc_unassigned)
         this.listEl = null;     // 列表容器
         this.opened = false;
         this.busy = false;      // 请求进行中:禁用全部按钮,防重复提交
@@ -82,38 +80,20 @@ export class NpcPanel {
         this.unsubscribed = false;
     }
 
-    // el:挂载容器(#stage,已是 position:relative,入口与面板都绝对定位其中)
+    // el:挂载容器(#stage,已是 position:relative,面板绝对定位其中)。
+    // W12 起入口在底部导航(main.js 接线),闲置红点也移到导航角标(main.js 的 syncNavBadges)
     mount(el) {
-        this.fabEl = document.createElement('button');
-        this.fabEl.type = 'button';
-        this.fabEl.className = 'game-fab npc-fab';
-        this.fabEl.title = 'NPC';
-        this.fabEl.setAttribute('aria-label', '打开 NPC 面板');
-        this.fabEl.textContent = '👥 NPC';
-
-        this.badgeEl = document.createElement('span');
-        this.badgeEl.className = 'fab-badge';
-        this.badgeEl.hidden = true;
-        this.fabEl.appendChild(this.badgeEl);
-
-        this.fabEl.addEventListener('click', () => (this.opened ? this.close() : this.open()));
-        el.appendChild(this.fabEl);
-
         this.rootEl = document.createElement('div');
         this.rootEl.className = 'npc-panel';
         this.rootEl.hidden = true;
         el.appendChild(this.rootEl);
-
-        this.syncBadge();
 
         // 快照更新(轮询 / 本面板操作 / 其他面板)后同步刷新。
         // 指纹只含会改变结构或按钮状态的位;士气与 XP 每轮询一次都在动,进指纹会让面板
         // 每 10 秒整块重建一次 —— 展开中的「选建筑」列表和滚动位置都会被打断,
         // 所以指纹没变时走 syncValues() 原地改文本(与科技面板的 syncEraValues 同一处理)
         onChange(() => {
-            if (this.unsubscribed) return;
-            this.syncBadge();
-            if (!this.opened) return;
+            if (this.unsubscribed || !this.opened) return;
             if (this.signature() === this.lastSignature) {
                 this.syncValues();
                 return;
@@ -133,7 +113,6 @@ export class NpcPanel {
         this.pickerFor = null;
         this.confirm = null;
         if (this.assignTarget !== null) this.filter = 'idle'; // 派驻只能选闲置的人
-        this.fabEl.classList.add('active');
         this.rootEl.hidden = false;
         this.render();
 
@@ -152,7 +131,6 @@ export class NpcPanel {
         this.confirm = null;
         this.poolOpen = false;
         this.valueRefs = null;
-        if (this.fabEl) this.fabEl.classList.remove('active');
         if (this.rootEl) {
             this.rootEl.hidden = true;
             this.rootEl.innerHTML = '';
@@ -163,10 +141,7 @@ export class NpcPanel {
     destroy() {
         this.unsubscribed = true;
         if (this.rootEl && this.rootEl.parentNode) this.rootEl.parentNode.removeChild(this.rootEl);
-        if (this.fabEl && this.fabEl.parentNode) this.fabEl.parentNode.removeChild(this.fabEl);
         this.rootEl = null;
-        this.fabEl = null;
-        this.badgeEl = null;
         this.listEl = null;
     }
 
@@ -754,14 +729,6 @@ export class NpcPanel {
             ref.morale.className = 'npc-morale' + (low ? ' is-low' : '');
             ref.note.textContent = low ? ' 有离职风险(低于 ' + fmtDec(alert, 0) + ')' : '';
         });
-    }
-
-    // 入口红点:闲置 NPC 数量(§11 的 npc_unassigned)。面板关着也要更新
-    syncBadge() {
-        if (!this.badgeEl) return;
-        const idle = this.npcState().idle;
-        this.badgeEl.textContent = idle > 99 ? '99+' : String(idle);
-        this.badgeEl.hidden = idle <= 0;
     }
 
     // 一行 NPC 的技能 / 等级 / XP 文案(渲染与原地刷新共用一份,免得两处写法漂移)

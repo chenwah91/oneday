@@ -83,7 +83,6 @@ export class TechnologyPanel {
         this.onOpen = onOpen || null;
 
         this.rootEl = null;    // 面板根节点
-        this.fabEl = null;     // 打开/关闭入口按钮
         this.listEl = null;    // 列表容器(重绘只动这里,避免整块闪烁)
         this.opened = false;
         this.busy = false;     // 请求进行中:禁用全部研究按钮,防重复提交
@@ -95,17 +94,9 @@ export class TechnologyPanel {
         this.unsubscribed = false;
     }
 
-    // el:挂载容器(#stage,已是 position:relative,入口与面板都绝对定位其中)
+    // el:挂载容器(#stage,已是 position:relative,面板绝对定位其中)。
+    // W12 起入口在底部导航(main.js 接线),本面板不再创建自己的 FAB 按钮
     mount(el) {
-        this.fabEl = document.createElement('button');
-        this.fabEl.type = 'button';
-        this.fabEl.className = 'tech-fab';
-        this.fabEl.title = '科技';
-        this.fabEl.setAttribute('aria-label', '打开科技面板');
-        this.fabEl.textContent = '🔬 科技';
-        this.fabEl.addEventListener('click', () => (this.opened ? this.close() : this.open()));
-        el.appendChild(this.fabEl);
-
         this.rootEl = document.createElement('div');
         this.rootEl.className = 'tech-panel';
         this.rootEl.hidden = true;
@@ -130,7 +121,6 @@ export class TechnologyPanel {
         if (this.onOpen) this.onOpen(this);
 
         this.opened = true;
-        this.fabEl.classList.add('active');
         this.rootEl.hidden = false;
 
         // 定义只拉一次,之后常驻 state(50 个节点,不必每次开面板都请求)
@@ -153,7 +143,6 @@ export class TechnologyPanel {
     close() {
         this.opened = false;
         this.stopTicker();
-        if (this.fabEl) this.fabEl.classList.remove('active');
         if (this.rootEl) {
             this.rootEl.hidden = true;
             this.rootEl.innerHTML = '';
@@ -165,9 +154,7 @@ export class TechnologyPanel {
         this.unsubscribed = true;
         this.stopTicker();
         if (this.rootEl && this.rootEl.parentNode) this.rootEl.parentNode.removeChild(this.rootEl);
-        if (this.fabEl && this.fabEl.parentNode) this.fabEl.parentNode.removeChild(this.fabEl);
         this.rootEl = null;
-        this.fabEl = null;
         this.listEl = null;
     }
 
