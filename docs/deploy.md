@@ -1,6 +1,6 @@
-# 部署指南(R1 v1.5.0)
+# 部署指南(R1 v1.5.2)
 
-⚠️ **上传前先备份(数据库 + 现有代码)**——本仓库的完整部署涉及数据库结构变更(迁移)与定义数据(seed),上传前必须先在 cPanel/phpMyAdmin 对生产数据库做一次完整导出备份,并保留一份现有线上代码的副本,确认可回退后再继续。**v1.2.0 → v1.5.0 的增量升级会跑 7 支新迁移,其中 `2026_08_13_200002` 会改 `users` 表结构(加封禁两列,存量行保持 NULL)——结构变更,备份纪律不打折**(见下方「路径 B」)。
+⚠️ **上传前先备份(数据库 + 现有代码)**——本仓库的完整部署涉及数据库结构变更(迁移)与定义数据(seed),上传前必须先在 cPanel/phpMyAdmin 对生产数据库做一次完整导出备份,并保留一份现有线上代码的副本,确认可回退后再继续。**v1.2.0 → v1.5.2 的增量升级会跑 9 支新迁移,其中 `2026_08_13_200002` 改 `users` 表结构(加封禁两列,存量行保持 NULL)、`2026_08_13_300001` 删 `building_definition` 五个死列——两处结构变更,备份纪律不打折**(见下方「路径 B」)。
 
 ⚠️ **首次上线特别提醒**:M3 的 39 支迁移里有 **10 支会改写既有存量数据**(见第 4 步的迁移表「是否动存量数据」列)—— 其中 **9 支动的是定义表**(资源产出补链 / 删三列 / NPC 池 30→150 / 事件复活与特性提升等),**1 支动的是玩家存档**:`2026_08_11_800002_settle_electricity_stock_to_flow` 会**清空玩家的电力库存并折算成资金**(9.F4「电力做流量不做库存」)。这类迁移一旦跑到一半失败,靠 `migrate:rollback` 未必回得干净 —— **备份是唯一可靠的回退手段**,务必先备份再跑。
 
@@ -8,22 +8,22 @@
 
 > 本文档只讲「怎么把这份代码库正确地部署到生产环境」。发布前的检查项(自动 + 人工)见 `docs/ops/release-checklist.md`,先过完那份清单再执行本文档的步骤;§82 发布前清单在本版的逐条走查结果见「四、4. §82 走查结果」。
 >
-> 版本对应关系:代码 `v1.5.0` · 数值 `game_data_version = V3.8.0` · PWA 缓存 `apg-v11` · 迁移文件 **74 支** · 后台规则参数 **154 项** · 测试 **1018 passed**。
+> 版本对应关系:代码 `v1.5.2` · 数值 `game_data_version = V3.8.1` · PWA 缓存 `apg-v11` · 迁移文件 **76 支** · 后台规则参数 **154 项** · 测试 **1018 passed**。
 > (下一个里程碑开发期每新增一支迁移把这里的数字同步 +1;PWA 缓存版本以 `public/game/service-worker.js` 里的实际值为准。)
 
 ---
 
 ## 〇、先确定你走哪条路径
 
-v1.5.0 是 **R1 第一基础版本**。同一份代码有两种上线场景,步骤差别很大 —— **先对号入座,再往下读**:
+v1.5.2 是 **R1 第一基础版本**。同一份代码有两种上线场景,步骤差别很大 —— **先对号入座,再往下读**:
 
-| | **路径 A:首次上线(全新库)** | **路径 B:v1.2.0 → v1.5.0 增量** |
+| | **路径 A:首次上线(全新库)** | **路径 B:v1.2.0 → v1.5.2 增量** |
 |---|---|---|
 | 适用 | 生产库是空的,从零部署 | 线上已经跑着 v1.2.0 |
 | 二、1 拉代码 | ✅ | ✅ |
 | 二、2 `composer install` | ✅ | ✅(`composer.lock` 未变,等于重装一遍,可跳过但不建议) |
 | 二、3 配 `.env` | ✅ **全新配置**(含三把密钥) | ✅ 只需**核对**已有值,无新增键 |
-| 二、4 跑迁移 | ✅ **74 支全跑** | ✅ **跑 7 支新迁移**:`2026_08_12_400001/400002`(定义回填+GDV V3.7.0,纯 DML)、`2026_08_13_100001~100003`(era 门槛新表灌入 + npc trait_multiplier 列 + GDV V3.8.0)、`2026_08_13_200001`(audit_logs 加索引,纯 DDL)、**`200002`(⚠ users 表加 banned_at/ban_reason 两列,结构变更,存量行保持 NULL)**。全部不改玩家数值;down() 均实测可回退 |
+| 二、4 跑迁移 | ✅ **76 支全跑** | ✅ **跑 9 支新迁移**:`2026_08_12_400001/400002`(定义回填+GDV V3.7.0,纯 DML)、`2026_08_13_100001~100003`(era 门槛新表灌入 + npc trait_multiplier 列 + GDV V3.8.0)、`2026_08_13_200001`(audit_logs 加索引,纯 DDL)、**`200002`(⚠ users 表加 banned_at/ban_reason 两列)**、**`300001`(⚠ building_definition 删五个死列,恒0/零读取)**、`300002`(GDV V3.8.1)。全部不改玩家数值;down() 均实测可回退 |
 | 二、5 `db:seed` | ✅ 必须跑 | ❌ **绝对不要跑**(定义 seeder 不幂等,会撞主键) |
 | 二、5.1 SW 版本 | ✅ 确认 `apg-v11` | ✅ 确认 `apg-v11`(v1.2.0 是 `apg-v10`,**这一版必须变**,否则老玩家拿不到新前端) |
 | 二、6 建管理员 | ✅ | ❌ 已有 |
@@ -441,7 +441,7 @@ v1.4.0 在本地(2026-08-12)的实际输出:
 | 4 | CSRF 正常 | ✅ | `bootstrap/app.php` **没有任何 `validateCsrfTokens(except: ...)` 豁免**,`routes/web.php` 的全部路由都在 `web` 组内 → `ValidateCsrfToken` 对所有写路由生效。结构性锁死:`M2SurfaceTest::test_every_m2_mutation_route_is_csrf_protected`(直接断言中间件栈里有 `ValidateCsrfToken::class`);419 响应形状由 `ExceptionRenderTest::test_csrf_mismatch_maps_to_419` 覆盖 |
 | 5 | Auth / Authorization 测试通过 | ✅ | `tests/Feature/Auth/`(Login / Register / Session / UserModel / Schema / AuditLogger)+ `tests/Feature/Security/M2AttackTest.php`(跨玩家实例越权、后台权限阶梯、玩家打后台)+ `tests/Feature/Admin/AdminAccessTest.php`(guest 401 / player 403 + 审计 / admin 200)。`tests/Feature/Security` + `Auth` + `Admin` 三目录全绿(2026-08-12 实跑,封禁全链与运营端点测试已并入);全量 **1018 passed** |
 | 6 | Rate Limit 测试通过 | ✅ | 6 个限流器定义在 `app/Providers/AppServiceProvider.php`(`api` 60/min·IP、`auth` 20、`register` 10、`snapshot` 30/user、`market` 30/user、`admin_write` 20/user),触发时统一写 `SECURITY.RATE_LIMIT` 审计 + Security Log。**反向全覆盖**:`M2SurfaceTest::test_every_api_route_is_rate_limited` 遍历路由表,`api/*` 每条都必须挂限流,豁免必须显式登记 —— 目前唯一豁免是 `/api/health`(探活不该被节流) |
-| 7 | Migration Review | ⚠️ | v1.4.1+v1.5.0 合计新增 **7 支**(定义回填×2 / era 新表 / trait 列 / GDV×2 / 审计索引 / **users 封禁两列=结构变更**,均幂等、down() 实测可回退,不改玩家数值);**路径 A 要把第 4 步的迁移表逐支过一遍**,重点是标了「动存量数据」的 10 支(尤其 `2026_08_11_800002` 动玩家存档) |
+| 7 | Migration Review | ⚠️ | v1.4.1→v1.5.2 合计新增 **9 支**(定义回填×2 / era 新表 / trait 列 / GDV×3 / 审计索引 / **users 封禁两列** / **建筑表删五死列**,均幂等、down() 实测可回退,不改玩家数值);**路径 A 要把第 4 步的迁移表逐支过一遍**,重点是标了「动存量数据」的 10 支(尤其 `2026_08_11_800002` 动玩家存档) |
 | 8 | DB Backup 完成 | ⚠️ | 本文顶部三段警示。**这一项只能在生产机上完成,代码库无法代劳** |
 | 9 | Restore Procedure 可用 | ⚠️ | §79 明确「有备份文件 ≠ 能恢复」。上线前**实际拿备份恢复一次到临时库**再算过 |
 | 10 | `.env` 未进入 Git | ✅ | `release:check` 自动查 → ✓。另做过**全历史**核查(104 个 commit):`git log --all --diff-filter=A` 里 `.env*` 只出现过 `.env.example` 一个文件,`.env` **从未被跟踪过**;全历史 `.env.example` 里没有真实 `APP_KEY`、没有非空的 `DB_PASSWORD`/`MAIL_PASSWORD`/`AWS_SECRET_ACCESS_KEY`(唯一命中是占位的 `MAIL_PASSWORD=null`) |
@@ -474,7 +474,7 @@ v1.4.0 在本地(2026-08-12)的实际输出:
 
 若部署后发现问题需要回退:
 
-> **路径 B(v1.2.0 → v1.5.0)的回滚**:先 `php artisan migrate:rollback --step=7`(退回七支新迁移,down() 均已实测:拟名回 NULL、era 表与封禁列干净移除、事件与工具逐字复原),再把代码切回 v1.2.0 的 commit、`config:clear && route:clear` 重新 cache。玩家数值不受影响。另:若已在后台改过 154 项参数中的新键,回滚代码后那些 game_settings 行会失去读取方,无害但建议顺手删行。PWA 注意:已经拿到 `apg-v11` 的客户端会在回滚后重新装回 `apg-v10`,期间可能有一次强刷。
+> **路径 B(v1.2.0 → v1.5.2)的回滚**:先 `php artisan migrate:rollback --step=9`(退回九支新迁移,down() 均已实测:拟名回 NULL、era 表与封禁列干净移除、事件与工具逐字复原),再把代码切回 v1.2.0 的 commit、`config:clear && route:clear` 重新 cache。玩家数值不受影响。另:若已在后台改过 154 项参数中的新键,回滚代码后那些 game_settings 行会失去读取方,无害但建议顺手删行。PWA 注意:已经拿到 `apg-v11` 的客户端会在回滚后重新装回 `apg-v10`,期间可能有一次强刷。
 > 下面 1~4 步针对的是**路径 A(跑过迁移)**的回滚。
 
 1. **数据库先行**:优先从本次部署前做的备份直接恢复数据库(最快、最安全),而不是依赖 `migrate:rollback` 反向跑迁移(反向迁移可能因为期间已产生的新数据而失败或丢数据)。

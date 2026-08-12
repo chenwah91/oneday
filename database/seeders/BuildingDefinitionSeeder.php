@@ -33,6 +33,10 @@ class BuildingDefinitionSeeder extends Seeder
                 );
             }
 
+            // 五个死列已物理删除(2026_08_13_300001,用户拍板删5留3):
+            // population_min/governance_ratio_min/happiness_min(恒0无读取)、
+            // base_workers/base_build_seconds(被 level 表逐级列取代)。
+            // buildings.json 里仍保留 base_workers/base_build_seconds 两个键(v3.2 历史设计数据),此处刻意不读
             return [
                 'building_id'          => $r['building_id'],
                 'era_key'              => $r['era'],
@@ -42,12 +46,7 @@ class BuildingDefinitionSeeder extends Seeder
                 'max_count'            => $r['max_count'],
                 'footprint_w'          => $r['footprint_w'],
                 'footprint_h'          => $r['footprint_h'],
-                'base_workers'         => $r['base_workers'],
-                'base_build_seconds'   => $r['base_build_seconds'],
                 'tech_id'              => $r['tech_id'],
-                'population_min'       => 0,
-                'governance_ratio_min' => 0,
-                'happiness_min'        => 0,
                 'upgrade_to_building_id' => $upgradeTo,
             ];
         }, $rows);

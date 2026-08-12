@@ -4,6 +4,10 @@
 
 > 本文件是项目第一份正式 CHANGELOG——在此之前各阶段版本号只体现在 git commit message 里(`vX.Y.Z ...`),未集中记录。下方「更早里程碑」一节按 commit 顺序补录这些历史版本供追溯,详细条目从 `v1.0.0` 开始按标准 CHANGELOG 格式维护。
 
+## [v1.5.2] — 死列清理(2026-08-13)
+
+用户拍板「按建议删」的落地:`building_definition` **物理删除五个零引用死列**(`population_min` / `governance_ratio_min` / `happiness_min` 三个建造门槛列——恒 0 且无代码读取;`base_workers` / `base_build_seconds`——被 level 表逐级列取代),照 V3.2.1 删三列先例。**保留三个**:`upgrade_to_building_id`(跨代升级链数据地基,测试守护,仍不可编辑)与 `resource_definition` 两个未来系统预留标记。`game_data_version` → **V3.8.1**(列集变更,checksum 对账需要);迁移 74 → **76 支**;`buildings.json` 保留两个历史键(seeder 已停读,注释说明)。测试保持 **1018** 全绿(死列只读用例改为「五列确实不存在 + 保留列仍被挡」)。
+
 ## [v1.5.1] — W11 后台全面化(界面)(2026-08-13)
 
 后台前端全面改版,v1.5.0 的全部后端能力至此**界面可达**。991 行单文件 `admin.js` 拆成 ES modules(core/ui/panels 三层,3615 行),浏览器实测 45 步 + 复验 7 步全过,console 零 JS 错误。

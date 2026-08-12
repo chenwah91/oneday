@@ -1052,13 +1052,10 @@ class AdminDefinitionController extends Controller
     // 改大一格会让所有存量建筑瞬间互相重叠(而重叠检测只在建造时跑,存量不会被重新校验)——
     // 那不是「数值失衡」,是地图数据当场自相矛盾。
     //
-    // ⚠️ 另有六列**零引用死列**,同样不进 allowlist,但理由不同 ——
-    //   population_min / governance_ratio_min / happiness_min / base_workers /
-    //   base_build_seconds / upgrade_to_building_id
-    // 它们在表里有值,但全项目没有任何代码读它们(建造闸门读的是等级表与科技,
-    // 工人数读 building_level_definition.worker_required,工期读 duration_seconds)。
-    // 开放编辑等于给运营一个「改了完全没反应」的假旋钮 —— 比不开放更糟。
-    // 这六列是补实现还是删列,待用户裁决(见交付汇报),裁决之前一律保持只读。
+    // 死列裁决已落地(用户 2026-08-13「按建议删」,迁移 2026_08_13_300001):
+    //   population_min / governance_ratio_min / happiness_min / base_workers / base_build_seconds
+    //   五个零引用死列已物理删除;upgrade_to_building_id **保留**(跨代升级链数据地基,
+    //   有 EnumCodeTest 整套守护)但仍不进 allowlist —— 改升级去向是改进化树拓扑,走迁移。
     private const BUILDING_DEF_EDITABLE = ['max_count'];
 
     // 列表:94 行的可编辑上限 + 只读结构列。

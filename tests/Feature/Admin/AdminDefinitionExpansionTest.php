@@ -274,22 +274,24 @@ class AdminDefinitionExpansionTest extends TestCase
         $this->assertSame($before, (int) DB::table('building_definition')->where('building_id', 'F01')->value('max_count'));
     }
 
-    // 六列零引用死列:在表里有值,但全项目没有代码读它们。
-    // 开放编辑等于给运营一个「改了完全没反应」的假旋钮 —— 补实现还是删列待用户裁决,裁决前保持只读
-    public function test_dead_columns_stay_read_only_until_adjudicated(): void
+    // 死列裁决落地(用户 2026-08-13「按建议删」):五个真死列已物理删除(2026_08_13_300001),
+    // upgrade_to_building_id 保留(跨代升级链的数据地基,有 EnumCodeTest 整套守护)但仍不可编辑。
+    // 本用例钉两件事:①五列确实不存在了(防止将来被无意加回);②保留列仍被 allowlist 挡住
+    public function test_dead_columns_dropped_and_kept_column_stays_read_only(): void
     {
-        $admin = $this->admin();
-
-        $dead = [
+        foreach ([
             'population_min', 'governance_ratio_min', 'happiness_min',
-            'base_workers', 'base_build_seconds', 'upgrade_to_building_id',
-        ];
-
-        foreach ($dead as $field) {
-            $this->actingAs($admin)->postJson('/api/admin/definitions/building', [
-                'building_id' => 'F01', 'field' => $field, 'value' => 1, 'reason' => '试图改死列',
-            ])->assertStatus(422);
+            'base_workers', 'base_build_seconds',
+        ] as $column) {
+            $this->assertFalse(
+                \Illuminate\Support\Facades\Schema::hasColumn('building_definition', $column),
+                "死列 {$column} 应已被 2026_08_13_300001 删除"
+            );
         }
+
+        $this->actingAs($this->admin())->postJson('/api/admin/definitions/building', [
+            'building_id' => 'F01', 'field' => 'upgrade_to_building_id', 'value' => 1, 'reason' => '试图改升级链',
+        ])->assertStatus(422);
     }
 
     public function test_building_editor_requires_permission(): void

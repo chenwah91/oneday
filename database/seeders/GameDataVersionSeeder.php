@@ -236,5 +236,14 @@ class GameDataVersionSeeder extends Seeder
                 'notes'       => 'W11-B 定义层扩容:时代升级门槛搬表(era_upgrade_requirement 9 行 = §5.1,同时是国防威胁需求的唯一来源)+ npc_definition 新增 trait_multiplier 特性强度倍率 + 建筑等级 JSON 条目 / 科技 / 建筑上限 / NPC 等级曲线 / 时代门槛后台可编辑',
             ]
         );
+
+        DB::table('game_data_versions')->updateOrInsert(
+            ['version' => 'V3.8.1'],
+            [
+                'deployed_at' => now(),
+                'deployed_by' => 'seed',
+                'notes'       => '删除 building_definition 五个死列(三门槛列恒0无读取 + base_workers/base_build_seconds 被 level 表取代;用户 2026-08-13 拍板删5留3,upgrade_to_building_id 与资源两标记保留)',
+            ]
+        );
     }
 }

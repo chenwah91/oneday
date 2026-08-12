@@ -196,7 +196,7 @@ class EnumCodeTest extends TestCase
         return [
             'building_id' => $id, 'era' => 'I', 'category' => 'housing', 'series' => 'residence',
             'name' => '测试建筑' . $id, 'max_count' => 1, 'footprint_w' => 1, 'footprint_h' => 1,
-            'base_workers' => 0, 'base_build_seconds' => 1, 'tech_id' => null, 'upgrade_to' => $upgradeTo,
+            'tech_id' => null, 'upgrade_to' => $upgradeTo,
         ];
     }
 
