@@ -98,8 +98,17 @@ class M2SurfaceTest extends TestCase
             $this->assertNotEmpty($throttles, "POST /{$uri} 没挂任何限流器");
         }
 
-        // 后台写操作额外叠一层 admin_write:管理员账号被盗时批量刷补偿要先撞上限
-        foreach (['api/admin/compensation', 'api/admin/settings'] as $uri) {
+        // 后台写操作额外叠一层 admin_write:管理员账号被盗时批量刷补偿/批量改全服数值要先撞上限。
+        // 名单是**全部** POST api/admin/* 写端点(R1-B 走查发现 building-level/npc 两条漏挂,补上后全量锁死)
+        foreach ([
+            'api/admin/compensation',
+            'api/admin/settings',
+            'api/admin/definitions/building-level',
+            'api/admin/definitions/npc',
+            'api/admin/definitions/market',
+            'api/admin/definitions/item',
+            'api/admin/definitions/event',
+        ] as $uri) {
             $this->assertContains(
                 ThrottleRequests::class.':admin_write',
                 $this->middlewareOf($uri, 'POST'),

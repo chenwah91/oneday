@@ -43,7 +43,7 @@ php artisan release:check
 - [ ] **玩家侧不出现 Stack Trace**:`APP_DEBUG=false` 前提下,`bootstrap/app.php` 的 `withExceptions` 已对 `api/*` 及期望 JSON 的请求统一转成 `ApiResponse::fail(...)` 的稳定错误码 JSON,5xx 会写日志但不回传异常细节;非 API 的 Web 请求走 Laravel 默认错误页(`APP_DEBUG=false` 时同样不含 Stack Trace)。发布前实际触发一次 5xx 确认响应体干净。
 - [ ] **Admin 权限**:确认 `/api/admin/*` 路由组仍套着 `['auth:web', 'admin', 'throttle:api']`(`routes/web.php`),`admin` 别名指向 `app/Http/Middleware/EnsureAdmin.php`;用非管理员账号实测访问被拒绝(403)。
 - [ ] **依赖安全检查**:发布前跑 `composer audit`(PHP 依赖,`composer.json` 无框架外重依赖);若本次改动涉及 `package.json`(Vite/Tailwind 等前端构建依赖),补跑 `npm audit`。
-- [ ] **PWA 缓存版本**:`public/game/service-worker.js` 中的 `const CACHE = 'apg-v1';` ——只要本次发布改动了任何被 `PRECACHE_URLS` 预缓存的静态资源,必须同步把这个版本号往上加一(如 `apg-v2`),否则玩家端 Service Worker 会继续用旧缓存,更新对已安装 PWA 的玩家不生效。
+- [ ] **PWA 缓存版本**:`public/game/service-worker.js` 中的 `const CACHE`(v1.3.0 为 `apg-v11`)——只要本次发布改动了任何被 `PRECACHE_URLS` 预缓存的静态资源,必须同步把这个版本号往上加一,否则玩家端 Service Worker 会继续用旧缓存,更新对已安装 PWA 的玩家不生效。改完记得同步 `tests/Feature/Definition/EnumCodeTest.php` 里的断言(不同步会直接测试红,属刻意的结构性锁死)。
 
 ## 三、数据库(生产 MySQL 5.7 vs 本地 MariaDB)
 

@@ -3,8 +3,9 @@
 use App\Support\ApiResponse;
 use Illuminate\Support\Facades\Route;
 
+// 根路径直达游戏入口(R1-B):玩家入口是 /game/,Laravel 骨架 welcome 页(82KB)对玩家无意义
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/game/');
 });
 
 // 基础设施探针(供中间件/健康检查测试)
@@ -60,6 +61,11 @@ Route::prefix('api')->group(function () {
         // 与其它 definitions 端点同一档(auth:web + throttle:api):它是全服共享的静态定义,不含任何玩家数据。
         // **不下发 trait_json 的 specs 结构**(理由见 DefinitionController::npcs 的注释)
         Route::get('/definitions/npcs', [\App\Http\Controllers\City\DefinitionController::class, 'npcs'])->middleware('throttle:api');
+
+        // 工具定义(R1-B):24 件工具的制作目录(成本 / 时代 / 制作建筑 / 耐久 / 效果),供前端工具面板制作区显示。
+        // 与其它 definitions 端点同一档(auth:web + throttle:api):全服共享的静态定义,不含任何玩家数据。
+        // **不下发 effect_json 的 specs 结构**(理由见 DefinitionController::items 的注释)
+        Route::get('/definitions/items', [\App\Http\Controllers\City\DefinitionController::class, 'items'])->middleware('throttle:api');
 
         // 建造:完整安全链(幂等/Revision/占地/上限/资源/审计)
         Route::post('/city/build', \App\Http\Controllers\City\BuildController::class)->middleware('throttle:api');
@@ -170,11 +176,13 @@ Route::prefix('api/admin')->middleware(['auth:web', 'admin', 'throttle:api'])->g
     // Definition 调整:某建筑三级可编辑字段快照 / 提交调整(allowlist + 审计 + 版本递增)。
     // 查看当前值是「调整流程」的第一步,与提交同挂 edit_definition:support / game_master 不碰游戏数值
     Route::get('/definitions/building-levels', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'buildingLevels'])->middleware('admin:edit_definition');
-    Route::post('/definitions/building-level', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editBuildingLevel'])->middleware('admin:edit_definition');
+    // 写入端点叠 admin_write 限流(R1-B 走查补漏):与 market/item/event/settings/compensation 同一纪律,
+    // 管理员账号被盗时批量改全服数值要先撞 20/min 上限
+    Route::post('/definitions/building-level', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editBuildingLevel'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
 
     // NPC 定义调整(M3-D1):与建筑等级同一套机制(allowlist 字段 + 强制 reason + 审计 + 版本递增)
     Route::get('/definitions/npcs', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'npcs'])->middleware('admin:edit_definition');
-    Route::post('/definitions/npc', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editNpc'])->middleware('admin:edit_definition');
+    Route::post('/definitions/npc', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editNpc'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
 
     // 市场定义(M3-D3,v3.2 §8 的 26 行):查看 / 调整基础价、波动率、弹性、费率、流动性、价格区间。
     // 与建筑等级 / NPC 同权限(edit_definition):改一行基础价就是改全服价格,属最高风险的数值改动。

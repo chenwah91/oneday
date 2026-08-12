@@ -12,6 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(\App\Http\Middleware\EnsureRequestId::class);
+        // 安全响应头挂全局(append = 出站最后一道):所有 Laravel 响应统一带上,静态文件另由服务器配置
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->alias(['admin' => \App\Http\Middleware\EnsureAdmin::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\City;
 
+use App\Game\City\EraService;
+use App\Game\Item\ItemDefinition;
 use App\Game\Resource\ResourceCode;
 use App\Http\Controllers\Controller;
 use App\Support\ApiResponse;
@@ -163,5 +165,68 @@ class DefinitionController extends Controller
             'skills'      => $skills,
             'level_curve' => $curve,
         ]]);
+    }
+
+    // 工具定义(R1-B,v3.2 §7 的 24 行):玩家侧制作目录。
+    //
+    // 补的是与 npcs 同一类的硬缺口:制作必须提交 item_id(§7 是配方合成不是抽奖),
+    // 而「有哪些工具 / 材料成本多少 / 要什么时代与制作建筑」三样只在 item_definition 里,
+    // 玩家侧一个都读不到(/api/admin/definitions/items 是 edit_definition 权限的后台端点)。
+    // 前端因此只能把制作区降级成一句缺口提示 —— 本端点点亮它。
+    //
+    // ══ 为什么**不**下发 effect_json 的 specs 结构 ═══════════════════════════════
+    // 与 npcs() 的 trait_json 逐字同一条理由:specs 是内核投稿 modifier 的内部表达
+    //(target / scope / op / value / scope_key),下发出去 ① 客户端拿它自己算加成,
+    // 永远算不出与服务端乘区口径一致的数;② 它是内部结构,target 名单随波次增删,
+    // 下发等于把它变成对外契约。展示信息由 effect_code + effect_value + unit 三列给足
+    //(§7 原文三列,前端 enum-names.js 把 code 翻成中文,数值一律用服务器下发的)。
+    // 同理不下发 unmapped_zh / crafting_unmapped_zh:那两列是「本波没映射上」的内部排查记录。
+    //
+    // trade_value 也不下发:B5 已批 M3 不做工具交易,这一列当前只是将来「拆解返还」的基数,
+    // 下发就等于对玩家承诺一个不存在的卖出价。
+    //
+    // min_era_order 一并给出(与 buildings / technologies / npcs 三个端点同一条理由,§13):
+    // 前端要拿它与快照的 city.era.era_order 比,把「还没到时代」的工具置灰,
+    // 否则前端得自己维护一张「时代 → 序号」表 —— 序号只在 era 表里有一份。
+    //
+    // 读表走 ItemDefinition::all():该类的文件头写死了「全项目只有这里读 item_definition」,
+    // 这里再自己拼一次 SQL 就会让 craft_cost_json 的解析口径出现第二份
+    //(它会丢掉 ≤0 的脏项,与制作路径判「定义损坏」的口径必须一致)
+    public function items(): JsonResponse
+    {
+        $orders = EraService::orders();
+
+        $items = array_values(array_map(fn ($def) => [
+            'item_id'  => $def['item_id'],
+            'name_key' => $def['name_key'],
+            // §7 里工具**没有中文名**,只有 name_key 与 equip_target_desc_zh(伐木工 / 猎人…)。
+            // 后者是工具唯一的中文显示成分,前端的显示名 = 类别(装备对象);
+            // 下发它就是为了让前端删掉临时补位的 ITEM_EQUIP_TARGET_NAMES 小表(该表注释已写明)
+            'equip_target_desc_zh' => $def['equip_target_desc_zh'],
+            // §7 明文「单建筑同类加成只取最高值」就是按 category 分组的,前端要拿它提示玩家
+            'category'      => $def['category'],
+            'min_era'       => $def['min_era'],
+            'min_era_order' => (int) ($orders[$def['min_era']] ?? 0),
+            // 耐久上限(点);运行时的剩余耐久在快照的 items 块,不在定义里
+            'durability'      => (int) $def['durability'],
+            'durability_tier' => $def['durability_tier'],
+            // work_minutes / uses:medical_item 是一次性消耗品,玩家要在做之前就看得出来
+            'durability_mode' => $def['durability_mode'],
+            'effect_code'     => $def['effect_code'],
+            'effect_value'    => (float) $def['effect_value'],
+            'unit'            => $def['unit'],
+            // 材料成本 {资源 code => 数量}(与建筑 level1.cost 同构:资源 code 的中文名
+            // 一律由 /api/definitions/resources 翻,不在这里重复一份显示名)
+            'craft_cost' => $def['craft_cost'],
+            // 制作来源:building_id 有值才是真闸门(ItemService::craft 只校验这一列);
+            // 为空的两类(手工制作 / §7 点名的建筑不在 94 栋内)不设建筑门槛,
+            // 前端照 desc 原文显示即可 —— 两者的区别对玩家没有意义,对玩家只有「要不要先建楼」
+            'crafting_source_desc_zh' => $def['crafting_source_desc_zh'],
+            'crafting_building_id'    => $def['crafting_building_id'],
+            // §7 的 note_zh:一句中文补充说明(「消耗型道具」「终局专属」),仅供显示
+            'note' => $def['note'],
+        ], ItemDefinition::all()));
+
+        return ApiResponse::ok(['data' => ['items' => $items]]);
     }
 }
