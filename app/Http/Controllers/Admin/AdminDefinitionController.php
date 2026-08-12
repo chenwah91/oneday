@@ -91,9 +91,18 @@ class AdminDefinitionController extends Controller
     public function buildingLevels(Request $request): JsonResponse
     {
         $buildingId = (string) $request->query('buildingId', '');
+        // W11-2 补漏:①下发三个 JSON 列现值(building-level-json 条目编辑器要显示当前产量/配方/造价,
+        // 此前后台只能借游戏侧端点看 L1 的两列);②与其余 8 个定义 GET 对齐,下发 editable 数组,
+        // 前端不再用「行键名 − 主键列」兜底推导。JSON 列 decode 后下发(空列退化 {} 由前端处理)
         $rows = DB::table('building_level_definition')->where('building_id', $buildingId)->orderBy('level')
-            ->get(array_merge(['building_id', 'level'], self::EDITABLE));
-        return ApiResponse::ok(['data' => ['levels' => $rows]]);
+            ->get(array_merge(['building_id', 'level'], self::EDITABLE, ['output_json', 'input_json', 'cost_json']))
+            ->map(function ($r) {
+                foreach (['output_json', 'input_json', 'cost_json'] as $col) {
+                    $r->{$col} = json_decode($r->{$col} ?? 'null', true);
+                }
+                return $r;
+            });
+        return ApiResponse::ok(['data' => ['levels' => $rows, 'editable' => self::EDITABLE]]);
     }
 
     public function editBuildingLevel(Request $request): JsonResponse

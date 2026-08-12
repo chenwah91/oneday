@@ -27,12 +27,10 @@ html, body {
     color: #9aa4b2;
 }
 
-/* 顶部栏 */
+/* 顶部栏:上排身份 + 下排 tab 导航 */
 .topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 20px;
+    display: block;
+    padding: 12px 20px 0;
     background: #1b212b;
     border-bottom: 1px solid #2a3140;
 }
@@ -178,14 +176,14 @@ html, body {
     text-align: center;
 }
 
-/* 主看板 */
+/* 主看板:定义整表(NPC 150 行 / 建筑 94 行)列多且宽,窄栅格会让每一列都撞在一起 */
 .dashboard {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 18px;
     padding: 20px;
-    max-width: 1100px;
+    max-width: 1680px;
     width: 100%;
     margin: 0 auto;
 }
@@ -333,10 +331,13 @@ html, body {
     padding: 10px 12px;
 }
 
-/* 规则开关表格:说明列允许换行(其余列沿用 .data-table 的 nowrap) */
-.setting-desc {
+/* 规则开关表格:说明列允许换行(其余列沿用 .data-table 的 nowrap)。
+   选择器必须带 .data-table td —— 单靠 .setting-desc 权重低于 .data-table td 的 nowrap,
+   154 条说明会各占一行把「当前值 / 操作」两列挤出屏幕外 */
+.data-table td.setting-desc {
     white-space: normal;
     min-width: 260px;
+    max-width: 520px;
     color: #9aa4b2;
 }
 
@@ -426,4 +427,392 @@ html, body {
 /* 已停用的事件整行压暗:运营扫一眼就知道哪些当前不会触发 */
 .row-disabled {
     opacity: 0.55;
+}
+
+/* ==================== W11-2 后台改版:tab 导航 / 面板 / 展开行 ==================== */
+
+/* 顶栏拆成两行:身份一行,tab 导航一行 */
+.topbar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 10px;
+}
+
+.tab {
+    padding: 6px 12px;
+    border-radius: 8px 8px 0 0;
+    border: 1px solid transparent;
+    color: #9aa4b2;
+    font-size: 13px;
+    text-decoration: none;
+    line-height: 1.6;
+}
+
+.tab:hover {
+    color: #e8eaed;
+    background: rgba(91, 141, 239, 0.08);
+}
+
+.tab-active {
+    color: #e8eaed;
+    background: #12161c;
+    border-color: #2a3140;
+    border-bottom-color: #12161c;
+    font-weight: 600;
+}
+
+#panel-root {
+    display: block;
+}
+
+/* 面板说明:每个面板顶部一行「这一页能改什么、改坏了会怎样」 */
+.panel-hint {
+    font-size: 12px;
+    line-height: 1.7;
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    border-left: 3px solid #333c4a;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.panel-hint b {
+    color: #c7cedb;
+}
+
+.panel-subtitle {
+    margin: 18px 0 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #c7cedb;
+}
+
+.def-toolbar:not(:empty) {
+    margin-bottom: 10px;
+}
+
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.filter-bar input,
+.filter-bar select,
+.panel-actions select {
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid #333c4a;
+    background: #12161c;
+    color: #e8eaed;
+    font-size: 13px;
+}
+
+.filter-bar input[type="search"],
+.filter-bar input[type="text"] {
+    min-width: 170px;
+}
+
+.filter-bar input:focus,
+.filter-bar select:focus,
+.panel-actions select:focus {
+    outline: none;
+    border-color: #5b8def;
+}
+
+.inline-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.btn-sm {
+    padding: 4px 9px;
+    font-size: 12px;
+    border-radius: 6px;
+}
+
+.load-more {
+    margin-top: 10px;
+}
+
+/* ---------- 仪表盘数字卡 ---------- */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.stat-card {
+    background: #151a22;
+    border: 1px solid #2a3140;
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+
+.stat-value {
+    font-size: 22px;
+    font-weight: 600;
+    color: #e8eaed;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: #c7cedb;
+    margin-top: 2px;
+}
+
+.stat-note {
+    font-size: 11px;
+    margin-top: 4px;
+    line-height: 1.5;
+}
+
+/* ---------- 整表定义编辑器 ---------- */
+.cell-id {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 12px;
+}
+
+/* 同上:必须带 .data-table td 才盖得住 nowrap(特性文案 / 备注 / 触发条件都很长) */
+.data-table td.cell-wrap {
+    white-space: normal;
+    max-width: 280px;
+}
+
+.cell-actions {
+    white-space: nowrap;
+}
+
+.cell-version {
+    font-size: 11px;
+}
+
+.cell-locked {
+    color: #9aa4b2;
+    font-style: italic;
+}
+
+.cell-warn {
+    color: #ffb65b;
+}
+
+.cell-input {
+    width: 100px;
+    padding: 4px 6px;
+    background: #151a22;
+    border: 1px solid #2a3140;
+    border-radius: 4px;
+    color: #e7ecf3;
+    font-size: 12px;
+}
+
+select.cell-input {
+    width: auto;
+    min-width: 110px;
+}
+
+.cell-input:focus {
+    outline: none;
+    border-color: #5b8def;
+}
+
+.event-disabled-reason {
+    width: 150px;
+    padding: 4px 6px;
+    background: #151a22;
+    border: 1px solid #2a3140;
+    border-radius: 4px;
+    color: #e7ecf3;
+    font-size: 12px;
+}
+
+/* ---------- 展开行(建筑等级条目 / 玩家详情 / 审计详情)---------- */
+.expand-row > td {
+    background: #151a22;
+    white-space: normal;
+    padding: 12px 14px;
+}
+
+tr.clickable {
+    cursor: pointer;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 6px 16px;
+    font-size: 13px;
+}
+
+.detail-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+}
+
+.ban-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.ban-form .ban-reason {
+    flex: 1 1 280px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid #333c4a;
+    background: #12161c;
+    color: #e8eaed;
+    font-size: 13px;
+}
+
+/* ---------- JSON 分组(建筑等级条目 / 审计四列)---------- */
+.json-groups {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 8px;
+}
+
+.json-group,
+.json-col {
+    min-width: 260px;
+    flex: 1 1 260px;
+}
+
+.json-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #c7cedb;
+    margin-bottom: 6px;
+}
+
+.json-note {
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 8px;
+}
+
+.json-pre {
+    margin: 0;
+    padding: 8px 10px;
+    background: #12161c;
+    border: 1px solid #2a3140;
+    border-radius: 6px;
+    font-size: 11px;
+    line-height: 1.5;
+    max-height: 260px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.json-value {
+    width: 100px;
+    padding: 4px 6px;
+    background: #151a22;
+    border: 1px solid #2a3140;
+    border-radius: 4px;
+    color: #e7ecf3;
+    font-size: 12px;
+}
+
+/* ---------- 规则参数页 ---------- */
+.group-row td {
+    background: #171d26;
+    color: #a9c2ff;
+    font-weight: 600;
+    font-size: 12px;
+    padding: 8px 10px;
+}
+
+/* 已改动:左侧色条 —— 运营最想一眼看出「这台机器被动过哪些旋钮」 */
+.row-changed td:first-child {
+    border-left: 3px solid #5b8def;
+}
+
+.row-deprecated {
+    opacity: 0.5;
+}
+
+.badge-changed {
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: rgba(91, 141, 239, 0.18);
+    color: #a9c2ff;
+    font-size: 11px;
+}
+
+.depend-hint {
+    margin-top: 3px;
+    font-size: 11px;
+    color: #ffb65b;
+}
+
+/* ---------- Toast ---------- */
+/* 右下角:右上角会盖住退出登录与角色徽标 */
+.toast-host {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 90;
+    max-width: 420px;
+}
+
+.toast {
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: #1b212b;
+    border: 1px solid #333c4a;
+    color: #e8eaed;
+    font-size: 13px;
+    line-height: 1.5;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    transition: opacity 0.4s ease;
+}
+
+.toast-ok {
+    border-color: rgba(76, 217, 123, 0.5);
+}
+
+.toast-out {
+    opacity: 0;
+}
+
+/* 定义整表列多(事件表有 15 列),横向必然要滚 —— 把「操作」列钉在右侧,
+   保存 / 触发按钮永远够得着,不必先横向拖到底再点 */
+.def-table td.cell-actions,
+.def-table th:last-child {
+    position: sticky;
+    right: 0;
+    background: #1b212b;
+    border-left: 1px solid #2a3140;
+}
+
+/* 触发条件 / 备注这类长文案列收窄一点,给右侧的可编辑列腾地方 */
+.data-table td.cell-wrap {
+    max-width: 220px;
+}
+
+/* 行内版本号:挂在操作格里,保存成功后显示新的 game_data_version */
+.cell-actions .cell-version {
+    margin-left: 6px;
+    font-size: 11px;
 }

@@ -311,13 +311,18 @@ class AdminReadController extends Controller
             $q->where('id', '<', $beforeId);
         }
 
+        // with_delta=1:仅追加 delta_json 一列(W11-2 补偿历史小表要显示每笔发了多少)。
+        // 列表默认不带任何 JSON 列的尺寸理由见 auditDetail 注释——delta 是四列里最小的一列
+        // (资源差额映射,几十字节),按需带上不破坏那条纪律;before/after/metadata 仍只走详情
+        $withDelta = $request->query('with_delta') === '1';
+
         $rows = $q->get();
         $audit = $rows->map(fn ($r) => [
             'id' => $r->id, 'occurredAt' => $r->occurred_at, 'action' => $r->action,
             'actorType' => $r->actor_type, 'actorId' => $r->actor_id, 'userId' => $r->user_id,
             'cityId' => $r->city_id, 'status' => $r->status, 'reasonCode' => $r->reason_code,
             'requestId' => $r->request_id,
-        ])->all();
+        ] + ($withDelta ? ['delta' => json_decode($r->delta_json ?? 'null', true)] : []))->all();
 
         return ApiResponse::ok(['data' => [
             'audit' => $audit,
