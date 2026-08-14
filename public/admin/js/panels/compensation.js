@@ -11,7 +11,7 @@ import { escapeHtml, formatAmount, toast } from '../core/dom.js';
 import { hasPermission } from '../core/session.js';
 import { navigate } from '../core/router.js';
 
-const state = { nodes: null, idempotencyKey: null, userId: null };
+const state = { nodes: null, idempotencyKey: null, userId: null, pendingResource: null };
 
 // 审计行的 delta 列(?with_delta=1 才下发):{"wood": 5} → 「wood +5」。
 // 正负分色 —— 补偿与扣减在这张表里必须一眼分得开
@@ -132,8 +132,24 @@ export const compensationPanel = {
         }
     },
 
-    // 跨面板跳转:#compensation?username=xxx
+    // 跨面板跳转:#compensation?username=xxx(旧)
+    // 或 #compensation?city=21&resource=wood(W14-B,玩家详情「资源现况」行的跳转):
+    // 有 city 就预填 city_id 并自动执行查询;resource 记为待选,由 lookup 在下拉就绪后消费。
     apply(params) {
+        if (params.city !== undefined) {
+            const cityId = Number(params.city);
+            if (Number.isInteger(cityId) && cityId > 0) {
+                state.nodes.cityId.value = cityId;
+                state.nodes.username.value = '';   // targetPayload 按 city_id 优先,清掉旧用户名防歧义
+                state.pendingResource = params.resource || null;
+                lookup();
+            }
+            // 参数是一次性的:消费完立刻从 hash 摘掉(replace 不入历史),
+            // 刷新页面 / 切 tab 再回来都不会重复触发查询 ——
+            // router 只在 hash 带参数时才调 apply,替换后的 #compensation 走无参数路径
+            location.replace('#compensation');
+            return;
+        }
         if (params.username) {
             state.nodes.username.value = params.username;
             state.nodes.cityId.value = '';
@@ -178,11 +194,21 @@ async function lookup(keepResult) {
         `).join('');
         if (selected) state.nodes.resource.value = selected;
 
+        // 跨面板跳转带来的目标资源(W14-B):选项就绪后自动选中,只消费一次;
+        // 压过上面的「保留旧选择」—— 运营点的是「给这项资源补偿」,意图更明确
+        if (state.pendingResource) {
+            if ((data.resources || []).some((r) => r.code === state.pendingResource)) {
+                state.nodes.resource.value = state.pendingResource;
+            }
+            state.pendingResource = null;
+        }
+
         state.nodes.jumpAudit.classList.remove('hidden');
         await loadHistory();
     } catch (err) {
         state.nodes.city.textContent = '';
         state.nodes.resource.innerHTML = '<option value="">先查询城市</option>';
+        state.pendingResource = null; // 查询失败:待选资源一并作废,不能残留到下一次手动查询
         setError(errorMessage(err));
     }
 }

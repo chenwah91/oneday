@@ -8,6 +8,8 @@ use App\Game\Definition\GameDataVersion;
 use App\Game\Event\EventDefinition;
 use App\Game\Item\ItemDefinition;
 use App\Game\Market\MarketDefinition;
+use App\Game\Modifier\ModifierSpec;
+use App\Game\NPC\NpcCode;
 use App\Game\Resource\ResourceCode;
 use App\Http\Controllers\Controller;
 use App\Support\ApiResponse;
@@ -19,6 +21,7 @@ use App\Support\Xlsx\XlsxWriter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -67,30 +70,50 @@ class AdminDefinitionController extends Controller
         'cost_json'   => 10000000,
     ];
 
-    // NPC 定义的可编辑字段(M3-D1,v3.2 §6.3)。
+    // NPC 定义的可编辑字段(M3-D1 起步,W14-A 扩到全表合理集合)。
     //
-    // 只放**数值**列:工资 / 口粮 / 初始技能值 / 初始等级 / 上限等级。
-    // 刻意不放 rarity / category / primary_skill_id / recruit_source / trait_json ——
-    // 那几列是「结构」不是「数值」:改 rarity 会同时改掉招募掷点权重与价格档位,
-    // 改 primary_skill_id 会让岗位匹配整体换一套,改 trait_json 要重新过 ModifierSpec 的三重 allowlist。
-    // 结构性调整走 Seed + 迁移(有 diff、可回滚),不给后台一个能一键改坏经济的入口。
+    // W14-A 修旧挂账:此前只开放五个数值列且上限裸奔,运营调一个 NPC 的分类 / 稀有度 / 文案
+    // 都要提工单等发版。现按三类字段分开校验(见 editNpc):
+    //   数值列  逐列过 NPC_FIELD_MAX(旧挂账一并补上,不再裸奔);
+    //   枚举列  category / min_era / rarity / recruit_source 对权威来源校验 ——
+    //           rarity / recruit_source 的权威是 NpcCode 常量(Seeder 守门用的同一份);
+    //           min_era 的权威是 era 表(列上有外键);category 的权威取**库内 distinct**:
+    //           EnumCode 没有 NPC category 登记表、Seeder 也不校验它,库内现值就是最严的口径
+    //           (Fail Closed:不准借道编辑发明新分类,新分类走迁移);
+    //   文本列  name_zh / recruit_desc_zh / trait_desc_zh 按列宽限长。
     //
-    // W11-B 追加 trait_multiplier(特性强度倍率):它正好补上「trait_json 不可编辑」留下的那个洞 ——
-    // 运营真正想调的是「这位 NPC 的特性是不是太强」,而不是特性的结构。倍率满足前者,
-    // 结构仍然锁在 Seed + 迁移那条有 diff、可回滚的路上(见 NpcTraitScale 顶部的口径说明)。
+    // 仍然不可改的列:npc_id / name_key 是主键与派生键;primary_skill_id 改了会让岗位匹配
+    // 整体换一套(结构,走迁移);trait_json 是结构列 —— 强度走 trait_multiplier(W11-B),
+    // 结构锁在 Seed + 迁移那条有 diff、可回滚的路上(AdminDefinitionExpansionTest 明确守着这一条)。
     private const NPC_EDITABLE = [
-        'wage_per_min', 'food_per_min',
+        'name_zh', 'category', 'min_era',
         'initial_skill_value', 'initial_skill_level', 'max_level',
+        'wage_per_min', 'food_per_min',
+        'rarity', 'recruit_source', 'recruit_desc_zh', 'trait_desc_zh',
         'trait_multiplier',
     ];
 
-    // 逐字段的合理上限(下限统一 0)。
-    // 目前只登记 trait_multiplier —— 另外五列的上限是既有缺口,不在本波次范围内(已在交付汇报点名)
+    // 四个枚举列(权威来源见 NPC_EDITABLE 的说明);三个文本列 => 各自的列宽
+    private const NPC_ENUM_EDITABLE = ['category', 'min_era', 'rarity', 'recruit_source'];
+
+    private const NPC_TEXT_MAX = ['name_zh' => 64, 'recruit_desc_zh' => 191, 'trait_desc_zh' => 191];
+
+    // 逐字段的合理上限(下限统一 0)。W14-A 补齐全部数值列 —— 每一条都对应一种「填错就出事」的具体后果
     private const NPC_FIELD_MAX = [
+        // 工资 1e6/分钟:与建筑维护费同量级的上限,防 DECIMAL(10,2) 金额列溢出;
+        // 真到这个量级,一个 NPC 每分钟的工资已超过全服总产出,雇他等于宣布破产
+        'wage_per_min'        => 1000000,
+        // 口粮 1e4/分钟:列是 DECIMAL(8,3)(物理上限 99999.999),§6.3 全表最高 1.4,1e4 已留足实验余量
+        'food_per_min'        => 10000,
+        // 初始技能值是百分制(§6.3 全表最高 99):列是 unsignedSmallInteger,>100 会让技能值失去参照系
+        'initial_skill_value' => 100,
+        // 等级两列:§6.2 曲线只有 10 级,超出会让 NpcBonus 查曲线落空(静默失去全部加成)
+        'initial_skill_level' => 10,
+        'max_level'           => 10,
         // 强度 10 倍:再高会让单个 NPC 的一条特性直接顶爆 §6.4 的单人帽 1.60 与 §13 的 2.75 总帽,
         // 顶爆之后倍率再怎么调都不会有任何变化 —— 运营会看到「改了没反应」,那是最难解释的一类问题。
         // 与 event_definition.effect_multiplier 同一个上限、同一条理由
-        'trait_multiplier' => 10,
+        'trait_multiplier'    => 10,
     ];
 
     public function buildingLevels(Request $request): JsonResponse
@@ -837,13 +860,15 @@ class AdminDefinitionController extends Controller
 
     // ---- NPC 定义(M3-D1)----
 
-    // 列表:150 行原型的可编辑数值 + 只读的结构列(中文名 / 稀有度 / 来源 / 技能),供后台先看后改。
-    // 不分页:全表一屏拉下来才比较得出「这一档工资是不是偏了」;
-    // name_zh 一起给出来 —— 150 行里只靠 N087 这样的 code 认人太难(150 行现已逐条有名)
+    // 列表:150 行原型的可编辑列 + 只读的结构列,供后台先看后改。
+    // 不分页:全表一屏拉下来才比较得出「这一档工资是不是偏了」。
+    // W14-A:可编辑列扩全后,原先的只读列大多进了 NPC_EDITABLE,这里只留三个真正只读的
+    //(主键 / 派生键 / 结构键);trait_json 只读下发 —— 与 items 的 effect_json 同一条理由:
+    // 运营得看得见「特性结构到底是什么」才判断得出 trait_multiplier 该调多少,但结构本身不可编辑
     public function npcs(): JsonResponse
     {
         $rows = DB::table('npc_definition')->orderBy('npc_id')->get(array_merge(
-            ['npc_id', 'name_key', 'name_zh', 'category', 'min_era', 'primary_skill_id', 'rarity', 'recruit_source', 'trait_desc_zh'],
+            ['npc_id', 'name_key', 'primary_skill_id', 'trait_json'],
             self::NPC_EDITABLE
         ));
 
@@ -855,12 +880,21 @@ class AdminDefinitionController extends Controller
     // 所以必须 bump game_data_version —— 否则半年后回查「他当时的工资为什么是 8」会查不出来(§64/§65)
     public function editNpc(Request $request): JsonResponse
     {
+        // W14-A 扩列后字段分三类,value 的形状按 field 分流(与 editMarketDefinition 的 trade_mode 分流同款):
+        // 枚举 / 文本列收 string(限长后逐字段再对权威来源校验),数值列收 numeric + min:0
+        //(放行负数会让 wage_per_min 变成「雇一个人反而每分钟生钱」)
+        $isString = in_array(
+            $request->input('field'),
+            array_merge(self::NPC_ENUM_EDITABLE, array_keys(self::NPC_TEXT_MAX)),
+            true
+        );
+
         $data = $request->validate([
             'npc_id' => ['required', 'string', 'max:16'],
             'field'  => ['required', 'string'],
-            // 与建筑等级同一条理由:allowlist 里的五个字段按设计都是非负数,
-            // 放行负数会让 wage_per_min 变成「雇一个人反而每分钟生钱」
-            'value'  => ['required', 'numeric', 'min:0'],
+            'value'  => $isString
+                ? ['required', 'string', 'max:191']
+                : ['required', 'numeric', 'min:0'],
             // reason 上限对齐 audit_logs.reason_code 的 VARCHAR(80)
             'reason' => ['required', 'string', 'min:2', 'max:80'],
         ]);
@@ -869,36 +903,60 @@ class AdminDefinitionController extends Controller
             return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, ['errors' => ['field' => ['字段不可编辑']]]);
         }
 
-        if (isset(self::NPC_FIELD_MAX[$data['field']]) && (float) $data['value'] > self::NPC_FIELD_MAX[$data['field']]) {
-            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
-                'errors' => ['value' => ['超出该字段允许的上限 ' . self::NPC_FIELD_MAX[$data['field']]]],
-            ]);
-        }
+        if ($isString) {
+            $value = (string) $data['value'];
+            $error = self::validateNpcStringField($data['field'], $value);
+            if ($error !== null) {
+                return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, ['errors' => ['value' => [$error]]]);
+            }
+        } else {
+            $value = (float) $data['value'];
+            if ($value > self::NPC_FIELD_MAX[$data['field']]) {
+                return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
+                    'errors' => ['value' => ['超出该字段允许的上限 ' . self::NPC_FIELD_MAX[$data['field']]]],
+                ]);
+            }
 
-        // 等级类字段必须是 1~10 的整数(§6.2 曲线只有 10 级):
-        // 填 0 或 3.5 会让 NpcBonus 查曲线时落空,静默变成「这个 NPC 没有加成」
-        if (in_array($data['field'], ['initial_skill_level', 'max_level'], true)) {
-            $level = (float) $data['value'];
-            if ($level < 1 || $level > 10 || floor($level) !== $level) {
+            // 等级类字段必须是 1~10 的整数(§6.2 曲线只有 10 级):
+            // 填 0 或 3.5 会让 NpcBonus 查曲线时落空,静默变成「这个 NPC 没有加成」
+            if (in_array($data['field'], ['initial_skill_level', 'max_level'], true)
+                && ($value < 1 || floor($value) !== $value)) {
                 return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
                     'errors' => ['value' => ['等级必须是 1~10 的整数']],
+                ]);
+            }
+
+            // 技能值是 int 列(W14-A 补漏):62.5 写进去会被静默截断成 62,后台显示与库里从此不一致
+            if ($data['field'] === 'initial_skill_value' && floor($value) !== $value) {
+                return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
+                    'errors' => ['value' => ['该字段必须是整数']],
                 ]);
             }
         }
 
         $admin = $request->user();
 
-        $result = DB::transaction(function () use ($data, $admin) {
+        $result = DB::transaction(function () use ($data, $value, $admin) {
             // lockForUpdate:锁住该行直到事务提交,防止并发编辑时 before/after 审计值出现丢失更新
             $row = DB::table('npc_definition')->where('npc_id', $data['npc_id'])->lockForUpdate()->first();
             if (! $row) {
                 return null;
             }
+
+            // 两个等级列改单列时也要与另一列现值合并自洽(W14-A):
+            // initial > max 的 NPC 招出来第一天就「超上限」,而升级逻辑再也拉不回来
+            if ($data['field'] === 'initial_skill_level' && (float) $value > (float) $row->max_level) {
+                return 'level_pair';
+            }
+            if ($data['field'] === 'max_level' && (float) $value < (float) $row->initial_skill_level) {
+                return 'level_pair';
+            }
+
             $before = $row->{$data['field']};
-            DB::table('npc_definition')->where('npc_id', $data['npc_id'])->update([$data['field'] => $data['value']]);
+            DB::table('npc_definition')->where('npc_id', $data['npc_id'])->update([$data['field'] => $value]);
 
             $version = GameDataVersion::bump(
-                "调整 {$data['npc_id']} {$data['field']}: {$before} → {$data['value']}",
+                "调整 {$data['npc_id']} {$data['field']}: {$before} → {$value}",
                 'admin:' . $admin->username
             );
 
@@ -908,18 +966,48 @@ class AdminDefinitionController extends Controller
                 'entity_id' => $data['npc_id'],
                 'reason_code' => $data['reason'],
                 'before_json' => [$data['field'] => $before],
-                'after_json' => [$data['field'] => $data['value']],
+                'after_json' => [$data['field'] => $value],
                 'metadata_json' => ['game_data_version' => $version],
             ]);
 
-            return ['before' => $before, 'after' => $data['value'], 'version' => $version];
+            return ['before' => $before, 'after' => $value, 'version' => $version];
         });
 
         if ($result === null) {
             return ApiResponse::fail(ErrorCode::NOT_FOUND, 404);
         }
+        if ($result === 'level_pair') {
+            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
+                'errors' => ['value' => ['initial_skill_level 不得超过 max_level(改单列时与另一列现值合并校验)']],
+            ]);
+        }
 
         return ApiResponse::ok(['data' => $result]);
+    }
+
+    // 枚举 / 文本列的取值校验(editNpc 与 addNpc 共用)。返回 null = 合法,字符串 = 错误信息。
+    // Fail Closed:对不上权威来源一律拒 —— 枚举列拼错在运行时只会「静默不生效」,是最难查的一类问题
+    private static function validateNpcStringField(string $field, string $value): ?string
+    {
+        return match (true) {
+            $field === 'category'       => DB::table('npc_definition')->where('category', $value)->exists()
+                ? null : '未登记的 NPC category(只能用库内已有分类,新增分类走迁移)',
+            $field === 'min_era'        => self::eraExists($value) ? null : '不存在的时代 key',
+            $field === 'rarity'         => in_array($value, NpcCode::RARITIES, true)
+                ? null : '不是合法稀有度 code(见 NpcCode::RARITIES)',
+            $field === 'recruit_source' => in_array($value, NpcCode::SOURCES, true)
+                ? null : '不是合法获取来源 code(见 NpcCode::SOURCES)',
+            // 文本列:非空 + 列宽(validate 已收 191,这里再按各列实际列宽收紧,name_zh 是 64)
+            default                     => trim($value) === ''
+                ? '不能为空'
+                : (mb_strlen($value) <= self::NPC_TEXT_MAX[$field] ? null : '长度超过列宽 ' . self::NPC_TEXT_MAX[$field]),
+        };
+    }
+
+    // era_key 是否存在于时代表(科技 / NPC 的时代列共用;era 表是这一列的权威来源,列上还有外键兜底)
+    private static function eraExists(string $eraKey): bool
+    {
+        return DB::table('era')->where('era_key', $eraKey)->exists();
     }
 
     // ---- 市场定义(M3-D3,v3.2 §8)----
@@ -939,10 +1027,14 @@ class AdminDefinitionController extends Controller
     //
     // 全市场级的调节(手续费倍率 / 滑点系数 / 成交量上限 / 全场停市)在 game_settings 里,那边改一处影响全场;
     // 这里改的是**单个资源**。两套入口互不重叠,同一个数不会有两个来源。
+    //
+    // W14-A 扩列核对:对照全列,补上 note(自由文本备注,仅后台显示、不参与计算 —— 上市理由 /
+    // 停市原因这类「给下一个人看的话」此前没有任何入口能写)。rs_code / market_category / first_era
+    // 三列身份列维持只读(理由见上);至此除身份列外全列可编辑。
     private const MARKET_EDITABLE = [
         'base_price', 'min_price', 'max_price',
         'volatility', 'elasticity', 'fee_rate', 'base_liquidity',
-        'trade_mode',
+        'trade_mode', 'note',
     ];
 
     // trade_mode 允许互切的两个取值(capacity_contract 刻意不在其中,见 MARKET_EDITABLE 的说明)
@@ -972,10 +1064,10 @@ class AdminDefinitionController extends Controller
     // 26 行不分页 —— 市场调价必须横向比较(「铁比铜贵这么多合理吗」),一屏看完才比得出来
     public function marketDefinitions(): JsonResponse
     {
-        // trade_mode 不在只读列里 —— 它已是可编辑字段(W11-B),由 MARKET_EDITABLE 带出,
+        // trade_mode / note 不在只读列里 —— 两者已是可编辑字段(W11-B / W14-A),由 MARKET_EDITABLE 带出,
         // 两处都列会让 SELECT 出现重复列名
         $rows = DB::table('market_definition')->orderBy('rs_code')->get(array_merge(
-            ['resource_id', 'rs_code', 'market_category', 'first_era', 'note'],
+            ['resource_id', 'rs_code', 'market_category', 'first_era'],
             self::MARKET_EDITABLE
         ));
 
@@ -989,16 +1081,18 @@ class AdminDefinitionController extends Controller
     // 改一行基础价就等于改了全服价格,半年后要能回答「那时的铁为什么是这个价」(§64 / §65)。
     public function editMarketDefinition(Request $request): JsonResponse
     {
-        // trade_mode 是 allowlist 里唯一的**字符串**字段,校验规则按字段分流:
+        // 字符串字段(trade_mode / note)与数值字段的校验规则按字段分流:
         // 其余七个数值字段仍是 numeric + min:0(负的 base_price 会让「买入」变成给玩家发钱,
         // 负的 fee_rate 会让往返套利立刻转正)
         $isTradeMode = $request->input('field') === 'trade_mode';
+        // note 是自由文本(W14-A 扩列):只限长(对齐列宽 VARCHAR(191)),不做枚举
+        $isNote = $request->input('field') === 'note';
 
         $data = $request->validate([
             'resource_code' => ['required', 'string', 'max:32'],
             'field'         => ['required', 'string'],
-            'value'         => $isTradeMode
-                ? ['required', 'string', 'max:32']
+            'value'         => $isTradeMode || $isNote
+                ? ['required', 'string', 'max:' . ($isNote ? 191 : 32)]
                 : ['required', 'numeric', 'min:0'],
             // reason 上限对齐 audit_logs.reason_code 的 VARCHAR(80)
             'reason'        => ['required', 'string', 'min:2', 'max:80'],
@@ -1015,6 +1109,8 @@ class AdminDefinitionController extends Controller
                     'errors' => ['value' => ['trade_mode 只允许在 spot 与 non_tradeable 之间互切']],
                 ]);
             }
+            $value = (string) $data['value'];
+        } elseif ($isNote) {
             $value = (string) $data['value'];
         } else {
             $value = (float) $data['value'];
@@ -1052,6 +1148,13 @@ class AdminDefinitionController extends Controller
             if ((float) $after['min_price'] > (float) $after['max_price']) {
                 return 'min_over_max';
             }
+            // W14-A 补:价格三元组必须 min ≤ base ≤ max(改单列时与另两列现值合并校验)。
+            // base 掉出夹取区间的话,每个 epoch 的目标价一算出来就被夹回边界 —— 价格永远贴边抖,
+            // 波动率与弹性两个旋钮从此都「改了没反应」
+            if ((float) $after['base_price'] < (float) $after['min_price']
+                || (float) $after['base_price'] > (float) $after['max_price']) {
+                return 'base_out_of_range';
+            }
             if ($after['trade_mode'] === MarketDefinition::TRADE_MODE_SPOT && (float) $after['base_price'] <= 0) {
                 return 'zero_base_price';
             }
@@ -1082,6 +1185,11 @@ class AdminDefinitionController extends Controller
         if ($result === 'min_over_max') {
             return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
                 'errors' => ['value' => ['改动会让 min_price 超过 max_price,价格夹取区间将为空']],
+            ]);
+        }
+        if ($result === 'base_out_of_range') {
+            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
+                'errors' => ['value' => ['改动会让 base_price 掉出 [min_price, max_price] 区间,价格将永远贴着边界']],
             ]);
         }
         if ($result === 'zero_base_price') {
@@ -1878,6 +1986,619 @@ class AdminDefinitionController extends Controller
 
         // 门槛有请求级缓存,改完必须失效 —— 否则同一请求后续的升代判定 / 威胁需求还在用旧数值
         EraService::flushRequirements();
+
+        return ApiResponse::ok(['data' => $result]);
+    }
+
+    // ==================== W14-A:定义表「新增」端点 ====================
+    //
+    // 四个端点走与编辑器同一条 11 步管线(allowlist → 校验 → 强制 reason → 事务 → 审计 → GDV bump →
+    // 缓存 flush),差别只在审计的 create 语义:before 为空(此前没有这一行),after 记完整新行,
+    // entity 记新 ID。新增绝不做删除;所有 ID 格式 / 唯一性 / 外键存在性 Fail Closed。
+
+    // 新科技 ID 的格式:库内 50 条全部是 TECH_ + 大写字母/数字段(下划线分段,如 TECH_VI_IND)。
+    // 放宽到任意大写段而不是死磕「罗马数字_分支缩写」—— 新科技未必落在 5 分支 × 10 时代的网格上,
+    // 但前缀与大小写风格必须一致;总长由 validate 按列宽 32 收
+    private const TECH_ID_PATTERN = '/^TECH_[A-Z0-9]+(?:_[A-Z0-9]+)*$/';
+
+    // 新 NPC ID 的格式:库内 150 行全部是 N + 三位数字(N001~N150),照抄这个风格
+    private const NPC_ID_PATTERN = '/^N\d{3}$/';
+
+    // trait_json 单条 spec 的数值护栏(新增 NPC 用):
+    // pct 10(= +1000%)与 trait_multiplier 同上限同理由 —— 再高只会顶爆 §6.4 / §13 的帽;
+    // flat 1e6 与金额类字段同量级(库内现值最高 flat +30)
+    private const TRAIT_SPEC_PCT_MAX = 10;
+    private const TRAIT_SPEC_FLAT_MAX = 1000000;
+
+    // ---- ① 建筑等级加一行 ----
+    //
+    // level 由服务端算 = 该建筑当前最高级 + 1(客户端不传 level):等级连续性不是「校验出来的」,
+    // 是「构造出来的」—— 与 W13-2 导入的连续性不变量同一条底线,断档在这里直接不可能发生。
+    // 数值列与三个 JSON 列的校验完全复用导入那一套(FIELD_MAX / 整数特判 / 资源 allowlist / JSON_MAX)。
+    public function addBuildingLevel(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'building_id' => ['required', 'string', 'max:16'],
+            // reason 上限对齐 audit_logs.reason_code 的 VARCHAR(80)
+            'reason'      => ['required', 'string', 'min:2', 'max:80'],
+            'values'      => ['required', 'array'],
+        ]);
+
+        // building_id 必须已存在 —— 不准借道「加等级」新建建筑(结构性变更走迁移,与导入同一条纪律)
+        if (! DB::table('building_definition')->where('building_id', $data['building_id'])->exists()) {
+            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
+                'errors' => ['building_id' => ['building_id 不存在(新增等级不能新建建筑)']],
+            ]);
+        }
+
+        $errors = [];
+        $parsed = self::parseBuildingLevelValues($data['values'], $errors);
+        if ($errors !== []) {
+            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, ['errors' => $errors]);
+        }
+
+        $admin = $request->user();
+
+        $result = DB::transaction(function () use ($data, $parsed, $admin) {
+            // lockForUpdate 锁住该建筑全部现有等级行,防并发双加:后一个请求在这里排队,
+            // 醒来后重算 max 拿到正确的下一级 —— 不会出现两行同级或断档
+            $levels = DB::table('building_level_definition')
+                ->where('building_id', $data['building_id'])
+                ->lockForUpdate()->pluck('level');
+            $level = (int) ($levels->max() ?? 0) + 1;
+
+            // level 列是 unsignedTinyInteger,255 是物理上限(与单格编辑器同一条理由)
+            if ($level > 255) {
+                return 'level_overflow';
+            }
+
+            DB::table('building_level_definition')->insert(array_merge([
+                'building_id' => $data['building_id'],
+                'level'       => $level,
+                // cost_type 是无程序读点的历史描述列,沿用最近一档的既有 code(与导入同一口径)
+                'cost_type'   => self::costTypeForLevel($level),
+            ], $parsed));
+
+            $version = GameDataVersion::bump(
+                "新增 {$data['building_id']} L{$level}(建筑等级行)",
+                'admin:' . $admin->username
+            );
+
+            AuditLogger::record(AuditAction::ADMIN_CONFIG_CHANGE, 'success', [
+                'actor_type' => 'admin', 'actor_id' => $admin->id, 'user_id' => $admin->id,
+                'entity_type' => 'building_level_definition',
+                'entity_id' => $data['building_id'] . ':' . $level,
+                'reason_code' => $data['reason'],
+                'after_json' => $parsed,
+                'metadata_json' => ['game_data_version' => $version, 'operation' => 'create'],
+            ]);
+
+            return ['building_id' => $data['building_id'], 'level' => $level, 'version' => $version];
+        });
+
+        if ($result === 'level_overflow') {
+            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
+                'errors' => ['values' => ['该建筑已到 level 列的物理上限 255,不能再加']],
+            ]);
+        }
+
+        return ApiResponse::ok(['data' => $result]);
+    }
+
+    // 新增等级行的 values 校验(与 parseImportRow 同一套护栏,错误按「values.列名」收集)。
+    // 通过时返回可直接 insert 的列数组(JSON 列已规范化编码;JSON 列接受对象/数组或其 JSON 字符串)
+    private static function parseBuildingLevelValues(array $values, array &$errors): array
+    {
+        $parsed = [];
+
+        // 七个数值列:与 editBuildingLevel / 导入同一套 FIELD_MAX / 非负 / 整数特判
+        foreach (self::EDITABLE as $col) {
+            $value = $values[$col] ?? null;
+            if (! is_numeric($value)) {
+                $errors["values.{$col}"] = [$value === null ? '不能为空' : '必须是数字'];
+                continue;
+            }
+            $value = (float) $value;
+            if ($value < 0) {
+                $errors["values.{$col}"] = ['不能是负数'];
+                continue;
+            }
+            if ($value > self::BUILDING_FIELD_MAX[$col]) {
+                $errors["values.{$col}"] = ['超出该字段允许的上限 ' . self::BUILDING_FIELD_MAX[$col]];
+                continue;
+            }
+            if (in_array($col, ['duration_seconds', 'worker_required'], true)) {
+                if (floor($value) !== $value) {
+                    $errors["values.{$col}"] = ['该字段必须是整数(int 列,小数会被静默截断)'];
+                    continue;
+                }
+                $value = (int) $value;
+            }
+            $parsed[$col] = $value;
+        }
+
+        // 三个 JSON 列:合法 JSON + 条目过资源 allowlist + 数值过 BUILDING_JSON_MAX(与导入同一套)
+        foreach (self::BUILDING_JSON_COLUMNS as $col) {
+            $raw = $values[$col] ?? null;
+            if (is_string($raw) && trim($raw) !== '') {
+                $raw = json_decode(trim($raw), true);
+                if (! is_array($raw)) {
+                    $errors["values.{$col}"] = ['不是合法的 JSON(必须是数组或对象)'];
+                    continue;
+                }
+            }
+            if ($raw === null || $raw === '') {
+                if ($col === 'cost_json') {
+                    $errors["values.{$col}"] = ['cost_json 不能为空(该列 NOT NULL,免费升级请显式传 {} 并三思)'];
+                } else {
+                    $parsed[$col] = null; // input/output 允许为空(NULL 列)
+                }
+                continue;
+            }
+            if (! is_array($raw)) {
+                $errors["values.{$col}"] = ['必须是 JSON 对象 / 数组,或其字符串形式'];
+                continue;
+            }
+            $shapeError = $col === 'cost_json'
+                ? self::validateCostJson($raw)
+                : self::validateRateJson($raw, self::BUILDING_JSON_MAX[$col]);
+            if ($shapeError !== null) {
+                $errors["values.{$col}"] = [$shapeError];
+                continue;
+            }
+            // 规范化落库:cost 的空映射要编成 {} 而不是 [](与导入同一条理由)
+            $parsed[$col] = $col === 'cost_json' && $raw === []
+                ? '{}'
+                : json_encode($raw, JSON_UNESCAPED_UNICODE);
+        }
+
+        return $parsed;
+    }
+
+    // ---- ② 新增科技 ----
+    //
+    // 与 editTechnology 的分工:编辑只开数值(拓扑锁死,改既有节点的前置会造出环);
+    // 新增是「加一个新节点」—— 新节点的前置只能指向**已存在**的科技,从构造上就造不出环。
+    // branch 的权威来源是 EnumCode::TECH_BRANCHES(EnumCode::COLUMNS 里登记的这一列的登记表);
+    // era_key 的权威来源是 era 表(列上有外键);解锁建筑必须已存在(不准借道发明新建筑)。
+    public function addTechnology(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'reason'                         => ['required', 'string', 'min:2', 'max:80'],
+            'values'                         => ['required', 'array'],
+            'values.tech_id'                 => ['required', 'string', 'max:32'],
+            'values.name'                    => ['required', 'string', 'max:96'],
+            'values.era_key'                 => ['required', 'string', 'max:4'],
+            'values.branch'                  => ['required', 'string', 'max:32'],
+            'values.knowledge_cost'          => ['required', 'numeric', 'min:0'],
+            'values.research_minutes'        => ['required', 'numeric', 'min:0'],
+            // 两个数组列:present 允许空数组(没有前置 / 不解锁建筑都是合法形态);
+            // 上限只是护栏 —— 前置超过 20 条 / 解锁超过 50 栋的科技在设计上不存在
+            'values.prerequisite_tech_ids'   => ['present', 'array', 'max:20'],
+            'values.prerequisite_tech_ids.*' => ['string', 'max:32'],
+            'values.unlock_building_ids'     => ['present', 'array', 'max:50'],
+            'values.unlock_building_ids.*'   => ['string', 'max:16'],
+        ]);
+        $values = $data['values'];
+
+        $errors = [];
+
+        if (! preg_match(self::TECH_ID_PATTERN, $values['tech_id'])) {
+            $errors['values.tech_id'] = ['tech_id 必须是 TECH_ 开头的大写字母/数字段(例 TECH_VI_IND)'];
+        }
+        if (! self::eraExists($values['era_key'])) {
+            $errors['values.era_key'] = ['不存在的时代 key'];
+        }
+        if (! array_key_exists($values['branch'], EnumCode::TECH_BRANCHES)) {
+            $errors['values.branch'] = ['branch 不在 EnumCode::TECH_BRANCHES 登记表内'];
+        }
+
+        // 数值:与 editTechnology 同一套上限;knowledge_cost 是 int 列必须整数
+        $cost = (float) $values['knowledge_cost'];
+        if ($cost > self::TECH_FIELD_MAX['knowledge_cost'] || floor($cost) !== $cost) {
+            $errors['values.knowledge_cost'] = ['知识成本必须是 0~' . self::TECH_FIELD_MAX['knowledge_cost'] . ' 的整数'];
+        }
+        $minutes = (float) $values['research_minutes'];
+        if ($minutes > self::TECH_FIELD_MAX['research_minutes']) {
+            $errors['values.research_minutes'] = ['超出该字段允许的上限 ' . self::TECH_FIELD_MAX['research_minutes']];
+        }
+
+        // 前置科技:逐个必须已存在(新节点尚不在表里,引用自己同样会被「不存在」拒掉,但单独报清楚)
+        $prereqs = array_values($values['prerequisite_tech_ids']);
+        if (count($prereqs) !== count(array_unique($prereqs))) {
+            $errors['values.prerequisite_tech_ids'] = ['前置科技 ID 重复'];
+        } elseif (in_array($values['tech_id'], $prereqs, true)) {
+            $errors['values.prerequisite_tech_ids'] = ['前置科技不能引用自己'];
+        } elseif ($prereqs !== []) {
+            $known = DB::table('technology_definition')->whereIn('tech_id', $prereqs)->pluck('tech_id')->all();
+            $missing = array_values(array_diff($prereqs, $known));
+            if ($missing !== []) {
+                $errors['values.prerequisite_tech_ids'] = ['前置科技不存在:' . implode('、', $missing)];
+            }
+        }
+
+        // 解锁建筑:逐个必须已存在于 building_definition
+        $unlocks = array_values($values['unlock_building_ids']);
+        if (count($unlocks) !== count(array_unique($unlocks))) {
+            $errors['values.unlock_building_ids'] = ['解锁建筑 ID 重复'];
+        } elseif ($unlocks !== []) {
+            $known = DB::table('building_definition')->whereIn('building_id', $unlocks)->pluck('building_id')->all();
+            $missing = array_values(array_diff($unlocks, $known));
+            if ($missing !== []) {
+                $errors['values.unlock_building_ids'] = ['解锁建筑不存在:' . implode('、', $missing)];
+            }
+        }
+
+        if ($errors !== []) {
+            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, ['errors' => $errors]);
+        }
+
+        $admin = $request->user();
+        $reason = $data['reason'];
+
+        $result = DB::transaction(function () use ($values, $prereqs, $unlocks, $cost, $minutes, $admin, $reason) {
+            // 唯一性在锁内判(间隙锁 + 主键约束双保险):并发同 ID 时后一个要么在这里看到行,要么撞 PK 回滚
+            if (DB::table('technology_definition')->where('tech_id', $values['tech_id'])->lockForUpdate()->exists()) {
+                return 'duplicate';
+            }
+
+            $row = [
+                'tech_id'               => $values['tech_id'],
+                'era_key'               => $values['era_key'],
+                'branch'                => $values['branch'],
+                'name'                  => $values['name'],
+                'knowledge_cost'        => (int) $cost,
+                'research_minutes'      => $minutes,
+                // 存库格式照现有行:两列都是 json 列存 JSON 数组(TechService / DefinitionController 按 json_decode 读)
+                'prerequisite_tech_ids' => json_encode($prereqs, JSON_UNESCAPED_UNICODE),
+                'unlock_building_ids'   => json_encode($unlocks, JSON_UNESCAPED_UNICODE),
+            ];
+            DB::table('technology_definition')->insert($row);
+
+            $version = GameDataVersion::bump(
+                "新增科技 {$values['tech_id']}({$values['name']})",
+                'admin:' . $admin->username
+            );
+
+            AuditLogger::record(AuditAction::ADMIN_CONFIG_CHANGE, 'success', [
+                'actor_type' => 'admin', 'actor_id' => $admin->id, 'user_id' => $admin->id,
+                'entity_type' => 'technology_definition',
+                'entity_id' => $values['tech_id'],
+                'reason_code' => $reason,
+                'after_json' => $row,
+                'metadata_json' => ['game_data_version' => $version, 'operation' => 'create'],
+            ]);
+
+            return ['tech_id' => $values['tech_id'], 'version' => $version];
+        });
+
+        if ($result === 'duplicate') {
+            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
+                'errors' => ['values.tech_id' => ['tech_id 已存在']],
+            ]);
+        }
+
+        return ApiResponse::ok(['data' => $result]);
+    }
+
+    // ---- ③ 新增 NPC 定义 ----
+    //
+    // 全列必填(除 trait_multiplier 外无默认可依;name_zh 对新 NPC 强制 —— 150 行现已逐条有名,
+    // 新加的没有名字等于回到「只靠 N151 认人」的老问题)。
+    // 枚举列对权威来源校验(与 editNpc 共用 validateNpcStringField);
+    // trait_json 照 NpcDefinitionSeeder::assertTraitJson 的同一口径:specs 逐条必须能构造成
+    // 合法 ModifierSpec(target / scope / op 三重 allowlist),构造失败即拒 ——
+    // target 拼错的特性在运行时只会「静默不生效」,那是最难查的一类线上问题。
+    public function addNpc(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'reason'                     => ['required', 'string', 'min:2', 'max:80'],
+            'values'                     => ['required', 'array'],
+            'values.npc_id'              => ['required', 'string', 'max:16'],
+            'values.name_key'            => ['required', 'string', 'max:64'],
+            'values.name_zh'             => ['required', 'string', 'max:64'],
+            'values.category'            => ['required', 'string', 'max:32'],
+            'values.min_era'             => ['required', 'string', 'max:4'],
+            'values.primary_skill_id'    => ['required', 'string', 'max:32'],
+            'values.initial_skill_value' => ['required', 'numeric', 'min:0'],
+            'values.initial_skill_level' => ['required', 'numeric', 'min:0'],
+            'values.max_level'           => ['required', 'numeric', 'min:0'],
+            'values.wage_per_min'        => ['required', 'numeric', 'min:0'],
+            'values.food_per_min'        => ['required', 'numeric', 'min:0'],
+            'values.rarity'              => ['required', 'string', 'max:16'],
+            'values.recruit_source'      => ['required', 'string', 'max:32'],
+            'values.recruit_desc_zh'     => ['required', 'string', 'max:191'],
+            'values.trait_desc_zh'       => ['required', 'string', 'max:191'],
+            // 对象或 JSON 字符串都收,形状在下面统一校验
+            'values.trait_json'          => ['required'],
+            'values.trait_multiplier'    => ['required', 'numeric', 'min:0'],
+        ]);
+        $values = $data['values'];
+
+        $errors = [];
+
+        if (! preg_match(self::NPC_ID_PATTERN, $values['npc_id'])) {
+            $errors['values.npc_id'] = ['npc_id 必须是 N + 三位数字(与库内 N001~N150 同风格)'];
+        }
+        // name_key 是派生键:库内 150 行全部是 npc.{npc_id}.name,不收自由发挥的键名
+        if ($values['name_key'] !== 'npc.' . $values['npc_id'] . '.name') {
+            $errors['values.name_key'] = ['name_key 必须是 npc.{npc_id}.name'];
+        }
+
+        // 四个枚举列 + 三个文本列:与 editNpc 同一套校验
+        foreach (array_merge(self::NPC_ENUM_EDITABLE, array_keys(self::NPC_TEXT_MAX)) as $field) {
+            $error = self::validateNpcStringField($field, (string) $values[$field]);
+            if ($error !== null) {
+                $errors["values.{$field}"] = [$error];
+            }
+        }
+
+        // primary_skill_id 的权威来源是 npc_skill_definition(§6.1 的 12 条,列上有外键)
+        if (! DB::table('npc_skill_definition')->where('skill_id', $values['primary_skill_id'])->exists()) {
+            $errors['values.primary_skill_id'] = ['不存在的技能 id(见 npc_skill_definition)'];
+        }
+
+        // 数值列:逐列 FIELD_MAX + 整数特判(与 editNpc 同一套)
+        foreach (['initial_skill_value', 'initial_skill_level', 'max_level', 'wage_per_min', 'food_per_min', 'trait_multiplier'] as $col) {
+            $value = (float) $values[$col];
+            if ($value > self::NPC_FIELD_MAX[$col]) {
+                $errors["values.{$col}"] = ['超出该字段允许的上限 ' . self::NPC_FIELD_MAX[$col]];
+            } elseif (in_array($col, ['initial_skill_value', 'initial_skill_level', 'max_level'], true) && floor($value) !== $value) {
+                $errors["values.{$col}"] = ['该字段必须是整数'];
+            } elseif (in_array($col, ['initial_skill_level', 'max_level'], true) && $value < 1) {
+                $errors["values.{$col}"] = ['等级必须是 1~10 的整数'];
+            }
+        }
+        // 等级对必须自洽:initial > max 的 NPC 招出来第一天就「超上限」
+        if (! isset($errors['values.initial_skill_level'], $errors['values.max_level'])
+            && (float) $values['initial_skill_level'] > (float) $values['max_level']) {
+            $errors['values.initial_skill_level'] = ['initial_skill_level 不得超过 max_level'];
+        }
+
+        // trait_json:三重 allowlist + 数值护栏,通过时拿到规范化 JSON 串
+        $trait = self::validateTraitJson($values['trait_json']);
+        if (isset($trait['error'])) {
+            $errors['values.trait_json'] = [$trait['error']];
+        }
+
+        if ($errors !== []) {
+            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, ['errors' => $errors]);
+        }
+
+        $admin = $request->user();
+        $reason = $data['reason'];
+
+        $result = DB::transaction(function () use ($values, $trait, $admin, $reason) {
+            // 唯一性在锁内判(间隙锁 + 主键约束双保险)
+            if (DB::table('npc_definition')->where('npc_id', $values['npc_id'])->lockForUpdate()->exists()) {
+                return 'duplicate';
+            }
+
+            $row = [
+                'npc_id'              => $values['npc_id'],
+                'name_key'            => $values['name_key'],
+                'name_zh'             => $values['name_zh'],
+                'category'            => $values['category'],
+                'min_era'             => $values['min_era'],
+                'primary_skill_id'    => $values['primary_skill_id'],
+                'initial_skill_value' => (int) $values['initial_skill_value'],
+                'initial_skill_level' => (int) $values['initial_skill_level'],
+                'max_level'           => (int) $values['max_level'],
+                'wage_per_min'        => (float) $values['wage_per_min'],
+                'food_per_min'        => (float) $values['food_per_min'],
+                'rarity'              => $values['rarity'],
+                'recruit_source'      => $values['recruit_source'],
+                'recruit_desc_zh'     => $values['recruit_desc_zh'],
+                'trait_desc_zh'       => $values['trait_desc_zh'],
+                'trait_json'          => $trait['json'],
+                'trait_multiplier'    => (float) $values['trait_multiplier'],
+            ];
+            DB::table('npc_definition')->insert($row);
+
+            $version = GameDataVersion::bump(
+                "新增 NPC {$values['npc_id']}({$values['name_zh']})",
+                'admin:' . $admin->username
+            );
+
+            AuditLogger::record(AuditAction::ADMIN_CONFIG_CHANGE, 'success', [
+                'actor_type' => 'admin', 'actor_id' => $admin->id, 'user_id' => $admin->id,
+                'entity_type' => 'npc_definition',
+                'entity_id' => $values['npc_id'],
+                'reason_code' => $reason,
+                'after_json' => $row,
+                'metadata_json' => ['game_data_version' => $version, 'operation' => 'create'],
+            ]);
+
+            return ['npc_id' => $values['npc_id'], 'version' => $version];
+        });
+
+        if ($result === 'duplicate') {
+            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
+                'errors' => ['values.npc_id' => ['npc_id 已存在']],
+            ]);
+        }
+
+        return ApiResponse::ok(['data' => $result]);
+    }
+
+    // trait_json 校验(与 NpcDefinitionSeeder::assertTraitJson 同一口径):specs 逐条必须能构造成
+    // 合法 ModifierSpec(target / scope / op 三重 allowlist,构造失败即拒),另加数值护栏。
+    // 接受对象或 JSON 字符串;通过时返回 ['json' => 规范化 JSON 串],失败返回 ['error' => 信息]。
+    // 规范化时只保留 specs / unmapped_zh 两个已知键 —— 不让夹带的私货字段进库
+    private static function validateTraitJson(mixed $raw): array
+    {
+        if (is_string($raw)) {
+            $raw = json_decode(trim($raw), true);
+        }
+        if (! is_array($raw)) {
+            return ['error' => '必须是 {"specs":[…],"unmapped_zh":[…]} 结构的对象,或其 JSON 字符串'];
+        }
+
+        $specs = $raw['specs'] ?? [];
+        $unmapped = $raw['unmapped_zh'] ?? [];
+        if (! is_array($specs) || ! array_is_list($specs) || ! is_array($unmapped) || ! array_is_list($unmapped)) {
+            return ['error' => 'specs 与 unmapped_zh 都必须是列表'];
+        }
+        foreach ($unmapped as $i => $text) {
+            if (! is_string($text)) {
+                return ['error' => "unmapped_zh 第 {$i} 条必须是字符串"];
+            }
+        }
+
+        foreach ($specs as $i => $spec) {
+            if (! is_array($spec)) {
+                return ['error' => "specs 第 {$i} 条必须是对象"];
+            }
+            try {
+                new ModifierSpec(
+                    (string) ($spec['target'] ?? ''),
+                    (string) ($spec['scope'] ?? ''),
+                    (string) ($spec['op'] ?? ''),
+                    (float) ($spec['value'] ?? 0),
+                    $spec['scope_key'] ?? null,
+                );
+            } catch (InvalidArgumentException $e) {
+                return ['error' => "specs 第 {$i} 条非法 —— " . $e->getMessage()];
+            }
+            $max = ($spec['op'] ?? '') === ModifierSpec::OP_PCT ? self::TRAIT_SPEC_PCT_MAX : self::TRAIT_SPEC_FLAT_MAX;
+            if (abs((float) ($spec['value'] ?? 0)) > $max) {
+                return ['error' => "specs 第 {$i} 条的 value 绝对值超出上限 {$max}"];
+            }
+        }
+
+        return ['json' => json_encode(['specs' => $specs, 'unmapped_zh' => $unmapped], JSON_UNESCAPED_UNICODE)];
+    }
+
+    // ---- ④ 新增市场定义(上市)----
+    //
+    // resource_id 必须已存在于 resource_definition 且尚无 market_definition 行(不准借道发明新资源)。
+    // 身份列不让客户端传,服务器派生(防不一致):
+    //   first_era 抄 resource_definition.first_era —— 新行没有 §8 原文可依,资源表是唯一权威;
+    //   rs_code 优先抄 resource_definition.rs_code(§8 已编号但未上市的资源沿用编号),
+    //     资源表没编号(NULL)时顺延市场表现有最大编号 +1(与 RS027 水泥 / RS028 药品的先例同一规则)。
+    // market_category 是例外:resource_definition.category(6 个资源类)与它(11 个市场分组)
+    // 语义不同、派生不出来 —— 收客户端值但只认库内已有分组(Fail Closed,新分组走迁移)。
+    // trade_mode 只收 spot / non_tradeable:capacity_contract 是电力的特例,新资源不该长成它。
+    public function addMarketDefinition(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'reason'                 => ['required', 'string', 'min:2', 'max:80'],
+            'values'                 => ['required', 'array'],
+            'values.resource_id'     => ['required', 'string', 'max:32'],
+            'values.market_category' => ['required', 'string', 'max:32'],
+            'values.trade_mode'      => ['required', 'string', 'max:24'],
+            'values.base_price'      => ['required', 'numeric', 'min:0'],
+            'values.min_price'       => ['required', 'numeric', 'min:0'],
+            'values.max_price'       => ['required', 'numeric', 'min:0'],
+            'values.volatility'      => ['required', 'numeric', 'min:0'],
+            'values.elasticity'      => ['required', 'numeric', 'min:0'],
+            'values.fee_rate'        => ['required', 'numeric', 'min:0'],
+            'values.base_liquidity'  => ['required', 'numeric', 'min:0'],
+            'values.note'            => ['sometimes', 'nullable', 'string', 'max:191'],
+        ]);
+        $values = $data['values'];
+
+        $errors = [];
+
+        $resource = DB::table('resource_definition')->where('resource_id', $values['resource_id'])->first();
+        if ($resource === null) {
+            $errors['values.resource_id'] = ['resource_id 不存在于 resource_definition(上市不能发明新资源)'];
+        }
+
+        if (! DB::table('market_definition')->where('market_category', $values['market_category'])->exists()) {
+            $errors['values.market_category'] = ['未登记的市场分组(只能用库内已有分组,新分组走迁移)'];
+        }
+
+        if (! in_array($values['trade_mode'], self::MARKET_TRADE_MODE_SWITCHABLE, true)) {
+            $errors['values.trade_mode'] = ['trade_mode 只允许 spot 或 non_tradeable(产能合约是电力的特例)'];
+        }
+
+        // 七个数值列:与 editMarketDefinition 同一套上限
+        foreach (self::MARKET_FIELD_MAX as $col => $max) {
+            if ((float) $values[$col] > $max) {
+                $errors["values.{$col}"] = ['超出该字段允许的上限 ' . $max];
+            }
+        }
+
+        // 价格三元组跨字段校验:min ≤ base ≤ max;现货 base 必须 > 0(与编辑器同一套理由)
+        $base = (float) $values['base_price'];
+        if ((float) $values['min_price'] > (float) $values['max_price']
+            || $base < (float) $values['min_price'] || $base > (float) $values['max_price']) {
+            $errors['values.base_price'] = ['价格三元组必须满足 min_price ≤ base_price ≤ max_price'];
+        } elseif ($values['trade_mode'] === MarketDefinition::TRADE_MODE_SPOT && $base <= 0) {
+            $errors['values.base_price'] = ['现货资源的 base_price 必须大于 0,否则该资源会变成免费'];
+        }
+
+        if ($errors !== []) {
+            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, ['errors' => $errors]);
+        }
+
+        $admin = $request->user();
+        $reason = $data['reason'];
+
+        $result = DB::transaction(function () use ($values, $resource, $admin, $reason) {
+            // 唯一性 + rs_code 顺延都要在锁内做:lockForUpdate 锁住整张定义表(28 行,低频管理操作),
+            // 并发两笔上市不会拿到同一个顺延编号,也不会给同一资源插两行
+            $rsCodes = DB::table('market_definition')->lockForUpdate()->pluck('rs_code', 'resource_id')->all();
+            if (array_key_exists($values['resource_id'], $rsCodes)) {
+                return 'duplicate';
+            }
+
+            $rsCode = $resource->rs_code;
+            if ($rsCode === null || in_array($rsCode, $rsCodes, true)) {
+                $maxNum = 0;
+                foreach ($rsCodes as $code) {
+                    if (preg_match('/^RS(\d+)$/', (string) $code, $m)) {
+                        $maxNum = max($maxNum, (int) $m[1]);
+                    }
+                }
+                $rsCode = 'RS' . str_pad((string) ($maxNum + 1), 3, '0', STR_PAD_LEFT);
+            }
+
+            $note = isset($values['note']) && trim((string) $values['note']) !== '' ? (string) $values['note'] : null;
+
+            $row = [
+                'resource_id'     => $values['resource_id'],
+                'rs_code'         => $rsCode,
+                'market_category' => $values['market_category'],
+                'first_era'       => $resource->first_era,
+                'trade_mode'      => $values['trade_mode'],
+                'base_price'      => (float) $values['base_price'],
+                'min_price'       => (float) $values['min_price'],
+                'max_price'       => (float) $values['max_price'],
+                'volatility'      => (float) $values['volatility'],
+                'elasticity'      => (float) $values['elasticity'],
+                'fee_rate'        => (float) $values['fee_rate'],
+                'base_liquidity'  => (float) $values['base_liquidity'],
+                'note'            => $note,
+            ];
+            DB::table('market_definition')->insert($row);
+
+            $version = GameDataVersion::bump(
+                "市场上市 {$values['resource_id']}({$rsCode})",
+                'admin:' . $admin->username
+            );
+
+            AuditLogger::record(AuditAction::ADMIN_CONFIG_CHANGE, 'success', [
+                'actor_type' => 'admin', 'actor_id' => $admin->id, 'user_id' => $admin->id,
+                'entity_type' => 'market_definition',
+                'entity_id' => $values['resource_id'],
+                'reason_code' => $reason,
+                'after_json' => $row,
+                'metadata_json' => ['game_data_version' => $version, 'operation' => 'create'],
+            ]);
+
+            return ['resource_id' => $values['resource_id'], 'version' => $version];
+        });
+
+        if ($result === 'duplicate') {
+            return ApiResponse::fail(ErrorCode::VALIDATION_ERROR, 422, [
+                'errors' => ['values.resource_id' => ['该资源已有市场定义行(改数值请走编辑器)']],
+            ]);
+        }
+
+        // 定义有请求级缓存,新增完必须失效 —— 否则同一请求后续的价目表还看不见这一行
+        MarketDefinition::flush();
 
         return ApiResponse::ok(['data' => $result]);
     }

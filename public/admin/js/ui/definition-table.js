@@ -26,10 +26,19 @@ function readonlyCell(row, col) {
     return escapeHtml(String(value));
 }
 
-// 可编辑格:数值走 number,带 options 的走 select(市场的 trade_mode 是唯一的字符串字段)
+// 可编辑格:数值走 number,带 options 的走 select,meta.text 的走文本框。
+// 文本类型是 W14 加的:后端把市场 note 与 NPC 的中文名 / 描述列开放成可编辑后,
+// 这些列若仍按数值渲染就是个填不进字的数字框 —— 控件形态必须跟着列的实际类型走
 function editorCell(row, field, meta) {
     const raw = row[field];
     const original = raw === null || raw === undefined ? '' : String(raw);
+
+    if (meta && meta.text) {
+        const maxLength = meta.maxLength ? ` maxlength="${escapeHtml(String(meta.maxLength))}"` : '';
+        return `<input type="text" class="cell-input cell-input-text"${maxLength}
+                       data-field="${escapeHtml(field)}" data-original="${escapeHtml(original)}"
+                       value="${escapeHtml(original)}">`;
+    }
 
     if (meta && Array.isArray(meta.options)) {
         const options = meta.options.map((o) => {
@@ -60,6 +69,14 @@ function validateCell(control, meta, label) {
     }
 
     const text = control.value.trim();
+
+    // 文本列:原样提交(长度由 maxlength 与服务端把关)。允许留空 —— note / 描述这类列
+    // 本来就可以是空的,服务端按 NULL 收;不能套用数值列「不能留空」那条
+    if (meta && meta.text) {
+        if (meta.required && text === '') return { ok: false, message: `${label} 不能留空` };
+        return { ok: true, value: text };
+    }
+
     if (text === '') return { ok: false, message: `${label} 不能留空` };
 
     const value = Number(text);

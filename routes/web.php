@@ -179,16 +179,25 @@ Route::prefix('api/admin')->middleware(['auth:web', 'admin', 'throttle:api'])->g
     // 写入端点叠 admin_write 限流(R1-B 走查补漏):与 market/item/event/settings/compensation 同一纪律,
     // 管理员账号被盗时批量改全服数值要先撞 20/min 上限
     Route::post('/definitions/building-level', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editBuildingLevel'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
+    // 新增等级行(W14-A):level 由服务端算 = 该建筑当前最高级 + 1(客户端不传),
+    // 等级连续性从构造上就不可能破。与编辑同权限、同限流 —— 加一级等于给全服多一档产能
+    Route::post('/definitions/building-level/add', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'addBuildingLevel'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
 
     // NPC 定义调整(M3-D1):与建筑等级同一套机制(allowlist 字段 + 强制 reason + 审计 + 版本递增)
     Route::get('/definitions/npcs', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'npcs'])->middleware('admin:edit_definition');
     Route::post('/definitions/npc', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editNpc'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
+    // 新增 NPC 原型(W14-A):全字段表单,npc_id 唯一且格式照 N001;
+    // 枚举列对权威来源校验,trait_json 过 ModifierSpec 三重 allowlist(与 Seeder 同一口径)
+    Route::post('/definitions/npc/add', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'addNpc'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
 
     // 市场定义(M3-D3,v3.2 §8 的 26 行):查看 / 调整基础价、波动率、弹性、费率、流动性、价格区间。
     // 与建筑等级 / NPC 同权限(edit_definition):改一行基础价就是改全服价格,属最高风险的数值改动。
     // 全市场级的开关与系数(停市 / 手续费倍率 / 滑点系数 / 成交量上限)在 /api/admin/settings,不在这里
     Route::get('/definitions/market', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'marketDefinitions'])->middleware('admin:edit_definition');
     Route::post('/definitions/market', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editMarketDefinition'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
+    // 新资源上市(W14-A):resource_id 必须已存在于 resource_definition 且尚无市场行;
+    // rs_code / first_era 由服务端从资源表派生(客户端不传,防两表不一致)
+    Route::post('/definitions/market/add', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'addMarketDefinition'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
 
     // 工具定义(M3-D2,v3.2 §7 的 24 行):查看 / 调整耐久、效果值、拆解基数。
     // 与建筑等级 / NPC / 市场同权限(edit_definition):改一行 effect_value 就是改全服产量上限。
@@ -218,6 +227,9 @@ Route::prefix('api/admin')->middleware(['auth:web', 'admin', 'throttle:api'])->g
     // 前置 / 解锁 / 时代 / 分支四列只读下发 —— 那是科技树拓扑,改了会造出环或死锁
     Route::get('/definitions/technologies', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'technologies'])->middleware('admin:edit_definition');
     Route::post('/definitions/technology', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'editTechnology'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
+    // 新增科技(W14-A):与编辑的分工 —— 编辑只开数值(改既有节点的前置会造出环),
+    // 新增是加一个新节点,前置只能指向**已存在**的科技,从构造上就造不出环
+    Route::post('/definitions/technology/add', [\App\Http\Controllers\Admin\AdminDefinitionController::class, 'addTechnology'])->middleware(['admin:edit_definition', 'throttle:admin_write']);
 
     // 建筑定义(W11-B,v3.2 §3 的 94 行):查看 / 调整同类建造上限 max_count。
     // footprint 只读 —— 改占地会让存量建筑瞬间互相重叠

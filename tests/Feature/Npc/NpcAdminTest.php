@@ -40,12 +40,17 @@ class NpcAdminTest extends TestCase
         $res->assertOk();
         $this->assertCount(150, $res->json('data.npcs'));
         $this->assertContains('wage_per_min', $res->json('data.editable'));
-        // 结构列只读下发,供后台显示,不出现在 editable 里
-        $this->assertNotContains('rarity', $res->json('data.editable'));
-        // 中文名只读下发(150 行里靠 code 认不出人);N001~N030 的拟名已由 400001 回填
+        // W14-A 扩列:rarity / name_zh 等已从「只读结构列」转为可编辑
+        // (枚举列对 NpcCode 权威来源校验,文本列限长;详见 AdminDefinitionCreateTest)
+        $this->assertContains('rarity', $res->json('data.editable'));
+        $this->assertContains('name_zh', $res->json('data.editable'));
+        // 中文名随响应下发(150 行里靠 code 认不出人);N001~N030 的拟名已由 400001 回填
         $this->assertSame('武岚', collect($res->json('data.npcs'))->firstWhere('npc_id', 'N036')['name_zh']);
         $this->assertSame('伯衡', collect($res->json('data.npcs'))->firstWhere('npc_id', 'N001')['name_zh']);
-        $this->assertNotContains('name_zh', $res->json('data.editable'));
+        // 真正的结构列仍然只读:主键 / 派生键 / 岗位匹配键 / 特性结构
+        foreach (['npc_id', 'name_key', 'primary_skill_id', 'trait_json'] as $locked) {
+            $this->assertNotContains($locked, $res->json('data.editable'));
+        }
     }
 
     public function test_edit_npc_field_audits_and_bumps_version(): void
@@ -72,11 +77,25 @@ class NpcAdminTest extends TestCase
         $this->assertSame(6.0, (float) json_decode($audit->before_json, true)['wage_per_min']);
     }
 
-    // 结构列(稀有度 / 主技能 / 来源 / 特性)不给后台入口:改它们会连带改掉招募权重、价格档与岗位匹配
+    // 结构列不给后台入口(W14-A 扩列后仍然锁着的那几个):
+    // 改 primary_skill_id 会让岗位匹配整体换一套,改 trait_json 要重新过 ModifierSpec 三重 allowlist ——
+    // 两者都属结构性变更,走 Seed + 迁移那条有 diff、可回滚的路。
+    // 稀有度改成**非法值**同样被拒(枚举列已开放,但取值 Fail Closed)
     public function test_edit_npc_rejects_non_allowlisted_field(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/npc', [
-            'npc_id' => 'N012', 'field' => 'rarity', 'value' => 1, 'reason' => '试图改稀有度',
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->postJson('/api/admin/definitions/npc', [
+            'npc_id' => 'N012', 'field' => 'primary_skill_id', 'value' => 'SKILL_MINING', 'reason' => '试图改主技能',
+        ])->assertStatus(422);
+        $this->assertSame('SKILL_PROCESSING', DB::table('npc_definition')->where('npc_id', 'N012')->value('primary_skill_id'));
+
+        $this->actingAs($admin)->postJson('/api/admin/definitions/npc', [
+            'npc_id' => 'N012', 'field' => 'trait_json', 'value' => '{"specs":[]}', 'reason' => '试图改特性结构',
+        ])->assertStatus(422);
+
+        $this->actingAs($admin)->postJson('/api/admin/definitions/npc', [
+            'npc_id' => 'N012', 'field' => 'rarity', 'value' => 'mythic', 'reason' => '试图填非法稀有度',
         ])->assertStatus(422);
 
         $this->assertSame('uncommon', DB::table('npc_definition')->where('npc_id', 'N012')->value('rarity'));

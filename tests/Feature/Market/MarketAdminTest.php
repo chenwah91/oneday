@@ -50,10 +50,12 @@ class MarketAdminTest extends TestCase
         $this->assertEqualsWithDelta(1364.0, (float) $iron['base_liquidity'], 0.0001);
 
         // 可编辑字段清单随响应下发,后台不必自己维护一份「哪些能改」。
-        // trade_mode 于 W11-B 加入(单资源停市 / 复市):它是唯一的字符串字段,
-        // 且只放行 spot ↔ non_tradeable 互切 —— 互切规则由 AdminDefinitionExpansionTest 守
+        // trade_mode 于 W11-B 加入(单资源停市 / 复市):它只放行 spot ↔ non_tradeable 互切 ——
+        // 互切规则由 AdminDefinitionExpansionTest 守。
+        // note 于 W14-A 加入(扩列核对补漏):上市理由 / 停市原因这类「给下一个人看的话」
+        // 此前没有任何入口能写。至此除三个身份列(rs_code / market_category / first_era)外全列可编辑
         $this->assertSame(
-            ['base_price', 'min_price', 'max_price', 'volatility', 'elasticity', 'fee_rate', 'base_liquidity', 'trade_mode'],
+            ['base_price', 'min_price', 'max_price', 'volatility', 'elasticity', 'fee_rate', 'base_liquidity', 'trade_mode', 'note'],
             $res->json('data.editable')
         );
     }

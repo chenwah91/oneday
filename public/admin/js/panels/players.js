@@ -418,9 +418,15 @@ function renderDetail() {
             ['建城时间', escapeHtml(String(c.created_at || '-'))],
         ]);
 
+        // 资源现况 → 补偿联动(W14-B):有 adjust_resource 权限时每行给一颗跳转按钮,
+        // 点击带上 city_id 与资源 code 跳补偿面板(hash 参数,与 #players?player=N 同一套模式)
+        const canComp = hasPermission('adjust_resource');
         const resourceRows = (data.resources || []).map((r) => `
             <tr><td>${escapeHtml(r.name)}</td><td class="cell-id">${escapeHtml(r.resource_id)}</td>
-            <td>${escapeHtml(formatAmount(r.amount))}</td></tr>`);
+            <td>${escapeHtml(formatAmount(r.amount))}</td>
+            <td>${canComp
+                ? `<button type="button" class="btn btn-ghost btn-sm" data-comp-res="${escapeHtml(r.resource_id)}" title="跳到补偿面板,城市与该资源自动选好">补偿 / 扣减</button>`
+                : '<span class="muted">-</span>'}</td></tr>`);
 
         const buildingRows = (data.buildings || []).map((b) => `
             <tr><td>${b.id}</td><td>${escapeHtml(b.name)}</td><td class="cell-id">${escapeHtml(b.building_id)}</td>
@@ -466,7 +472,7 @@ function renderDetail() {
 
         sectionsHtml = `
             ${sub(`资源现况(${(data.resources || []).length} 项)`)}
-            ${tableHtml(['资源', 'code', '数量'], resourceRows, '没有资源行')}
+            ${tableHtml(['资源', 'code', '数量', '操作'], resourceRows, '没有资源行')}
 
             ${sub(`建筑(${(data.buildings || []).length} 栋)`)}
             ${tableHtml(['实例', '名称', 'code', '等级', '状态', '坐标', '工人'], buildingRows, '还没有建筑')}
@@ -590,6 +596,14 @@ function renderDetail() {
             navigate('audit', c ? { city_id: c.id } : { user_id: p.id });
         });
     }
+
+    // 资源现况的「补偿 / 扣减」跳转:hash 带 city + resource,由补偿面板的 apply 消费。
+    // 绑在每次 renderDetail 新建的按钮上(view 是常驻节点,挂它身上会随重绘反复叠加监听器)
+    view.querySelectorAll('[data-comp-res]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            navigate('compensation', { city: c.id, resource: btn.dataset.compRes });
+        });
+    });
 
     const compForm = view.querySelector('.pd-comp-form');
     if (compForm) compForm.addEventListener('submit', onCompSubmit);

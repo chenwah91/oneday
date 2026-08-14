@@ -7,6 +7,8 @@
 //   ③ **Excel 导出 / 导入**(W13-2)—— 等级上限已数据驱动(升级只看下一级定义行存不存在),
 //      批量调数值、给任意建筑补 L4/L5… 新等级行都走「导出 → 改 → 导回」;
 //      导入不删行(文件里没有的现有行一律不动),每栋的等级必须从 1 连续。
+//   ④ **单条新增等级**(W14-B)—— 工具栏「新增 L(N+1) 级」按钮,表单预填当前最高级数值副本,
+//      POST /definitions/building-level/add,level 由服务端强制 = 最高级 + 1。
 //
 // 数据来源:GET /definitions/building-levels 现在把 editable 数组与三个 JSON 列的**现值**
 // 一起下发(已 decode:output/input 是 [{resource, rate_per_min}],cost 是 {资源: 数量},空列为 null / [])。
@@ -24,6 +26,27 @@ const JSON_GROUPS = [
     { column: 'input_json', label: '投入 input_json(rate_per_min)' },
     { column: 'cost_json', label: '建造成本 cost_json' },
 ];
+
+// 可编辑列的中文名与校验元数据:整表编辑器(config)与「新增等级」表单共用同一份,
+// 两处不一致会出现「表格里能填、新增里被拦」这种最难解释的问题
+const LEVEL_LABELS = {
+    duration_seconds: '建造耗时(秒)',
+    worker_required: '所需工人',
+    maintenance_money_per_min: '维护-资金/分',
+    maintenance_food_per_min: '维护-粮食/分',
+    maintenance_fuel_per_min: '维护-燃料/分',
+    power_per_min: '耗电/分',
+    capacity: '容量',
+};
+const LEVEL_FIELD_META = {
+    duration_seconds: { integer: true, min: 0, max: 604800 },
+    worker_required: { integer: true, min: 0, max: 10000 },
+    maintenance_money_per_min: { min: 0, max: 1000000 },
+    maintenance_food_per_min: { min: 0, max: 1000000 },
+    maintenance_fuel_per_min: { min: 0, max: 1000000 },
+    power_per_min: { min: 0, max: 1000000 },
+    capacity: { min: 0, max: 1000000000 },
+};
 
 // 资源 code → 中文名(游戏侧只读定义端点,后台没有等价端点;整个会话只取一次)
 let resourceNames = null;
@@ -226,11 +249,146 @@ async function onEntrySubmit(e, row, ctx) {
     }
 }
 
+// ---------- 新增等级(W14-B)----------
+// 选中建筑后工具栏出现「新增 L(N+1) 级」按钮(N = 本地已加载的最高级),表单预填最高级那行
+// 数值的副本供运营改;POST /definitions/building-level/add(W14-A 契约),level 由服务端
+// 强制 = 最高级 + 1(与 Excel 导入的等级连续性同一不变量),客户端不传 level。
+
+// toolbar 捕获的控件引用:countSuffix(每次整表加载完)要刷新按钮文案与显隐
+let addUi = null;
+
+function maxLevelOf(rows) {
+    return rows.reduce((m, r) => Math.max(m, Number(r.level) || 0), 0);
+}
+
+// 数字输入的体验级预检(服务端 allowlist + 上限校验才是权威);失败返回 null 并写好错误信息
+function levelNumberOf(input, label, meta, ctx) {
+    const text = input.value.trim();
+    if (text === '') { ctx.setError(`${label} 不能留空`); return null; }
+    const value = Number(text);
+    if (!Number.isFinite(value)) { ctx.setError(`${label} 必须是有效数字`); return null; }
+    if (value < 0) { ctx.setError(`${label} 不能是负数`); return null; }
+    if (meta && meta.integer && Math.floor(value) !== value) { ctx.setError(`${label} 必须是整数`); return null; }
+    if (meta && meta.max !== undefined && value > meta.max) { ctx.setError(`${label} 不能大于 ${meta.max}`); return null; }
+    return value;
+}
+
+// 每次整表加载完刷新按钮:换建筑 / 刷新 / 导入后按钮上的 N 都要跟着走;
+// 顺手收起表单 —— 表单里预填的是旧数据,留着只会误导
+function updateAddControls() {
+    if (!addUi) return;
+    const { ctx, addBtn, form } = addUi;
+    form.classList.add('hidden');
+    const max = maxLevelOf(ctx.rows);
+    const show = !!ctx.state.buildingId && max > 0;
+    addBtn.classList.toggle('hidden', !show);
+    if (show) addBtn.textContent = `新增 L${max + 1} 级(预填 L${max} 数值副本)`;
+}
+
+function openAddForm() {
+    const { ctx, form } = addUi;
+    const rows = ctx.rows;
+    if (!rows.length) return;
+    const top = rows.reduce((a, b) => (Number(b.level) > Number(a.level) ? b : a), rows[0]);
+    const nextLevel = Number(top.level) + 1;
+
+    // 数值列跟接口下发的 editable 走(与整表编辑器同一条纪律,CLAUDE §13)
+    const numFields = ctx.editable.map((f) => {
+        const meta = LEVEL_FIELD_META[f] || {};
+        const label = LEVEL_LABELS[f] || f;
+        const step = meta.integer ? '1' : 'any';
+        const max = meta.max !== undefined ? ` max="${escapeHtml(String(meta.max))}"` : '';
+        const raw = top[f] === null || top[f] === undefined ? '' : String(top[f]);
+        return `<div class="auth-field">
+            <label class="auth-label">${escapeHtml(label)}</label>
+            <input type="number" class="bl-add-num" data-field="${escapeHtml(f)}" step="${step}" min="0"${max} value="${escapeHtml(raw)}">
+        </div>`;
+    }).join('');
+
+    // 三个 JSON 列:预填最高级现值的 JSON 文本,可整段调整数值;结构合法性由服务端校验
+    const jsonFields = JSON_GROUPS.map((g) => {
+        const value = top[g.column];
+        const text = value === null || value === undefined ? '' : JSON.stringify(value, null, 2);
+        return `<div class="auth-field">
+            <label class="auth-label">${escapeHtml(g.label)}</label>
+            <textarea class="bl-add-json" data-column="${escapeHtml(g.column)}" rows="6" spellcheck="false">${escapeHtml(text)}</textarea>
+        </div>`;
+    }).join('');
+
+    form.innerHTML = `
+        <div class="panel-subtitle">新增 ${escapeHtml(ctx.state.buildingId)} 的 L${nextLevel} 级 —— 已预填 L${top.level} 的数值副本,按需修改后提交(等级由服务端自动定为最高级 + 1,不需要填)</div>
+        <div class="def-row">${numFields}</div>
+        <div class="def-row">${jsonFields}</div>
+        <div class="auth-field">
+            <label class="auth-label">修改原因(必填,2-80 字)</label>
+            <input class="bl-add-reason" type="text" maxlength="80" placeholder="修改原因(必填,2-80 字)">
+        </div>
+        <div class="def-actions">
+            <button type="submit" class="btn btn-primary bl-add-submit">提交新增 L${nextLevel}</button>
+            <button type="button" class="btn btn-ghost bl-add-cancel">收起</button>
+        </div>
+    `;
+    form.classList.remove('hidden');
+    form.querySelector('.bl-add-cancel').addEventListener('click', () => form.classList.add('hidden'));
+}
+
+async function onAddLevelSubmit(e) {
+    e.preventDefault();
+    if (!addUi) return;
+    const { ctx, form } = addUi;
+    ctx.clearError();
+    ctx.clearResult();
+
+    const reasonInput = form.querySelector('.bl-add-reason');
+    const reason = reasonInput ? reasonInput.value.trim() : '';
+    if (reason.length < 2) { ctx.setError('请填写修改原因(至少 2 字)'); return; }
+
+    const values = {};
+    for (const input of Array.from(form.querySelectorAll('.bl-add-num'))) {
+        const field = input.dataset.field;
+        const value = levelNumberOf(input, LEVEL_LABELS[field] || field, LEVEL_FIELD_META[field], ctx);
+        if (value === null) return;
+        values[field] = value;
+    }
+    for (const area of Array.from(form.querySelectorAll('.bl-add-json'))) {
+        const column = area.dataset.column;
+        const text = area.value.trim();
+        if (text === '') {
+            values[column] = null; // 空列合法:该级没有这一组条目
+            continue;
+        }
+        try {
+            values[column] = JSON.parse(text);
+        } catch (err) {
+            ctx.setError(`${column} 不是合法 JSON,请检查引号与逗号`);
+            return;
+        }
+    }
+
+    const submit = form.querySelector('.bl-add-submit');
+    submit.disabled = true;
+    try {
+        const data = await api.post('/api/admin/definitions/building-level/add', {
+            building_id: ctx.state.buildingId,
+            reason,
+            values,
+        });
+        // 先整表重拉再写结果条:load() 开头会清结果条,顺序反了成功信息会被立刻擦掉
+        //(重拉后新等级行出现在表里,按钮文案也在 countSuffix 里变成 L(N+2))
+        await ctx.reload();
+        ctx.setResult(`已新增 ${data.building_id} L${data.level}(新版本号 ${data.version})`);
+    } catch (err) {
+        ctx.setError(errorMessage(err));
+    } finally {
+        submit.disabled = false;
+    }
+}
+
 export const buildingLevelsPanel = createDefinitionPanel({
     id: 'building-level',
     label: '建筑等级',
     title: '建筑等级定义(等级无上限,定义到几级就能升到几级)',
-    hint: '先在下面选一栋建筑,再逐格改它各级的数值。行尾「条目」可展开该级的<b>产出 / 投入 / 建造成本</b>三组逐资源小表格 —— 那才是这栋楼强不强的真正数值。批量改动与<b>补新等级行</b>(L4、L5…)走「导出 Excel → 改 → 导入」:导入不删行,每栋的等级必须从 1 连续。',
+    hint: '先在下面选一栋建筑,再逐格改它各级的数值。行尾「条目」可展开该级的<b>产出 / 投入 / 建造成本</b>三组逐资源小表格 —— 那才是这栋楼强不强的真正数值。<b>补单个新等级</b>用工具栏的「新增 L(N+1) 级」按钮(预填最高级数值副本);批量改动走「导出 Excel → 改 → 导入」:导入不删行,每栋的等级必须从 1 连续。',
     listUrl: (ctx) => (ctx.state.buildingId
         ? '/api/admin/definitions/building-levels?buildingId=' + encodeURIComponent(ctx.state.buildingId)
         : null),
@@ -242,25 +400,14 @@ export const buildingLevelsPanel = createDefinitionPanel({
         { row: 'level', param: 'level', label: '等级', numeric: true },
     ],
     readonlyColumns: [],
-    labels: {
-        duration_seconds: '建造耗时(秒)',
-        worker_required: '所需工人',
-        maintenance_money_per_min: '维护-资金/分',
-        maintenance_food_per_min: '维护-粮食/分',
-        maintenance_fuel_per_min: '维护-燃料/分',
-        power_per_min: '耗电/分',
-        capacity: '容量',
-    },
-    fieldMeta: {
-        duration_seconds: { integer: true, min: 0, max: 604800 },
-        worker_required: { integer: true, min: 0, max: 10000 },
-        maintenance_money_per_min: { min: 0, max: 1000000 },
-        maintenance_food_per_min: { min: 0, max: 1000000 },
-        maintenance_fuel_per_min: { min: 0, max: 1000000 },
-        power_per_min: { min: 0, max: 1000000 },
-        capacity: { min: 0, max: 1000000000 },
-    },
+    labels: LEVEL_LABELS,
+    fieldMeta: LEVEL_FIELD_META,
     expand: { label: '条目', render: renderExpand },
+    // 每次整表加载完刷新「新增 L(N+1) 级」按钮(countSuffix 是渲染完成后唯一回调进面板的钩子)
+    countSuffix() {
+        updateAddControls();
+        return '';
+    },
     // 建筑选择器:94 行的下拉,选完立刻重新拉这栋楼的各级。
     // 右侧是 Excel 导出 / 导入(W13-2):导出全表 → 线下改 / 补新等级行 → 导回
     toolbar(node, ctx) {
@@ -275,7 +422,24 @@ export const buildingLevelsPanel = createDefinitionPanel({
                 <input type="file" class="bl-import-file" accept=".xlsx">
             </label>
             <button type="button" class="btn btn-ghost bl-import">导入 Excel</button>
+            <button type="button" class="btn btn-ghost bl-add hidden"></button>
+            <form class="def-form bl-add-form hidden"></form>
         `;
+
+        // 新增等级(W14-B):按钮与表单的引用交给模块级 addUi,countSuffix 每次加载完刷新
+        addUi = {
+            ctx,
+            addBtn: node.querySelector('.bl-add'),
+            form: node.querySelector('.bl-add-form'),
+        };
+        addUi.addBtn.addEventListener('click', () => {
+            ctx.clearError();
+            ctx.clearResult();
+            openAddForm();
+        });
+        // 表单元素常驻(内容每次打开重建),submit 只绑一次
+        addUi.form.addEventListener('submit', onAddLevelSubmit);
+
         const select = node.querySelector('.bl-building');
         api.get('/api/admin/definitions/buildings').then((data) => {
             const list = data.buildings || [];
@@ -288,6 +452,9 @@ export const buildingLevelsPanel = createDefinitionPanel({
         });
         select.addEventListener('change', () => {
             ctx.state.buildingId = select.value;
+            // 先藏新增控件:旧建筑的按钮 / 预填表单对新选择无效;
+            // 选空(url 为 null)时 load 提前返回不会走 countSuffix,这里不藏就会残留
+            if (addUi) { addUi.addBtn.classList.add('hidden'); addUi.form.classList.add('hidden'); }
             ctx.reload();
         });
 
