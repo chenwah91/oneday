@@ -279,7 +279,10 @@ class EnumCodeTest extends TestCase
         //      四面板去 FAB、建造面板改开合 sheet;新增 profile-panel.js(资料/登出)、
         //      stats-panel.js(村庄统计)、backpack-panel.js(背包)与 player-panels.css 进预缓存清单。
         //      同属一波,只 bump 一次
-        $this->assertStringContainsString("const CACHE = 'apg-v12'", $sw);
+        // v13:W16 建造面板按规则流程开放 —— build-panel.js 改三态(可建 / 已满半透明 / 未解锁默认收起),
+        //      panels.css 补 is-maxed、状态行、未解锁切换与 [hidden] 兜底样式。
+        //      两个文件已在预缓存清单里,改的是内容,所以只 bump 版本
+        $this->assertStringContainsString("const CACHE = 'apg-v13'", $sw);
         $this->assertStringContainsString("'/game/js/core/enum-names.js'", $sw);
     }
 

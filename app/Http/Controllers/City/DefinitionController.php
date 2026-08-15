@@ -49,7 +49,13 @@ class DefinitionController extends Controller
             // era_order 一并返回(M2-B6):前端建造面板要拿它与快照的 city.era.era_order 比较,
             // 把超时代的建筑提前置灰。否则前端得自己维护一张「时代 → 序号」表(§13:序号只在 era 表里有一份)
             ->join('era as e', 'bd.era_key', '=', 'e.era_key')
-            ->select('bd.building_id', 'bd.name', 'bd.category', 'bd.era_key', 'e.era_order', 'bd.max_count',
+            // 前置科技(W16):建造面板的第二道闸门,与 BuildService「时代 → 科技 → …」同一口径。
+            // 不下发它,前端就只能按时代过滤,玩家会看到一堆点了必然 TECH_NOT_UNLOCKED 的建筑。
+            // 科技中文名一并 leftJoin 出来:为一句「需要科技 xxx」再拉 50 节点的科技定义不划算(§38);
+            // 用 leftJoin 是因为 tech_id 允许 NULL(无科技前置的建筑),内连接会让它们整条消失
+            ->leftJoin('technology_definition as t', 'bd.tech_id', '=', 't.tech_id')
+            ->select('bd.building_id', 'bd.name', 'bd.category', 'bd.era_key', 'e.era_order',
+                'e.name as era_name', 'bd.max_count', 'bd.tech_id', 't.name as tech_name',
                 'bd.footprint_w', 'bd.footprint_h', 'bl.cost_json', 'bl.output_json')
             ->orderBy('bd.building_id')
             ->get()
@@ -58,8 +64,13 @@ class DefinitionController extends Controller
                 'name'        => $r->name,
                 'category'    => $r->category,
                 'era'         => $r->era_key,
+                // 时代中文名(「部落时代」):era_key 是罗马数字 I/II/III,直接显示给玩家看不懂
+                'era_name'    => $r->era_name,
                 'era_order'   => (int) $r->era_order,
                 'max_count'   => (int) $r->max_count,
+                // 前置科技 id 与中文名;无前置时两者都是 null(前端据此直接放行)
+                'tech_id'     => $r->tech_id,
+                'tech_name'   => $r->tech_name,
                 // 该建筑已定义的最高等级(join L1 行保证了至少有 1 级,兜底 1 只是防御)
                 'max_level'   => (int) ($maxLevels[$r->building_id] ?? 1),
                 'footprint'   => ['w' => (int) $r->footprint_w, 'h' => (int) $r->footprint_h],

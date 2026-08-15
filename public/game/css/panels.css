@@ -110,6 +110,33 @@
     font-weight: 600;
 }
 
+/* 未解锁切换(W16):默认收起未解锁建筑,点开是给玩家看下一步目标的 */
+.build-locked-toggle {
+    margin-left: auto;
+    min-height: 28px;
+    padding: 0 10px;
+    border: 1px solid #2a3140;
+    border-radius: 14px;
+    background: transparent;
+    color: #9aa4b2;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.build-locked-toggle.active {
+    border-color: #5b8def;
+    color: #cdd6e4;
+}
+
+.build-locked-toggle[hidden] {
+    display: none;
+}
+
+/* 未解锁按钮不显示时,关闭键自己顶到最右 */
+.build-locked-toggle:not([hidden]) ~ .build-close {
+    margin-left: 0;
+}
+
 .build-close {
     margin-left: auto;
     width: 32px;
@@ -173,10 +200,21 @@
     background: rgba(91, 141, 239, 0.18);
 }
 
-/* 时代未解锁(M2-B6):置灰不可点,title 里说明需要的时代 */
+/* .build-item 自己是 display:flex,会盖掉 [hidden] 的 display:none —— 必须显式补一条 */
+.build-item[hidden] {
+    display: none;
+}
+
+/* 时代 / 科技未解锁:置灰不可点,状态行里说明差什么(默认还整条隐藏,见 build-panel.js) */
 .build-item.era-locked {
     opacity: 0.45;
     color: #6b7484;
+    cursor: default;
+}
+
+/* 已达数量上限(W16):半透明不可点,但仍留在列表里 —— 玩家要看得见「这个我已经建满了」 */
+.build-item.is-maxed {
+    opacity: 0.42;
     cursor: default;
 }
 
@@ -189,6 +227,27 @@
     font-size: 11px;
     color: #9aa4b2;
     white-space: nowrap;
+}
+
+/* 状态行:已有几座 / 已达上限 / 需要什么。没话说时整行隐藏,不占高度 */
+.build-item-note {
+    font-size: 11px;
+    color: #7d8797;
+    white-space: nowrap;
+}
+
+.build-item-note[hidden] {
+    display: none;
+}
+
+.build-empty {
+    padding: 12px 4px;
+    color: #7d8797;
+    font-size: 12px;
+}
+
+.build-empty[hidden] {
+    display: none;
 }
 
 /* 建筑详情面板:绝对定位在地图舞台内,不占用底部建造面板的空间 */
