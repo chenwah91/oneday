@@ -60,7 +60,7 @@ class AdminDashboardTest extends TestCase
         DB::table('city_resources')->updateOrInsert(['city_id' => $cityIds[1], 'resource_id' => 'wood'], ['amount' => 250]);
         DB::table('city_resources')->updateOrInsert(['city_id' => $cityIds[2], 'resource_id' => 'stone'], ['amount' => 70]);
 
-        $res = $this->actingAs($admin)->getJson('/api/admin/dashboard')->assertOk();
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/dashboard')->assertOk();
 
         // 账号:3 个玩家 + 1 个 admin = 4;都是刚建的,今日新增同样是 4
         $this->assertSame(4, $res->json('data.players.total'));
@@ -96,15 +96,15 @@ class AdminDashboardTest extends TestCase
     {
         $admin = $this->admin();
         $target = $this->player('dashbanned');
-        $before = $this->actingAs($admin)->getJson('/api/admin/dashboard')->json('data.audit.admin_actions_today');
+        $before = $this->actingAs($admin, 'admin')->getJson('/api/admin/dashboard')->json('data.audit.admin_actions_today');
 
         // 制造一条 ADMIN.PLAYER_BAN
-        $this->actingAs($admin)->postJson("/api/admin/players/{$target->id}/ban", ['reason' => '仪表盘计数测试'])->assertOk();
+        $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$target->id}/ban", ['reason' => '仪表盘计数测试'])->assertOk();
 
         // 再制造一条**非** ADMIN 前缀的审计(登录失败),它不该被计入
         $this->postJson('/api/auth/login', ['username' => 'nobody-here', 'password' => 'wrongpass'])->assertStatus(401);
 
-        $res = $this->actingAs($admin)->getJson('/api/admin/dashboard')->assertOk();
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/dashboard')->assertOk();
 
         $this->assertSame($before + 1, $res->json('data.audit.admin_actions_today'), '只应多出那一条 ADMIN.PLAYER_BAN');
         // 顺带验一下封禁计数确实进了仪表盘
@@ -120,13 +120,13 @@ class AdminDashboardTest extends TestCase
         // ① 一座城时的查询条数
         $p = $this->player('dashn1');
         CityFactory::createForUser($p);
-        $withOneCity = $this->countQueries(fn () => $this->actingAs($admin)->getJson('/api/admin/dashboard')->assertOk());
+        $withOneCity = $this->countQueries(fn () => $this->actingAs($admin, 'admin')->getJson('/api/admin/dashboard')->assertOk());
 
         // ② 再加 6 座城(每座都有自己的建筑与资源行)
         for ($i = 0; $i < 6; $i++) {
             CityFactory::createForUser($this->player('dashn'.$i.'x'));
         }
-        $withSevenCities = $this->countQueries(fn () => $this->actingAs($admin)->getJson('/api/admin/dashboard')->assertOk());
+        $withSevenCities = $this->countQueries(fn () => $this->actingAs($admin, 'admin')->getJson('/api/admin/dashboard')->assertOk());
 
         $this->assertSame(
             $withOneCity,
@@ -145,14 +145,15 @@ class AdminDashboardTest extends TestCase
         // actingAs 会把用户挂在 guard 上并对本用例后续的每个请求生效
         $this->getJson('/api/admin/dashboard')->assertStatus(401);
 
-        // 普通玩家连后台门槛都过不去
+        // 普通玩家连后台门槛都过不去。
+        // guard 写 'admin' 才落得到 EnsureAdmin 的角色闸门(403);只有玩家会话时是 auth:admin 的 401
         $player = $this->player('dashdenied');
-        $this->actingAs($player)->getJson('/api/admin/dashboard')->assertStatus(403);
+        $this->actingAs($player, 'admin')->getJson('/api/admin/dashboard')->assertStatus(403);
 
         // support 有 read_player,应当放行
         $support = $this->player('dashsupport');
         $support->forceFill(['role' => 'support'])->save();
-        $this->actingAs($support)->getJson('/api/admin/dashboard')->assertOk();
+        $this->actingAs($support, 'admin')->getJson('/api/admin/dashboard')->assertOk();
     }
 
     // DB::listen 计数:只统计闭包执行期间发出的 SQL

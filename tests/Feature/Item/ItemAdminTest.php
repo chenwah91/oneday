@@ -39,7 +39,7 @@ class ItemAdminTest extends TestCase
 
     public function test_item_list_returns_rows_and_editable_fields(): void
     {
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/definitions/items');
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/definitions/items');
 
         $res->assertOk();
         $this->assertCount(24, $res->json('data.items'));
@@ -53,7 +53,7 @@ class ItemAdminTest extends TestCase
     {
         $countBefore = DB::table('game_data_versions')->count();
 
-        $res = $this->actingAs($this->admin())->postJson('/api/admin/definitions/item', [
+        $res = $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/item', [
             'item_id' => 'IT001', 'field' => 'durability', 'value' => 90, 'reason' => '工具耐久平衡',
         ]);
 
@@ -74,7 +74,7 @@ class ItemAdminTest extends TestCase
     // 只改前者就会变成「后台改了没反应」(= M.3 的 governance_bonus 双口径),必须同步
     public function test_editing_effect_value_rewrites_the_specs(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/item', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/item', [
             'item_id' => 'IT001', 'field' => 'effect_value', 'value' => 20, 'reason' => '木材工具增强',
         ])->assertOk();
 
@@ -91,7 +91,7 @@ class ItemAdminTest extends TestCase
     // 否则「降低维护」会变成「提高维护」
     public function test_editing_effect_value_preserves_negative_specs(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/item', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/item', [
             'item_id' => 'IT016', 'field' => 'effect_value', 'value' => 12, 'reason' => '维护减免增强',
         ])->assertOk();
 
@@ -104,7 +104,7 @@ class ItemAdminTest extends TestCase
 
     public function test_edit_item_rejects_non_editable_field(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/item', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/item', [
             'item_id' => 'IT001', 'field' => 'category', 'value' => 1, 'reason' => '越权改结构',
         ])->assertStatus(422)->assertJson(['error' => 'VALIDATION_ERROR']);
 
@@ -114,12 +114,12 @@ class ItemAdminTest extends TestCase
     public function test_edit_item_rejects_out_of_range_and_fractional_durability(): void
     {
         // 超上限
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/item', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/item', [
             'item_id' => 'IT001', 'field' => 'effect_value', 'value' => 99999, 'reason' => '超范围',
         ])->assertStatus(422);
 
         // 耐久必须是 ≥1 的整数
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/item', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/item', [
             'item_id' => 'IT001', 'field' => 'durability', 'value' => 2.5, 'reason' => '小数耐久',
         ])->assertStatus(422);
 
@@ -128,17 +128,18 @@ class ItemAdminTest extends TestCase
 
     public function test_edit_item_rejects_unknown_item(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/item', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/item', [
             'item_id' => 'IT999', 'field' => 'durability', 'value' => 10, 'reason' => '不存在的工具',
         ])->assertStatus(404);
     }
 
-    // 普通玩家不能碰后台(CLAUDE §83)
+    // 普通玩家不能碰后台(CLAUDE §83)。
+    // guard 写 'admin' 才落得到 EnsureAdmin 的角色闸门(403);只有玩家会话时是 auth:admin 的 401
     public function test_player_cannot_edit_item_definition(): void
     {
         $player = User::create(['username' => 'itemplayer', 'name' => 'p', 'email' => 'itemplayer@a.com', 'password' => 'password123']);
 
-        $this->actingAs($player)->postJson('/api/admin/definitions/item', [
+        $this->actingAs($player, 'admin')->postJson('/api/admin/definitions/item', [
             'item_id' => 'IT001', 'field' => 'durability', 'value' => 10, 'reason' => '越权',
         ])->assertStatus(403);
     }
@@ -147,7 +148,7 @@ class ItemAdminTest extends TestCase
 
     public function test_item_settings_are_listed_with_range_metadata(): void
     {
-        $rows = collect($this->actingAs($this->admin())->getJson('/api/admin/settings')->json('data.settings'))
+        $rows = collect($this->actingAs($this->admin(), 'admin')->getJson('/api/admin/settings')->json('data.settings'))
             ->keyBy('setting_key');
 
         foreach ([GameSetting::ITEM_SLOTS_PER_BUILDING, GameSetting::ITEM_DURABILITY_MINUTES_NORMAL,
@@ -167,11 +168,11 @@ class ItemAdminTest extends TestCase
     public function test_item_setting_write_is_range_checked_and_audited(): void
     {
         // 超出登记区间 → 拒绝
-        $this->actingAs($this->admin())->postJson('/api/admin/settings', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/settings', [
             'setting_key' => GameSetting::ITEM_SLOTS_PER_BUILDING, 'value' => 999, 'reason' => '超范围',
         ])->assertStatus(422);
 
-        $this->actingAs($this->admin())->postJson('/api/admin/settings', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/settings', [
             'setting_key' => GameSetting::ITEM_SLOTS_PER_BUILDING, 'value' => 4, 'reason' => '扩槽',
         ])->assertOk();
 

@@ -61,7 +61,7 @@ class GameDataVersionTest extends TestCase
         $user = $this->user('gdvsnap');
         CityFactory::createForUser($user);
 
-        $res = $this->actingAs($user)->getJson('/api/city');
+        $res = $this->actingAs($user, 'web')->getJson('/api/city');
         $res->assertOk();
         $res->assertJsonStructure(['data' => ['data_version', 'server_time', 'city']]);
 
@@ -77,7 +77,7 @@ class GameDataVersionTest extends TestCase
         $user = $this->user('gdvkeys');
         CityFactory::createForUser($user);
 
-        $this->actingAs($user)->getJson('/api/city')
+        $this->actingAs($user, 'web')->getJson('/api/city')
             ->assertOk()
             ->assertJsonStructure(['data' => ['city' => [
                 'id', 'name', 'revision', 'population', 'population_capacity', 'money',
@@ -116,7 +116,7 @@ class GameDataVersionTest extends TestCase
         $level = $this->anyBuildingLevel();
 
         // 注意:这是「后台」端点,字段名由 Admin 侧维护,不随本次游戏侧契约改名
-        $res = $this->actingAs($this->admin())->postJson('/api/admin/definitions/building-level', [
+        $res = $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/building-level', [
             'buildingId' => $level->building_id,
             'level'      => $level->level,
             'field'      => 'worker_required',

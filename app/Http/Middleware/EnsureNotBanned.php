@@ -37,6 +37,15 @@ class EnsureNotBanned
             return $next($request);
         }
 
+        // 后台登录口豁免(2026-08-15):这条路由刻意没挂 auth:*(登录时人还没认证),
+        // 于是默认 guard 仍是 web —— 在这里判封禁,判的是同一个浏览器里那个**玩家**的状态,
+        // 与正在敲密码的管理员账号毫无关系。不豁免的话:浏览器里挂着一个被封玩家时,
+        // 管理员点登录会收到 401 ACCOUNT_BANNED(界面显示「自己被封了」),而他根本没被封。
+        // 管理员自己的封禁由 AdminAuthController 在**密码校验之后**判(不给账号枚举留缝)。
+        if ($request->is('api/admin/auth/login')) {
+            return $next($request);
+        }
+
         $user = $request->user();
         if (! $user || $user->banned_at === null) {
             return $next($request);
@@ -48,11 +57,20 @@ class EnsureNotBanned
 
         // 立刻踢下线:不销毁 session 的话,这条 401 会在他每次刷新时重复触发,
         // 每次都写一条审计 —— 一个开着自动轮询的页面能在一夜之间灌满审计表。
-        // 登出之后下一次请求就没有 user 了,会被 auth:web 用普通的 401 挡掉
-        Auth::guard('web')->logout();
+        // 登出之后下一次请求就没有 user 了,会被 auth:* 用普通的 401 挡掉。
+        //
+        // ⚠️ 两处刻意的写法(2026-08-15,后台独立会话之后):
+        //   1) Auth::logout() 走**默认 guard**,而不是写死 guard('web')。默认 guard 就是上面
+        //      $request->user() 解析出这个被封用户的那一把:玩家路径上是 web,/api/admin/* 上
+        //      auth:admin 已把它切成 admin。写死 web 的话,被封的非 staff 持后台会话时这行是空转,
+        //      真正踢人全靠下面那句 —— 属于隐式依赖,且随下面改成 regenerate 就会彻底失效。
+        //   2) regenerate(true) 而不是 invalidate():invalidate 会 flush 整个 session,
+        //      把同一浏览器里**另一个身份**的登录键一起清掉(被封的是玩家,却把管理员踢下线,
+        //      甚至就是管理员自己刚点的封禁把自己踢了)。regenerate(true) 销毁旧 id 那一行、
+        //      换新 id、保留数据 —— 当事身份已被上面的 logout() 摘掉,另一个身份原样存活。
+        Auth::logout();
         if ($request->hasSession()) {
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+            $request->session()->regenerate(true);
         }
 
         AuditLogger::record(AuditAction::SECURITY_AUTHORIZATION_FAILED, 'rejected', [

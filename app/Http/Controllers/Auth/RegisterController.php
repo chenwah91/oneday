@@ -26,7 +26,9 @@ class RegisterController extends Controller
             'password' => $data['password'], // 模型 hashed cast 自动哈希
         ]);
 
-        Auth::login($user);
+        // 显式指定 web guard(不用默认 guard):项目还有一个后台专用的 admin guard,
+        // 注册自动登录只能建立玩家身份,绝不能因为默认 guard 被切过而写进后台那把锁
+        Auth::guard('web')->login($user);
         $request->session()->regenerate();
 
         \App\Game\City\CityFactory::createForUser($user);

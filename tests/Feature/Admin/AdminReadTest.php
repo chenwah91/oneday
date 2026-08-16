@@ -32,7 +32,7 @@ class AdminReadTest extends TestCase
     {
         $p = User::create(['username' => 'someplayer', 'name' => 'someplayer', 'email' => 'sp@p.com', 'password' => 'password123']);
         CityFactory::createForUser($p);
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/players');
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/players');
         $res->assertOk()->assertJsonStructure(['data' => ['players' => [['id', 'username', 'email', 'role']]]]);
         $this->assertTrue(collect($res->json('data.players'))->contains('username', 'someplayer'));
     }
@@ -42,7 +42,7 @@ class AdminReadTest extends TestCase
     {
         $p = User::create(['username' => 'nopass', 'name' => 'nopass', 'email' => 'np@p.com', 'password' => 'password123']);
         CityFactory::createForUser($p);
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/players');
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/players');
         $res->assertOk();
         $body = $res->getContent();
         $this->assertStringNotContainsString('password', $body);
@@ -52,7 +52,7 @@ class AdminReadTest extends TestCase
     {
         $p = User::create(['username' => 'detailplayer', 'name' => 'detailplayer', 'email' => 'dp@p.com', 'password' => 'password123']);
         $city = CityFactory::createForUser($p);
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/players/' . $p->id);
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/players/' . $p->id);
         $res->assertOk()->assertJsonStructure([
             'data' => [
                 'player' => ['id', 'username', 'email', 'role'],
@@ -66,7 +66,7 @@ class AdminReadTest extends TestCase
 
     public function test_player_detail_not_found(): void
     {
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/players/999999');
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/players/999999');
         $res->assertStatus(404);
     }
 
@@ -134,7 +134,7 @@ class AdminReadTest extends TestCase
             ]);
         }
 
-        $res = $this->actingAs($admin)->getJson('/api/admin/players/' . $p->id)->assertOk();
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/players/' . $p->id)->assertOk();
 
         // 旧契约不破坏(player / city 的既有键),新分区键全部就位
         $res->assertJsonStructure(['data' => [
@@ -194,7 +194,7 @@ class AdminReadTest extends TestCase
     public function test_player_detail_without_city_gives_empty_sections(): void
     {
         $p = User::create(['username' => 'nocity', 'name' => 'nocity', 'email' => 'nc@p.com', 'password' => 'password123']);
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/players/' . $p->id)->assertOk();
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/players/' . $p->id)->assertOk();
 
         $this->assertNull($res->json('data.city'));
         $this->assertSame([], $res->json('data.resources'));
@@ -214,7 +214,7 @@ class AdminReadTest extends TestCase
         $p = User::create(['username' => 'sensitive', 'name' => 'sensitive', 'email' => 'ss@p.com', 'password' => 'password123']);
         CityFactory::createForUser($p);
 
-        $body = $this->actingAs($this->admin())->getJson('/api/admin/players/' . $p->id)->assertOk()->getContent();
+        $body = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/players/' . $p->id)->assertOk()->getContent();
         $this->assertStringNotContainsString('password', $body);
         $this->assertStringNotContainsString('remember_token', $body);
     }
@@ -227,13 +227,14 @@ class AdminReadTest extends TestCase
         // 未登录 401。必须排在所有 actingAs 之前 —— actingAs 会把用户挂在 guard 上对后续请求生效
         $this->getJson('/api/admin/players/' . $target->id)->assertStatus(401);
 
+        // guard 写 'admin' 才落得到 EnsureAdmin 的角色闸门(403);只有玩家会话时是 auth:admin 的 401
         $player = User::create(['username' => 'permdenied', 'name' => 'permdenied', 'email' => 'pd@p.com', 'password' => 'password123']);
-        $this->actingAs($player)->getJson('/api/admin/players/' . $target->id)->assertStatus(403);
+        $this->actingAs($player, 'admin')->getJson('/api/admin/players/' . $target->id)->assertStatus(403);
     }
 
     public function test_audit_list(): void
     {
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/audit');
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/audit');
         $res->assertOk()->assertJsonStructure(['data' => ['audit']]);
     }
 
@@ -241,8 +242,8 @@ class AdminReadTest extends TestCase
     public function test_audit_list_filter_by_action(): void
     {
         $admin = $this->admin();
-        $this->actingAs($admin)->getJson('/api/admin/players');
-        $res = $this->actingAs($admin)->getJson('/api/admin/audit?action=SECURITY.AUTHORIZATION_FAILED');
+        $this->actingAs($admin, 'admin')->getJson('/api/admin/players');
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/audit?action=SECURITY.AUTHORIZATION_FAILED');
         $res->assertOk();
         foreach ($res->json('data.audit') as $row) {
             $this->assertSame('SECURITY.AUTHORIZATION_FAILED', $row['action']);
@@ -252,7 +253,7 @@ class AdminReadTest extends TestCase
     // limit 需要被 clamp 到 <=200,超大值不应报错也不应超出上限
     public function test_audit_list_limit_clamped(): void
     {
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/audit?limit=99999');
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/audit?limit=99999');
         $res->assertOk();
         $this->assertLessThanOrEqual(200, count($res->json('data.audit')));
     }

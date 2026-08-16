@@ -94,6 +94,31 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             if ($e instanceof \Illuminate\Auth\AuthenticationException) {
+                // 「已登录玩家在扫后台 API」是最有价值的入侵信号(§60 授权失败必记 / §67 该行为要形成 security_flags),
+                // 必须留痕。后台组从 auth:web 改成 auth:admin(2026-08-15)之后,这条路径不再经过 EnsureAdmin ——
+                // Authenticate 提前抛 AuthenticationException,原本必然写下的 SECURITY.AUTHORIZATION_FAILED
+                // 会整条消失。这一段就是把那个信号补回原处。
+                //
+                // 只在**持有玩家会话**时记:未登录访客打后台端点是常态噪音(扫描器 / 收藏夹 / 探针),
+                // 全记等于把真信号淹掉。web guard 显式取,不受此刻默认 guard 已被切成 admin 的影响。
+                if ($request->is('api/admin/*') && \Illuminate\Support\Facades\Auth::guard('web')->check()) {
+                    $probeId = \Illuminate\Support\Facades\Auth::guard('web')->id();
+                    $route = $request->path();
+
+                    \App\Support\AuditLogger::record(\App\Support\AuditAction::SECURITY_AUTHORIZATION_FAILED, 'rejected', [
+                        'actor_id' => $probeId, 'user_id' => $probeId,
+                        // 与 EnsureAdmin 的 NOT_ADMIN 刻意区分:那条是「有后台会话但角色不够」,
+                        // 这条是「压根没有后台会话,拿玩家身份来敲门」——处置优先级不同
+                        'reason_code' => 'NO_ADMIN_SESSION',
+                        'metadata_json' => ['path' => $route, 'method' => $request->method()],
+                    ]);
+                    \App\Support\SecurityLogger::log('security.authorization_failed', [
+                        'user_id' => $probeId, 'route' => $route, 'method' => $request->method(),
+                        'reason' => 'NO_ADMIN_SESSION',
+                        'error_code' => \App\Support\ErrorCode::AUTH_REQUIRED,
+                    ]);
+                }
+
                 return \App\Support\ApiResponse::fail(\App\Support\ErrorCode::AUTH_REQUIRED, 401);
             }
 

@@ -35,7 +35,7 @@ class NpcAdminTest extends TestCase
 
     public function test_npc_list_returns_rows_and_editable_fields(): void
     {
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/definitions/npcs');
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/definitions/npcs');
 
         $res->assertOk();
         $this->assertCount(150, $res->json('data.npcs'));
@@ -58,7 +58,7 @@ class NpcAdminTest extends TestCase
         $versionBefore = GameDataVersion::current();
         $countBefore = DB::table('game_data_versions')->count();
 
-        $res = $this->actingAs($this->admin())->postJson('/api/admin/definitions/npc', [
+        $res = $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'N012', 'field' => 'wage_per_min', 'value' => 9.5, 'reason' => 'NPC 工资平衡',
         ]);
 
@@ -85,16 +85,16 @@ class NpcAdminTest extends TestCase
     {
         $admin = $this->admin();
 
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'N012', 'field' => 'primary_skill_id', 'value' => 'SKILL_MINING', 'reason' => '试图改主技能',
         ])->assertStatus(422);
         $this->assertSame('SKILL_PROCESSING', DB::table('npc_definition')->where('npc_id', 'N012')->value('primary_skill_id'));
 
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'N012', 'field' => 'trait_json', 'value' => '{"specs":[]}', 'reason' => '试图改特性结构',
         ])->assertStatus(422);
 
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'N012', 'field' => 'rarity', 'value' => 'mythic', 'reason' => '试图填非法稀有度',
         ])->assertStatus(422);
 
@@ -105,7 +105,7 @@ class NpcAdminTest extends TestCase
     public function test_edit_npc_rejects_out_of_range_level(): void
     {
         foreach ([0, 11, 3.5] as $bad) {
-            $this->actingAs($this->admin())->postJson('/api/admin/definitions/npc', [
+            $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/npc', [
                 'npc_id' => 'N012', 'field' => 'initial_skill_level', 'value' => $bad, 'reason' => '越界等级',
             ])->assertStatus(422);
         }
@@ -115,21 +115,22 @@ class NpcAdminTest extends TestCase
 
     public function test_edit_npc_rejects_negative_value_and_unknown_npc(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/npc', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'N012', 'field' => 'wage_per_min', 'value' => -1, 'reason' => '负工资',
         ])->assertStatus(422);
 
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/npc', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'NXXX', 'field' => 'wage_per_min', 'value' => 1, 'reason' => '不存在的 NPC',
         ])->assertStatus(404);
     }
 
+    // guard 写 'admin' 才落得到 EnsureAdmin 的角色闸门(403);只有玩家会话时是 auth:admin 的 401
     public function test_player_cannot_edit_npc_definition(): void
     {
         $player = User::create(['username' => 'plainplayer', 'name' => 'p', 'email' => 'p@p.com', 'password' => 'password123']);
 
-        $this->actingAs($player)->getJson('/api/admin/definitions/npcs')->assertStatus(403);
-        $this->actingAs($player)->postJson('/api/admin/definitions/npc', [
+        $this->actingAs($player, 'admin')->getJson('/api/admin/definitions/npcs')->assertStatus(403);
+        $this->actingAs($player, 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'N012', 'field' => 'wage_per_min', 'value' => 1, 'reason' => '越权',
         ])->assertStatus(403);
     }
@@ -138,7 +139,7 @@ class NpcAdminTest extends TestCase
 
     public function test_settings_list_exposes_number_type_with_range(): void
     {
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/settings');
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/settings');
 
         $res->assertOk();
         $settings = collect($res->json('data.settings'))->keyBy('setting_key');
@@ -158,7 +159,7 @@ class NpcAdminTest extends TestCase
 
     public function test_number_setting_can_be_updated_within_range(): void
     {
-        $res = $this->actingAs($this->admin())->postJson('/api/admin/settings', [
+        $res = $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/settings', [
             'setting_key' => GameSetting::NPC_MORALE_LEAVE_THRESHOLD, 'value' => 45, 'reason' => '提高离职门槛',
         ]);
 
@@ -176,14 +177,14 @@ class NpcAdminTest extends TestCase
     public function test_number_setting_rejects_out_of_range_and_non_numeric(): void
     {
         foreach ([-1, 101] as $bad) {
-            $this->actingAs($this->admin())->postJson('/api/admin/settings', [
+            $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/settings', [
                 'setting_key' => GameSetting::NPC_MORALE_LEAVE_THRESHOLD, 'value' => $bad, 'reason' => '越界',
             ])->assertStatus(422);
         }
 
         // 字符串数字 / 布尔一律拒绝,不做模糊解释(与 resource_map 同一纪律)
         foreach (['30', true, null, [1]] as $bad) {
-            $this->actingAs($this->admin())->postJson('/api/admin/settings', [
+            $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/settings', [
                 'setting_key' => GameSetting::NPC_MORALE_LEAVE_THRESHOLD, 'value' => $bad, 'reason' => '类型不符',
             ])->assertStatus(422);
         }

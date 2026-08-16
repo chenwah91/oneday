@@ -203,8 +203,8 @@ class M2AttackTest extends TestCase
             };
 
             $res = $method === 'get'
-                ? $this->actingAs($user)->getJson('/api/admin/'.$path.'?username=ladder-target')
-                : $this->actingAs($user)->postJson('/api/admin/'.$path, $payload);
+                ? $this->actingAs($user, 'admin')->getJson('/api/admin/'.$path.'?username=ladder-target')
+                : $this->actingAs($user, 'admin')->postJson('/api/admin/'.$path, $payload);
 
             $res->assertStatus($expected);
 
@@ -231,7 +231,10 @@ class M2AttackTest extends TestCase
 
         foreach ([['get', 'compensation/lookup'], ['get', 'settings']] as [$method, $path]) {
             DB::table('audit_logs')->delete();
-            $this->actingAs($u)->getJson('/api/admin/'.$path)->assertStatus(403);
+            // 挂在 admin guard 上:后台自 2026-08-15 起走独立会话,只有**玩家会话**的请求会被
+            // auth:admin 挡成 401 而不进 EnsureAdmin(那条路径在 AdminAccessTest 里单独验)。
+            // 这里要验的是 EnsureAdmin 本身:持有后台会话但角色是 player → NOT_ADMIN 403 + 留痕
+            $this->actingAs($u, 'admin')->getJson('/api/admin/'.$path)->assertStatus(403);
             $row = DB::table('audit_logs')->where('action', 'SECURITY.AUTHORIZATION_FAILED')->first();
             $this->assertSame('NOT_ADMIN', $row->reason_code);
         }
@@ -355,9 +358,9 @@ class M2AttackTest extends TestCase
         // 管理员补偿
         $gm = $this->staff(Role::GAME_MASTER, 'replay-gm');
         $body = ['city_id' => $city->id, 'resource' => 'wood', 'delta' => 50, 'reason' => '幂等重放不得二次入账', 'idempotency_key' => 'r-comp'];
-        $this->actingAs($gm)->postJson('/api/admin/compensation', $body)->assertOk();
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', $body)->assertOk();
         $afterComp = $this->wallet($city);
-        $this->actingAs($gm)->postJson('/api/admin/compensation', $body)->assertOk()->assertJson(['data' => ['replayed' => true, 'delta' => 0]]);
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', $body)->assertOk()->assertJson(['data' => ['replayed' => true, 'delta' => 0]]);
         $this->assertSame($afterComp, $this->wallet($city), '补偿重放二次入账了');
         $this->assertSame(1, DB::table('audit_logs')->where('action', 'ADMIN.COMPENSATION')->count());
     }
@@ -491,7 +494,7 @@ class M2AttackTest extends TestCase
         ];
 
         foreach ($payloads as $payload) {
-            $this->actingAs($gm)->postJson('/api/admin/compensation', $payload)
+            $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', $payload)
                 ->assertStatus(422)->assertJson(['success' => false]);
         }
 
@@ -514,14 +517,14 @@ class M2AttackTest extends TestCase
         ];
 
         foreach ($payloads as $payload) {
-            $this->actingAs($admin)->postJson('/api/admin/settings', $payload)->assertStatus(422);
+            $this->actingAs($admin, 'admin')->postJson('/api/admin/settings', $payload)->assertStatus(422);
         }
 
         $this->assertTrue(GameSetting::get(GameSetting::WORKER_GATE_ENABLED));
         $this->assertSame(0, DB::table('audit_logs')->where('action', 'ADMIN.CONFIG_CHANGE')->count());
 
         // 对照:真正的 false 必须能改进去(否则「开关关不掉」会被当成安全加固误伤)
-        $this->actingAs($admin)->postJson('/api/admin/settings', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/settings', [
             'setting_key' => GameSetting::WORKER_GATE_ENABLED, 'value' => false, 'reason' => '正常关闭',
         ])->assertOk();
         $this->assertFalse(GameSetting::get(GameSetting::WORKER_GATE_ENABLED));
@@ -648,18 +651,18 @@ class M2AttackTest extends TestCase
         $wood = $this->res($city, 'wood');
         $money = (float) DB::table('cities')->where('id', $city->id)->value('money');
 
-        $this->actingAs($gm)->postJson('/api/admin/compensation', [
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', [
             'city_id' => $city->id, 'resource' => 'wood', 'delta' => -($wood + 0.01), 'reason' => '扣穿木材应被拒绝',
         ])->assertStatus(422)->assertJson(['error' => 'INSUFFICIENT_RESOURCE']);
 
-        $this->actingAs($gm)->postJson('/api/admin/compensation', [
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', [
             'city_id' => $city->id, 'resource' => 'money', 'delta' => -($money + 0.01), 'reason' => '扣穿资金应被拒绝',
         ])->assertStatus(422)->assertJson(['error' => 'INSUFFICIENT_RESOURCE']);
 
         $this->assertSame($wood, $this->res($city, 'wood'));
         $this->assertSame($money, (float) DB::table('cities')->where('id', $city->id)->value('money'));
         // 恰好扣到 0 是允许的(边界在「小于 0」而不是「等于 0」)
-        $this->actingAs($gm)->postJson('/api/admin/compensation', [
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', [
             'city_id' => $city->id, 'resource' => 'wood', 'delta' => -$wood, 'reason' => '恰好扣到零应放行',
         ])->assertOk();
         $this->assertSame(0.0, $this->res($city, 'wood'));
@@ -768,17 +771,19 @@ class M2AttackTest extends TestCase
         $id = $this->place($city, 'F02', 1, 1);
         $admin = $this->staff(Role::ADMIN, 'gateoff-admin');
 
-        $this->actingAs($admin)->postJson('/api/admin/settings', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/settings', [
             'setting_key' => GameSetting::WORKER_GATE_ENABLED, 'value' => false, 'reason' => '救急关闭用工闸门',
         ])->assertOk();
 
+        // 下面两条是**玩家侧**请求,guard 必须显式写 'web':
+        // 上一行 actingAs(..., 'admin') 已经把默认 guard 切成 admin,不写的话这两个玩家会被挂到后台那把锁上
         // 规则 1 超编:F02 L1 只要 4 人
-        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instance_id' => $id, 'workers' => 5])
+        $this->actingAs($u, 'web')->postJson('/api/city/workers/assign', ['instance_id' => $id, 'workers' => 5])
             ->assertStatus(422)->assertJson(['error' => 'VALIDATION_ERROR']);
 
         // 规则 2 超劳动力:人口 5 → 可用 3
         DB::table('cities')->where('id', $city->id)->update(['population' => 5]);
-        $this->actingAs($u)->postJson('/api/city/workers/assign', ['instance_id' => $id, 'workers' => 4])
+        $this->actingAs($u, 'web')->postJson('/api/city/workers/assign', ['instance_id' => $id, 'workers' => 4])
             ->assertStatus(422)->assertJson(['error' => 'WORKER_NOT_AVAILABLE']);
 
         $this->assertSame(0, (int) DB::table('city_building_instances')->where('id', $id)->value('assigned_workers'));

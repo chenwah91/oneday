@@ -42,6 +42,20 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // 管理后台专用 guard(CLAUDE §43「管理员账号必须与普通玩家权限严格分离」)。
+        //
+        // 为什么要独立一个 guard:游戏(/game/)与后台(/admin/)同源共用一个浏览器 session,
+        // 只有一个 web guard 时,两边的登录会互相覆盖 —— 管理员登进后台后再在游戏页登录玩家号,
+        // 后台的每个请求就变成了玩家身份,整片 /api/admin/* 当场 403(2026-08-15 用户实测)。
+        //
+        // 同 provider(users 表)但 session 里的登录键按 guard 名分开(login_web_* / login_admin_*),
+        // 因此同一个浏览器可以同时保持「玩家已登录」和「管理员已登录」两个身份,互不覆盖。
+        // 这不需要额外的 cookie —— 两个键存在同一个 session 里,靠键名区分。
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
     ],
 
     /*

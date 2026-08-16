@@ -65,16 +65,28 @@ function showView(name) {
     topbar.classList.toggle('hidden', name === 'login');
 }
 
-async function enterAdmin() {
+// preloaded:init 已经取过一次后台身份时直接复用,不重复打 /api/admin/me
+async function enterAdmin(preloaded) {
     // 先取当前管理员身份:403 表示该账号根本不是后台人员,直接给无权限视图
     try {
-        await loadMe();
+        if (!preloaded) await loadMe();
     } catch (err) {
         if (err.status === 403) {
             showView('denied');
             return;
         }
-        // 非权限问题(网络 / 服务器错误)不阻塞进入,仅角色徽标留空
+        // 非权限问题(401 会话失效 / 429 限流 / 500 / 网络抖动):**不能**继续往下走。
+        // 原先的注释说「仅角色徽标留空」,但这是错的 —— 权限清单同时也空了,而 14 个面板
+        // 全部声明了 permission(9 个定义面板默认 edit_definition),visiblePanels() 返回空 →
+        // router 直接 return、导航渲染成空,运营看到的是一张顶栏正常、正文全白、
+        // 一个 tab 都没有、也没有半个字解释的页面,只能 F5 → 再撞一次 → 退回登录页,
+        // 陷入「登录 → 白页 → 又要登录」的死循环。宁可退回登录视图并说明原因。
+        loginError.textContent = err && err.status === 429
+            ? '请求过于频繁,请稍候再登录'
+            : '无法获取管理员身份(' + ((err && err.error) || '网络错误') + '),请重试';
+        loginError.classList.remove('hidden');
+        showView('login');
+        return;
     }
 
     const role = currentRole();
@@ -88,9 +100,9 @@ async function enterAdmin() {
     renderNav();
 }
 
-async function afterLogin(user) {
+async function afterLogin(user, preloaded) {
     currentUserEl.textContent = `${user.username}(${user.email})`;
-    await enterAdmin();
+    await enterAdmin(preloaded);
 }
 
 loginForm.addEventListener('submit', async (e) => {
@@ -98,14 +110,19 @@ loginForm.addEventListener('submit', async (e) => {
     loginError.classList.add('hidden');
     loginSubmit.disabled = true;
     try {
-        const data = await api.post('/api/auth/login', {
+        // 后台专用登录端点:走独立的 admin 会话,不会覆盖同一浏览器里已登录的玩家身份
+        const data = await api.post('/api/admin/auth/login', {
             username: loginUsername.value.trim(),
             password: loginPassword.value,
         });
         loginPassword.value = '';
         await afterLogin(data.user);
     } catch (err) {
-        loginError.textContent = errorMessage(err);
+        // 401 = 用户名或密码错(账号不存在与密码错不可区分,后端刻意同一个响应);
+        // 403 = 密码是对的,但这个账号不是后台人员 —— 两种情况的处置完全不同,文案必须分开
+        loginError.textContent = err && err.status === 403
+            ? '该账号不是管理员,无法登录后台'
+            : errorMessage(err);
         loginError.classList.remove('hidden');
     } finally {
         loginSubmit.disabled = false;
@@ -114,7 +131,8 @@ loginForm.addEventListener('submit', async (e) => {
 
 logoutBtn.addEventListener('click', async () => {
     try {
-        await api.post('/api/auth/logout');
+        // 只退后台身份:同一浏览器里正在玩游戏的玩家会话不受影响(见 AdminAuthController::logout)
+        await api.post('/api/admin/auth/logout');
     } catch (err) {
         // 忽略登出失败,直接回到登录视图
     }
@@ -128,13 +146,20 @@ logoutBtn.addEventListener('click', async () => {
     showView('login');
 });
 
-// 初始化:若已存在有效 Session,直接尝试进入后台
+// 初始化:若已存在有效的**后台** Session,直接尝试进入后台。
+//
+// 探针必须打 /api/admin/me 而不是 /api/me:两套会话已彻底分开(admin guard vs web guard),
+// /api/me 反映的是游戏侧的登录状态 —— 拿它当探针会同时错两个方向:
+// 只登了游戏的人被判成有后台会话(随后 403 变成「无权限」页),
+// 而只登了后台的人刷新页面会被判成未登录(退回登录表单)。
 (async function init() {
     showView('login');
     try {
-        const data = await api.get('/api/me');
-        await afterLogin(data.user);
+        const me = await loadMe();
+        await afterLogin(me, me);
     } catch (err) {
-        // 未登录,停留在登录视图
+        // 403:有后台会话但角色已被降级(登录之后被改了角色)→ 明确给无权限视图;
+        // 其余(401 未登录后台 / 网络错误)一律停留在登录视图
+        if (err && err.status === 403) showView('denied');
     }
 })();

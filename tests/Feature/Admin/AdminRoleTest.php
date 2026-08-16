@@ -42,7 +42,7 @@ class AdminRoleTest extends TestCase
     {
         $row = $this->anyBuildingLevel();
 
-        return $this->actingAs($actor)->postJson('/api/admin/definitions/building-level', [
+        return $this->actingAs($actor, 'admin')->postJson('/api/admin/definitions/building-level', [
             'buildingId' => $row->building_id,
             'level'      => $row->level,
             'field'      => 'worker_required',
@@ -57,8 +57,8 @@ class AdminRoleTest extends TestCase
     {
         $support = $this->userWithRole(Role::SUPPORT, 'supportuser');
 
-        $this->actingAs($support)->getJson('/api/admin/audit')->assertOk();
-        $this->actingAs($support)->getJson('/api/admin/players')->assertOk();
+        $this->actingAs($support, 'admin')->getJson('/api/admin/audit')->assertOk();
+        $this->actingAs($support, 'admin')->getJson('/api/admin/players')->assertOk();
         $this->postDefinitionEdit($support)->assertStatus(403)->assertJson(['error' => 'FORBIDDEN']);
     }
 
@@ -66,8 +66,8 @@ class AdminRoleTest extends TestCase
     {
         $gm = $this->userWithRole(Role::GAME_MASTER, 'gmuser');
 
-        $this->actingAs($gm)->getJson('/api/admin/players')->assertOk();
-        $this->actingAs($gm)->getJson('/api/admin/audit')->assertOk();
+        $this->actingAs($gm, 'admin')->getJson('/api/admin/players')->assertOk();
+        $this->actingAs($gm, 'admin')->getJson('/api/admin/audit')->assertOk();
         $this->postDefinitionEdit($gm)->assertStatus(403);
     }
 
@@ -88,12 +88,17 @@ class AdminRoleTest extends TestCase
     {
         $su = $this->userWithRole(Role::SUPER_ADMIN, 'superuser');
 
-        $this->actingAs($su)->getJson('/api/admin/players')->assertOk();
+        $this->actingAs($su, 'admin')->getJson('/api/admin/players')->assertOk();
         $this->postDefinitionEdit($su)->assertOk();
     }
 
     // ---------- Fail Closed ----------
 
+    // guard 一律写 'admin'(本文件所有 actingAs 皆然):后台自 2026-08-15 起走独立会话,
+    // 只有**玩家会话**的请求会在 auth:admin 就被挡成 401、根本不进 EnsureAdmin
+    //(那条路径由 AdminAccessTest / AdminAuthTest 单独覆盖)。
+    // 这里要验的是 EnsureAdmin 的角色闸门本身:持有后台会话但角色不够 → 403 + 留痕。
+    // 现实可达性:管理员登进后台之后被降级 / role 被写脏,会话存活期内的每个请求都靠它兜住
     public function test_player_forbidden_on_every_admin_endpoint(): void
     {
         $player = $this->userWithRole(Role::PLAYER, 'plainuser');
@@ -101,7 +106,7 @@ class AdminRoleTest extends TestCase
 
         foreach (['/api/admin/me', '/api/admin/players', '/api/admin/players/1', '/api/admin/audit',
             '/api/admin/definitions/building-levels?buildingId=' . $row->building_id] as $path) {
-            $this->actingAs($player)->getJson($path)->assertStatus(403)->assertJson(['error' => 'FORBIDDEN']);
+            $this->actingAs($player, 'admin')->getJson($path)->assertStatus(403)->assertJson(['error' => 'FORBIDDEN']);
         }
         $this->postDefinitionEdit($player)->assertStatus(403);
     }
@@ -112,8 +117,8 @@ class AdminRoleTest extends TestCase
         $weird = $this->userWithRole(Role::PLAYER, 'weirduser');
         $weird->forceFill(['role' => 'wizard'])->save();
 
-        $this->actingAs($weird)->getJson('/api/admin/players')->assertStatus(403);
-        $this->actingAs($weird)->getJson('/api/admin/me')->assertStatus(403);
+        $this->actingAs($weird, 'admin')->getJson('/api/admin/players')->assertStatus(403);
+        $this->actingAs($weird, 'admin')->getJson('/api/admin/me')->assertStatus(403);
         $this->postDefinitionEdit($weird)->assertStatus(403);
     }
 
@@ -136,7 +141,7 @@ class AdminRoleTest extends TestCase
     public function test_me_returns_role_and_permissions(): void
     {
         $support = $this->userWithRole(Role::SUPPORT, 'meuser');
-        $res = $this->actingAs($support)->getJson('/api/admin/me');
+        $res = $this->actingAs($support, 'admin')->getJson('/api/admin/me');
         $res->assertOk();
         $this->assertSame(Role::SUPPORT, $res->json('data.role'));
         $this->assertSame('meuser', $res->json('data.username'));
@@ -152,7 +157,7 @@ class AdminRoleTest extends TestCase
         $su = $this->userWithRole(Role::SUPER_ADMIN, 'mesuper');
         $this->assertSame(
             Role::permissions(),
-            $this->actingAs($su)->getJson('/api/admin/me')->json('data.permissions')
+            $this->actingAs($su, 'admin')->getJson('/api/admin/me')->json('data.permissions')
         );
     }
 

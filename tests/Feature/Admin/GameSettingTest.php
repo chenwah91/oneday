@@ -227,7 +227,7 @@ class GameSettingTest extends TestCase
     {
         $admin = $this->staff(Role::ADMIN, 'settingadmin');
 
-        $res = $this->actingAs($admin)->getJson('/api/admin/settings');
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/settings');
         $res->assertOk();
         $settings = collect($res->json('data.settings'));
         $this->assertSame(count(GameSetting::DEFINITIONS), $settings->count());
@@ -236,7 +236,7 @@ class GameSettingTest extends TestCase
         $this->assertNotSame('', $row['description']);
         $this->assertSame('bool', $row['type']);
 
-        $this->actingAs($admin)->postJson('/api/admin/settings', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/settings', [
             'setting_key' => GameSetting::WORKER_GATE_ENABLED,
             'value'       => false,
             'reason'      => '后台关闭用工闸门',
@@ -257,8 +257,8 @@ class GameSettingTest extends TestCase
     {
         $gm = $this->staff(Role::GAME_MASTER, 'settinggm');
 
-        $this->actingAs($gm)->getJson('/api/admin/settings')->assertStatus(403);
-        $this->actingAs($gm)->postJson('/api/admin/settings', [
+        $this->actingAs($gm, 'admin')->getJson('/api/admin/settings')->assertStatus(403);
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/settings', [
             'setting_key' => GameSetting::WORKER_GATE_ENABLED, 'value' => false, 'reason' => '越权尝试',
         ])->assertStatus(403)->assertJson(['error' => 'FORBIDDEN']);
 
@@ -270,10 +270,11 @@ class GameSettingTest extends TestCase
         $this->assertTrue(GameSetting::get(GameSetting::WORKER_GATE_ENABLED));
     }
 
+    // guard 写 'admin' 才落得到 EnsureAdmin 的角色闸门(403);只有玩家会话时是 auth:admin 的 401
     public function test_player_denied(): void
     {
         $player = $this->staff(Role::PLAYER, 'settingplayer');
-        $this->actingAs($player)->getJson('/api/admin/settings')->assertStatus(403);
+        $this->actingAs($player, 'admin')->getJson('/api/admin/settings')->assertStatus(403);
     }
 
     // 未登录单独一条:actingAs 会作用到整个用例剩余部分,和已登录断言混在一起验不出 401
@@ -290,11 +291,11 @@ class GameSettingTest extends TestCase
     {
         $admin = $this->staff(Role::ADMIN, 'settingadmin2');
 
-        $this->actingAs($admin)->postJson('/api/admin/settings', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/settings', [
             'setting_key' => GameSetting::WORKER_GATE_ENABLED, 'value' => false,
         ])->assertStatus(422);
 
-        $this->actingAs($admin)->postJson('/api/admin/settings', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/settings', [
             'setting_key' => 'never_registered', 'value' => true, 'reason' => '造一个新 key',
         ])->assertStatus(422);
 

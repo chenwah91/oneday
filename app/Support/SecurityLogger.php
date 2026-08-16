@@ -40,13 +40,24 @@ final class SecurityLogger
             'ip'         => $request?->ip(),
         ];
 
-        // user_id:调用方显式传入优先,否则取当前登录用户(未登录则不带)
-        $userId = $context['user_id'] ?? $request?->user()?->id;
+        // user_id:调用方显式传入优先,否则取当前登录用户(未登录则不带)。
+        //
+        // ⚠️ 用 array_key_exists 而不是 ??:登录失败这类事件会显式传 `'user_id' => $user?->id`,
+        // 账号不存在时那就是 null,意思是「这次尝试归不到任何账号」。用 ?? 的话 null 会退回
+        // $request->user() —— 而后台登录口没挂 auth,默认 guard 仍是 web,退回来的正是同一个浏览器里
+        // 登着游戏的那个**无关玩家**(后台与玩家会话共存是常态,不是边角情况)。
+        // 结果:security.log 指认 bob 正在被爆破,而 bob 什么都没做。宁可不带,不能栽赃。
+        $userId = array_key_exists('user_id', $context) ? $context['user_id'] : $request?->user()?->id;
         if ($userId !== null) {
             $base['user_id'] = (int) $userId;
         }
 
-        Log::channel('security')->warning($event, $base + self::filter($context));
+        // user_id 的归属已由上面那段统一裁决,不能让 filter 再从 context 里带一份进来 ——
+        // 显式传 null 时会漏成 "user_id": null 的噪音,把「归不到账号」写成一个看起来像字段缺失的值
+        $filtered = self::filter($context);
+        unset($filtered['user_id']);
+
+        Log::channel('security')->warning($event, $base + $filtered);
     }
 
     // allowlist 过滤:只保留白名单字段,其余一律丢弃(而不是「记录一切再脱敏」)

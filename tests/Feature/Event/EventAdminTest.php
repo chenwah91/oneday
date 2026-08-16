@@ -31,7 +31,7 @@ class EventAdminTest extends EventTestCase
 
     public function test_list_returns_thirty_events_with_landing_summary(): void
     {
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/definitions/events')->assertOk();
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/definitions/events')->assertOk();
         $events = $res->json('data.events');
 
         $this->assertCount(30, $events);
@@ -62,11 +62,12 @@ class EventAdminTest extends EventTestCase
         $this->assertGreaterThan(0, $blackout['mapped_effect_count'], '复活的事件必须有能执行的效果');
     }
 
+    // guard 写 'admin' 才落得到 EnsureAdmin 的角色闸门(403);只有玩家会话时是 auth:admin 的 401
     public function test_list_requires_edit_definition_permission(): void
     {
         $player = User::create(['username' => 'evtplayer', 'name' => 'p', 'email' => 'evtplayer@example.com', 'password' => 'password123']);
 
-        $this->actingAs($player)->getJson('/api/admin/definitions/events')->assertStatus(403);
+        $this->actingAs($player, 'admin')->getJson('/api/admin/definitions/events')->assertStatus(403);
     }
 
     // ---- 编辑:审计 + 版本递增 ----
@@ -75,7 +76,7 @@ class EventAdminTest extends EventTestCase
     {
         $versionBefore = GameDataVersion::current();
 
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/event', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/event', [
             'event_id' => 'EVT_DROUGHT', 'field' => 'base_weight', 'value' => 20, 'reason' => '干旱出现得太少',
         ])->assertOk()->assertJsonPath('data.before', '8.0000')->assertJsonPath('data.after', 20);
 
@@ -99,32 +100,32 @@ class EventAdminTest extends EventTestCase
         $admin = $this->admin();
 
         // 没有 reason
-        $this->actingAs($admin)->postJson('/api/admin/definitions/event', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/event', [
             'event_id' => 'EVT_DROUGHT', 'field' => 'base_weight', 'value' => 20,
         ])->assertStatus(422);
 
         // 不在 allowlist 里的字段(改分类 = 改权重分组,属结构性变更)
-        $this->actingAs($admin)->postJson('/api/admin/definitions/event', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/event', [
             'event_id' => 'EVT_DROUGHT', 'field' => 'category', 'value' => 1, 'reason' => '试试',
         ])->assertStatus(422);
 
         // 负值
-        $this->actingAs($admin)->postJson('/api/admin/definitions/event', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/event', [
             'event_id' => 'EVT_DROUGHT', 'field' => 'base_weight', 'value' => -1, 'reason' => '试试',
         ])->assertStatus(422);
 
         // 超上限
-        $this->actingAs($admin)->postJson('/api/admin/definitions/event', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/event', [
             'event_id' => 'EVT_DROUGHT', 'field' => 'effect_multiplier', 'value' => 99, 'reason' => '试试',
         ])->assertStatus(422);
 
         // 分钟类必须是整数
-        $this->actingAs($admin)->postJson('/api/admin/definitions/event', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/event', [
             'event_id' => 'EVT_DROUGHT', 'field' => 'cooldown_minutes', 'value' => 12.5, 'reason' => '试试',
         ])->assertStatus(422);
 
         // 不存在的事件
-        $this->actingAs($admin)->postJson('/api/admin/definitions/event', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/event', [
             'event_id' => 'EVT_NOPE', 'field' => 'base_weight', 'value' => 1, 'reason' => '试试',
         ])->assertStatus(404);
     }
@@ -138,7 +139,7 @@ class EventAdminTest extends EventTestCase
             ->where('event_id', 'EVT_NEW_DEPOSIT')->value('auto_effect_json'), true)['effects'],
             '样本前提:该事件的自动效果确实为空');
 
-        $res = $this->actingAs($this->admin())->postJson('/api/admin/definitions/event', [
+        $res = $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/event', [
             'event_id' => 'EVT_NEW_DEPOSIT', 'field' => 'enabled', 'value' => 1, 'reason' => '先试试',
         ])->assertOk();
 
@@ -155,7 +156,7 @@ class EventAdminTest extends EventTestCase
         $this->onlyEnable('EVT_FESTIVAL');
 
         // disabled_reason 于 W11-B 起是停用的必填项(后台列表要显示「这条为什么是灰的」)
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/event', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/event', [
             'event_id' => 'EVT_FESTIVAL', 'field' => 'enabled', 'value' => 0,
             'reason' => '临时下线', 'disabled_reason' => '庆典临时下线,等权重重算',
         ])->assertOk();
@@ -171,7 +172,7 @@ class EventAdminTest extends EventTestCase
         [$city] = $this->makeCity('admindur');
         $this->onlyEnable('EVT_FESTIVAL');
 
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/event', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/event', [
             'event_id' => 'EVT_FESTIVAL', 'field' => 'duration_minutes', 'value' => 40, 'reason' => '庆典延长',
         ])->assertOk();
 
@@ -193,7 +194,7 @@ class EventAdminTest extends EventTestCase
         $this->setResource($city, 'wood', 500);
         $this->onlyEnable('EVT_FOREST_FIRE');
 
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/event', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/event', [
             'event_id' => 'EVT_FOREST_FIRE', 'field' => 'effect_multiplier', 'value' => 0.5, 'reason' => '火灾太狠',
         ])->assertOk();
 
@@ -209,7 +210,7 @@ class EventAdminTest extends EventTestCase
     {
         $admin = $this->admin();
 
-        $list = $this->actingAs($admin)->getJson('/api/admin/settings')->assertOk()->json('data.settings');
+        $list = $this->actingAs($admin, 'admin')->getJson('/api/admin/settings')->assertOk()->json('data.settings');
         $chance = collect($list)->firstWhere('setting_key', 'event_trigger_chance');
 
         $this->assertSame('number', $chance['type']);
@@ -217,14 +218,14 @@ class EventAdminTest extends EventTestCase
         $this->assertSame(1, $chance['max_value']);
         $this->assertTrue($chance['registered']);
 
-        $this->actingAs($admin)->postJson('/api/admin/settings', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/settings', [
             'setting_key' => 'event_trigger_chance', 'value' => 0.25, 'reason' => '提高事件密度',
         ])->assertOk();
 
         $this->assertSame(0.25, GameSetting::get(GameSetting::EVENT_TRIGGER_CHANCE));
 
         // 越界值被服务端拒绝(前端校验只是体验优化)
-        $this->actingAs($admin)->postJson('/api/admin/settings', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/settings', [
             'setting_key' => 'event_trigger_chance', 'value' => 1.5, 'reason' => '越界',
         ])->assertStatus(422);
     }
@@ -238,7 +239,7 @@ class EventAdminTest extends EventTestCase
         GameSetting::set(GameSetting::EVENT_TRIGGER_CHANCE, 1.0, null, 'test');
         GameSetting::set(GameSetting::EVENT_OFFLINE_MAX_TRIGGERS, 10, null, 'test');
 
-        $this->actingAs($this->admin())->postJson('/api/admin/settings', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/settings', [
             'setting_key' => 'event_max_active', 'value' => 1, 'reason' => '压事件密度',
         ])->assertOk();
 

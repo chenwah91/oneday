@@ -37,7 +37,9 @@ class LoginController extends Controller
             return ApiResponse::fail(ErrorCode::TOO_MANY_REQUESTS, 429);
         }
 
-        $ok = $user && Auth::attempt(['username' => $credentials['username'], 'password' => $credentials['password']]);
+        // 显式指定 web guard(不用默认 guard):项目自 2026-08-15 起还有一个后台专用的 admin guard,
+        // 玩家登录端点无论如何都只能写玩家那把锁 —— 靠「默认 guard 恰好是 web」是隐式依赖,不该赌
+        $ok = $user && Auth::guard('web')->attempt(['username' => $credentials['username'], 'password' => $credentials['password']]);
 
         if (! $ok) {
             RateLimiter::hit($key, 900);
@@ -93,7 +95,7 @@ class LoginController extends Controller
 
         RateLimiter::clear($key);
         $request->session()->regenerate();
-        $user = Auth::user();
+        $user = Auth::guard('web')->user();
 
         // 管理员登录单独标注 actor_type,便于审计日志区分「管理员」与「普通玩家」的登录事件
         AuditLogger::record(AuditAction::AUTH_LOGIN_SUCCESS, 'success', [

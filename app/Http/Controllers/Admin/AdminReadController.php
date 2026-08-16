@@ -48,6 +48,10 @@ class AdminReadController extends Controller
         return ApiResponse::ok(['data' => [
             'id'          => $user->id,
             'username'    => $user->username,
+            // email 是**自己**的邮箱,不构成任何越权信息;补它是为了后台刷新页面时
+            // 顶栏能渲染出与刚登录时完全一致的「用户名(邮箱)」标签
+            //(刷新走的是 /api/admin/me 探针,不再打玩家侧的 /api/me)
+            'email'       => $user->email,
             'role'        => $role,
             'permissions' => Role::permissionsFor($role),
         ]]);

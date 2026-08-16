@@ -46,6 +46,8 @@ class BuildingLevelExcelTest extends TestCase
         return $user;
     }
 
+    // 调用点一律写 actingAs($this->player(), 'admin'):后台自 2026-08-15 起走独立会话,
+    // 只有玩家会话的请求会在 auth:admin 被挡成 401,验不到 EnsureAdmin 的角色闸门(403)
     private function player(string $un = 'excelplayer'): User
     {
         return User::create(['username' => $un, 'name' => $un, 'email' => "{$un}@example.com", 'password' => 'password123']);
@@ -101,7 +103,7 @@ class BuildingLevelExcelTest extends TestCase
 
     private function import(User $user, UploadedFile $file, array $extra = ['reason' => 'W13-2 批量调整']): TestResponse
     {
-        return $this->actingAs($user)->post(
+        return $this->actingAs($user, 'admin')->post(
             '/api/admin/definitions/building-levels/import',
             ['file' => $file] + $extra,
             ['Accept' => 'application/json']
@@ -112,7 +114,7 @@ class BuildingLevelExcelTest extends TestCase
 
     public function test_export_returns_valid_xlsx_with_expected_header_and_order(): void
     {
-        $res = $this->actingAs($this->admin())->get('/api/admin/definitions/building-levels/export');
+        $res = $this->actingAs($this->admin(), 'admin')->get('/api/admin/definitions/building-levels/export');
         $res->assertOk();
         $this->assertStringContainsString('spreadsheetml', (string) $res->headers->get('content-type'));
 
@@ -139,7 +141,7 @@ class BuildingLevelExcelTest extends TestCase
 
     public function test_export_requires_edit_definition_permission(): void
     {
-        $this->actingAs($this->player())->get('/api/admin/definitions/building-levels/export')->assertStatus(403);
+        $this->actingAs($this->player(), 'admin')->get('/api/admin/definitions/building-levels/export')->assertStatus(403);
     }
 
     // ==================== 导入:成功路径 ====================

@@ -161,10 +161,28 @@ Route::prefix('api')->group(function () {
     });
 });
 
+// ================= 后台认证(独立于玩家会话)=================
+//
+// 后台走**独立的 admin guard**,与玩家的 web guard 互不覆盖(见 config/auth.php 与 AdminAuthController)。
+// 这两条刻意放在下面的 admin 组**之外**:登录时人还没认证,挂 auth:admin 就永远进不来。
+// 与玩家登录同挂 throttle:auth(每 IP 每分钟 20 次)兜底 DoS;
+// 真正按账号的失败次数限制(每 15 分钟 5 次)在 AdminAuthController 内,且与玩家登录共用同一个计数器。
+Route::post('api/admin/auth/login', [\App\Http\Controllers\Admin\AdminAuthController::class, 'login'])
+    ->middleware('throttle:auth');
+
+// 登出必须已经是管理员身份(auth:admin),否则没有 actor 可写审计
+Route::post('api/admin/auth/logout', [\App\Http\Controllers\Admin\AdminAuthController::class, 'logout'])
+    ->middleware(['auth:admin', 'throttle:auth']);
+
 // 管理后台(CLAUDE §63 角色分级):
-// 组级 'admin' 不带参数 = 兜底门槛(support 及以上才进得来,player 一律 403);
+// 组级 auth:admin = 必须有**后台会话**(玩家的 web 会话在这里一律不认,未登录 401);
+// 组级 'admin' 不带参数 = 兜底门槛(support 及以上才进得来,非后台角色 403);
 // 单个端点再挂具体权限,按最小权限收紧。权限表见 App\Support\Role。
-Route::prefix('api/admin')->middleware(['auth:web', 'admin', 'throttle:api'])->group(function () {
+//
+// 两道闸各管一件事,缺一不可:
+//   auth:admin  —— 你有没有从**后台的门**登进来(玩家号登了游戏也进不来这里)
+//   admin       —— 你现在的角色够不够(登进来之后被降级 / 角色被改脏,靠它兜住 Fail Closed)
+Route::prefix('api/admin')->middleware(['auth:admin', 'admin', 'throttle:api'])->group(function () {
     // 当前管理员身份:username/role/permissions,供后台按权限显隐 UI(任意管理角色可读自己的)
     Route::get('/me', [\App\Http\Controllers\Admin\AdminReadController::class, 'me']);
 

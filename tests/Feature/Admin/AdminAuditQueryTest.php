@@ -56,14 +56,14 @@ class AdminAuditQueryTest extends TestCase
         $this->writeAudit(AuditAction::BUILDING_UPGRADE, ['user_id' => $p1->id, 'city_id' => $c1->id]);
 
         // user_id
-        $rows = $this->actingAs($admin)->getJson("/api/admin/audit?user_id={$p1->id}")->assertOk()->json('data.audit');
+        $rows = $this->actingAs($admin, 'admin')->getJson("/api/admin/audit?user_id={$p1->id}")->assertOk()->json('data.audit');
         $this->assertNotEmpty($rows);
         foreach ($rows as $row) {
             $this->assertSame((int) $p1->id, (int) $row['userId']);
         }
 
         // city_id
-        $rows = $this->actingAs($admin)->getJson("/api/admin/audit?city_id={$c2->id}")->assertOk()->json('data.audit');
+        $rows = $this->actingAs($admin, 'admin')->getJson("/api/admin/audit?city_id={$c2->id}")->assertOk()->json('data.audit');
         $this->assertNotEmpty($rows);
         foreach ($rows as $row) {
             $this->assertSame((int) $c2->id, (int) $row['cityId']);
@@ -71,7 +71,7 @@ class AdminAuditQueryTest extends TestCase
 
         // request_id:取一条已有记录的 request_id,回查必须只剩同一请求的行
         $requestId = DB::table('audit_logs')->where('user_id', $p1->id)->value('request_id');
-        $rows = $this->actingAs($admin)->getJson("/api/admin/audit?request_id={$requestId}")->assertOk()->json('data.audit');
+        $rows = $this->actingAs($admin, 'admin')->getJson("/api/admin/audit?request_id={$requestId}")->assertOk()->json('data.audit');
         $this->assertNotEmpty($rows);
         foreach ($rows as $row) {
             $this->assertSame($requestId, $row['requestId']);
@@ -86,11 +86,11 @@ class AdminAuditQueryTest extends TestCase
         $target = $this->player('auditbantarget');
 
         // 造两条 ADMIN.* (封 + 解) 与一条非 ADMIN 的
-        $this->actingAs($admin)->postJson("/api/admin/players/{$target->id}/ban", ['reason' => '审计前缀测试'])->assertOk();
-        $this->actingAs($admin)->postJson("/api/admin/players/{$target->id}/unban", ['reason' => '审计前缀测试解禁'])->assertOk();
+        $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$target->id}/ban", ['reason' => '审计前缀测试'])->assertOk();
+        $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$target->id}/unban", ['reason' => '审计前缀测试解禁'])->assertOk();
         $this->writeAudit(AuditAction::BUILDING_BUILD, ['user_id' => $target->id]);
 
-        $rows = $this->actingAs($admin)->getJson('/api/admin/audit?action=ADMIN.%25&limit=200')->assertOk()->json('data.audit');
+        $rows = $this->actingAs($admin, 'admin')->getJson('/api/admin/audit?action=ADMIN.%25&limit=200')->assertOk()->json('data.audit');
         $this->assertGreaterThanOrEqual(2, count($rows));
         foreach ($rows as $row) {
             $this->assertStringStartsWith('ADMIN.', $row['action'], '前缀 LIKE 不该带出别的域');
@@ -100,7 +100,7 @@ class AdminAuditQueryTest extends TestCase
         $this->assertContains(AuditAction::ADMIN_PLAYER_UNBAN, $actions);
 
         // 不含 % 时仍是精确匹配(旧行为不变)
-        $rows = $this->actingAs($admin)->getJson('/api/admin/audit?action='.AuditAction::ADMIN_PLAYER_BAN)->assertOk()->json('data.audit');
+        $rows = $this->actingAs($admin, 'admin')->getJson('/api/admin/audit?action='.AuditAction::ADMIN_PLAYER_BAN)->assertOk()->json('data.audit');
         $this->assertNotEmpty($rows);
         foreach ($rows as $row) {
             $this->assertSame(AuditAction::ADMIN_PLAYER_BAN, $row['action']);
@@ -108,12 +108,12 @@ class AdminAuditQueryTest extends TestCase
 
         // allowlist:小写 / 引号 / 通配注入一律 422
         foreach (['admin.%', "ADMIN.%' OR '1'='1", 'ADMIN.*'] as $bad) {
-            $this->actingAs($admin)->getJson('/api/admin/audit?action='.urlencode($bad))
+            $this->actingAs($admin, 'admin')->getJson('/api/admin/audit?action='.urlencode($bad))
                 ->assertStatus(422)->assertJsonPath('error', 'VALIDATION_ERROR');
         }
 
         // _ 只当字面量:ADMIN.PLAYER_BAN 里的下划线被转义后,'ADMIN.PLAYER_B%' 仍能命中封禁那条
-        $rows = $this->actingAs($admin)->getJson('/api/admin/audit?action='.urlencode('ADMIN.PLAYER_B%'))->assertOk()->json('data.audit');
+        $rows = $this->actingAs($admin, 'admin')->getJson('/api/admin/audit?action='.urlencode('ADMIN.PLAYER_B%'))->assertOk()->json('data.audit');
         $this->assertNotEmpty($rows);
         foreach ($rows as $row) {
             $this->assertSame(AuditAction::ADMIN_PLAYER_BAN, $row['action']);
@@ -139,19 +139,19 @@ class AdminAuditQueryTest extends TestCase
         $from = now()->subHours(2)->format('Y-m-d H:i:s');
         $to = now()->addHours(2)->format('Y-m-d H:i:s');
 
-        $rows = $this->actingAs($admin)->getJson(
+        $rows = $this->actingAs($admin, 'admin')->getJson(
             '/api/admin/audit?action='.AuditAction::TECH_UNLOCK.'&from='.urlencode($from).'&to='.urlencode($to)
         )->assertOk()->json('data.audit');
         $this->assertCount(1, $rows, '时间区间必须只框住「今天」那一条');
 
         // 只给 from:今天 + 明天两条
-        $rows = $this->actingAs($admin)->getJson(
+        $rows = $this->actingAs($admin, 'admin')->getJson(
             '/api/admin/audit?action='.AuditAction::TECH_UNLOCK.'&from='.urlencode($from)
         )->assertOk()->json('data.audit');
         $this->assertCount(2, $rows);
 
         // 无法解析的时间 422
-        $this->actingAs($admin)->getJson('/api/admin/audit?from=not-a-date')
+        $this->actingAs($admin, 'admin')->getJson('/api/admin/audit?from=not-a-date')
             ->assertStatus(422)->assertJsonPath('error', 'VALIDATION_ERROR');
 
         // 游标:limit=1 逐条往前翻,id 必须严格递减
@@ -159,7 +159,7 @@ class AdminAuditQueryTest extends TestCase
         $ids = [];
         for ($i = 0; $i < 3; $i++) {
             $url = '/api/admin/audit?action='.AuditAction::TECH_UNLOCK.'&limit=1'.($cursor ? "&before_id={$cursor}" : '');
-            $res = $this->actingAs($admin)->getJson($url)->assertOk();
+            $res = $this->actingAs($admin, 'admin')->getJson($url)->assertOk();
             $page = $res->json('data.audit');
             $this->assertCount(1, $page);
             $ids[] = (int) $page[0]['id'];
@@ -177,10 +177,10 @@ class AdminAuditQueryTest extends TestCase
         $admin = $this->admin();
         $target = $this->player('auditdetail');
 
-        $this->actingAs($admin)->postJson("/api/admin/players/{$target->id}/ban", ['reason' => '详情端点测试'])->assertOk();
+        $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$target->id}/ban", ['reason' => '详情端点测试'])->assertOk();
         $id = (int) DB::table('audit_logs')->where('action', AuditAction::ADMIN_PLAYER_BAN)->value('id');
 
-        $res = $this->actingAs($admin)->getJson("/api/admin/audit/{$id}")->assertOk();
+        $res = $this->actingAs($admin, 'admin')->getJson("/api/admin/audit/{$id}")->assertOk();
 
         $this->assertSame($id, $res->json('data.audit.id'));
         $this->assertSame(AuditAction::ADMIN_PLAYER_BAN, $res->json('data.audit.action'));
@@ -194,7 +194,7 @@ class AdminAuditQueryTest extends TestCase
         $this->assertSame($target->username, $res->json('data.audit.metadata_json.username'));
 
         // 不存在的 id → 404
-        $this->actingAs($admin)->getJson('/api/admin/audit/999999')->assertStatus(404);
+        $this->actingAs($admin, 'admin')->getJson('/api/admin/audit/999999')->assertStatus(404);
     }
 
     // ---- 越权 ----
@@ -210,15 +210,17 @@ class AdminAuditQueryTest extends TestCase
         $this->getJson('/api/admin/audit')->assertStatus(401);
         $this->getJson("/api/admin/audit/{$id}")->assertStatus(401);
 
-        // 普通玩家:连后台门槛都过不去
+        // 普通玩家:连后台门槛都过不去。
+        // guard 写 'admin' 是为了落到 EnsureAdmin 的角色闸门(403);只有玩家会话时
+        // 请求在 auth:admin 就被挡成 401,那条路径在 AdminAccessTest 单独验
         $player = $this->player('auditdenied');
-        $this->actingAs($player)->getJson('/api/admin/audit')->assertStatus(403);
-        $this->actingAs($player)->getJson("/api/admin/audit/{$id}")->assertStatus(403);
+        $this->actingAs($player, 'admin')->getJson('/api/admin/audit')->assertStatus(403);
+        $this->actingAs($player, 'admin')->getJson("/api/admin/audit/{$id}")->assertStatus(403);
 
         // support 有 read_audit,列表与详情都应放行(拆权限只会让客服查一半案子要找人代劳)
         $support = $this->admin('auditsupport', 'support');
-        $this->actingAs($support)->getJson('/api/admin/audit')->assertOk();
-        $this->actingAs($support)->getJson("/api/admin/audit/{$id}")->assertOk();
+        $this->actingAs($support, 'admin')->getJson('/api/admin/audit')->assertOk();
+        $this->actingAs($support, 'admin')->getJson("/api/admin/audit/{$id}")->assertOk();
 
         // 越权被拒必须留痕(EnsureAdmin 写的 SECURITY.AUTHORIZATION_FAILED)
         $this->assertTrue(

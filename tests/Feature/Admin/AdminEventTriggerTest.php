@@ -43,7 +43,7 @@ class AdminEventTriggerTest extends EventTestCase
         $admin = $this->admin();
         $this->onlyManual('EVT_FESTIVAL');
 
-        $res = $this->actingAs($admin)->postJson('/api/admin/events/trigger', [
+        $res = $this->actingAs($admin, 'admin')->postJson('/api/admin/events/trigger', [
             'city_id' => $city->id, 'event_id' => 'EVT_FESTIVAL', 'reason' => '复现玩家工单 T-2048',
         ])->assertOk();
 
@@ -112,7 +112,7 @@ class AdminEventTriggerTest extends EventTestCase
             'available_at' => Carbon::parse(self::BASE)->addHours(2),
         ]);
 
-        $this->actingAs($admin)->postJson('/api/admin/events/trigger', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/events/trigger', [
             'city_id' => $city->id, 'event_id' => 'EVT_FESTIVAL', 'reason' => '冷却中也要能复现',
         ])->assertOk();
 
@@ -138,11 +138,11 @@ class AdminEventTriggerTest extends EventTestCase
         GameSetting::set(GameSetting::EVENT_MAX_ACTIVE_DISASTER, 1, null, 'test');
         GameSetting::set(GameSetting::EVENT_MAX_ACTIVE, 1, null, 'test');
 
-        $this->actingAs($admin)->postJson('/api/admin/events/trigger', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/events/trigger', [
             'city_id' => $city->id, 'event_id' => 'EVT_FESTIVAL', 'reason' => '第一条应当成功',
         ])->assertOk();
 
-        $this->actingAs($admin)->postJson('/api/admin/events/trigger', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/events/trigger', [
             'city_id' => $city->id, 'event_id' => 'EVT_HARVEST', 'reason' => '第二条应当被上限拦下',
         ])->assertStatus(422)
             ->assertJsonPath('error', ErrorCode::EVENT_LIMIT_REACHED)
@@ -150,17 +150,17 @@ class AdminEventTriggerTest extends EventTestCase
 
         // 同一事件不得重复叠加(叠第二份 = 持续型 modifier 双倍生效)
         GameSetting::set(GameSetting::EVENT_MAX_ACTIVE, 5, null, 'test');
-        $this->actingAs($admin)->postJson('/api/admin/events/trigger', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/events/trigger', [
             'city_id' => $city->id, 'event_id' => 'EVT_FESTIVAL', 'reason' => '同一条不得叠加两份',
         ])->assertStatus(422)
             ->assertJsonPath('error', ErrorCode::EVENT_LIMIT_REACHED)
             ->assertJsonPath('details.limit', 'already_active');
 
         // 灾害档的独立上限同样照常尊重(总上限 5、灾害档 1)
-        $this->actingAs($admin)->postJson('/api/admin/events/trigger', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/events/trigger', [
             'city_id' => $city->id, 'event_id' => 'EVT_DROUGHT', 'reason' => '第一条灾害应当成功',
         ])->assertOk();
-        $this->actingAs($admin)->postJson('/api/admin/events/trigger', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/events/trigger', [
             'city_id' => $city->id, 'event_id' => 'EVT_FLOOD', 'reason' => '第二条灾害应被灾害档拦下',
         ])->assertStatus(422)
             ->assertJsonPath('details.limit', 'max_active_disaster');
@@ -178,19 +178,19 @@ class AdminEventTriggerTest extends EventTestCase
         $this->onlyManual('EVT_FESTIVAL');
 
         // 未登记的 event_id → 404
-        $this->actingAs($admin)->postJson('/api/admin/events/trigger', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/events/trigger', [
             'city_id' => $city->id, 'event_id' => 'EVT_NOT_EXISTS', 'reason' => '不存在的事件应当 404',
         ])->assertStatus(404);
 
         // 不存在的城市 → 404
-        $this->actingAs($admin)->postJson('/api/admin/events/trigger', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/events/trigger', [
             'city_id' => 999999, 'event_id' => 'EVT_FESTIVAL', 'reason' => '不存在的城市应当 404',
         ])->assertStatus(404);
 
         // 该事件被停用 → 422(事件被关掉通常是因为它本身算错了,不给绕过开关的后门)
         DB::table('event_definition')->where('event_id', 'EVT_FESTIVAL')->update(['enabled' => false]);
         \App\Game\Event\EventDefinition::flush();
-        $this->actingAs($admin)->postJson('/api/admin/events/trigger', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/events/trigger', [
             'city_id' => $city->id, 'event_id' => 'EVT_FESTIVAL', 'reason' => '停用的事件不许强触发',
         ])->assertStatus(422)->assertJsonPath('error', ErrorCode::EVENT_DISABLED);
 
@@ -198,7 +198,7 @@ class AdminEventTriggerTest extends EventTestCase
         DB::table('event_definition')->where('event_id', 'EVT_FESTIVAL')->update(['enabled' => true]);
         \App\Game\Event\EventDefinition::flush();
         GameSetting::set(GameSetting::EVENT_ENABLED, false, null, 'test');
-        $this->actingAs($admin)->postJson('/api/admin/events/trigger', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/events/trigger', [
             'city_id' => $city->id, 'event_id' => 'EVT_FESTIVAL', 'reason' => '系统停用时不许强触发',
         ])->assertStatus(422)->assertJsonPath('error', ErrorCode::EVENT_DISABLED);
 
@@ -218,7 +218,7 @@ class AdminEventTriggerTest extends EventTestCase
 
         // game_master 没有 edit_definition → 403
         $gm = $this->admin('forcegm', 'game_master');
-        $this->actingAs($gm)->postJson('/api/admin/events/trigger', [
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/events/trigger', [
             'city_id' => $city->id, 'event_id' => 'EVT_FESTIVAL', 'reason' => '越权尝试触发',
         ])->assertStatus(403);
 
@@ -226,13 +226,13 @@ class AdminEventTriggerTest extends EventTestCase
         $this->onlyManual('EVT_FESTIVAL');
 
         // reason 必填、至少 5 字、不超过 80 字
-        $this->actingAs($admin)->postJson('/api/admin/events/trigger', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/events/trigger', [
             'city_id' => $city->id, 'event_id' => 'EVT_FESTIVAL',
         ])->assertStatus(422);
-        $this->actingAs($admin)->postJson('/api/admin/events/trigger', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/events/trigger', [
             'city_id' => $city->id, 'event_id' => 'EVT_FESTIVAL', 'reason' => 'abc',
         ])->assertStatus(422);
-        $this->actingAs($admin)->postJson('/api/admin/events/trigger', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/events/trigger', [
             'city_id' => $city->id, 'event_id' => 'EVT_FESTIVAL', 'reason' => str_repeat('长', 81),
         ])->assertStatus(422);
 

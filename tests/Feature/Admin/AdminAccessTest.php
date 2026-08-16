@@ -18,10 +18,34 @@ class AdminAccessTest extends TestCase
         $this->getJson('/api/admin/players')->assertStatus(401);
     }
 
-    public function test_player_forbidden_and_audited(): void
+    // 玩家只有**游戏会话**(web guard)时打后台:2026-08-15 起后台走独立的 admin guard,
+    // 请求在 auth:admin 就被挡成 401,压根走不到 EnsureAdmin —— 状态码由改动前的 403 变成 401。
+    //
+    // 但**审计必须照留**(2026-08-16 补):「已登录玩家在扫后台 API」是最有价值的入侵信号
+    // (§60 授权失败必记 / §67 该行为要形成 security_flags)。改用 auth:admin 之后这条路径不再
+    // 经过 EnsureAdmin,原本必然写下的那条审计会整条消失 —— 现在由 bootstrap/app.php 的
+    // AuthenticationException 分支补回。reason_code 用 NO_ADMIN_SESSION,与 EnsureAdmin 的
+    // NOT_ADMIN(有后台会话但角色不够)刻意分开:两者的处置优先级不同。
+    public function test_player_web_session_gets_401_on_admin_api_and_is_still_audited(): void
+    {
+        $u = User::create(['username' => 'websessionplayer', 'name' => 'websessionplayer', 'email' => 'w@p.com', 'password' => 'password123']);
+
+        $this->actingAs($u, 'web')->getJson('/api/admin/players')
+            ->assertStatus(401)->assertJson(['error' => 'AUTH_REQUIRED']);
+
+        $audit = DB::table('audit_logs')->where('action', 'SECURITY.AUTHORIZATION_FAILED')->latest('id')->first();
+        $this->assertNotNull($audit, '已登录玩家探测后台 API 必须留痕');
+        $this->assertSame('NO_ADMIN_SESSION', $audit->reason_code);
+        $this->assertSame($u->id, (int) $audit->user_id);
+    }
+
+    // 第二道闸:**持有后台会话**但角色不是后台人员 → 403 + 审计。
+    // 现实场景是「管理员登进后台之后被降级 / role 被写脏」,登录口那道闸只在登录当时判一次,
+    // 会话存活期内的每个请求由 EnsureAdmin 兜住(Fail Closed)
+    public function test_non_staff_holding_admin_session_is_forbidden_and_audited(): void
     {
         $u = User::create(['username' => 'plainplayer', 'name' => 'plainplayer', 'email' => 'p@p.com', 'password' => 'password123']);
-        $this->actingAs($u)->getJson('/api/admin/players')
+        $this->actingAs($u, 'admin')->getJson('/api/admin/players')
             ->assertStatus(403)->assertJson(['error' => 'FORBIDDEN']);
         $this->assertSame('SECURITY.AUTHORIZATION_FAILED', DB::table('audit_logs')->latest('id')->first()->action);
     }
@@ -31,7 +55,7 @@ class AdminAccessTest extends TestCase
         // role 已不可批量赋值,测试里用 forceFill 显式提权
         $u = User::create(['username' => 'bossadmin', 'name' => 'bossadmin', 'email' => 'a@a.com', 'password' => 'password123']);
         $u->forceFill(['role' => 'admin'])->save();
-        $this->actingAs($u)->getJson('/api/admin/players')->assertOk();
+        $this->actingAs($u, 'admin')->getJson('/api/admin/players')->assertOk();
     }
 
     public function test_promote_command(): void

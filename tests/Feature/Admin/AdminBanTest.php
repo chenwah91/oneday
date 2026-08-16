@@ -47,7 +47,7 @@ class AdminBanTest extends TestCase
         $this->postJson('/api/auth/login', ['username' => 'banvictim', 'password' => 'password123'])->assertOk();
 
         // ② 管理员封禁
-        $res = $this->actingAs($admin)->postJson("/api/admin/players/{$player->id}/ban", [
+        $res = $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$player->id}/ban", [
             'reason' => '刷资源作弊,工单 T-1024',
         ])->assertOk();
         $this->assertTrue($res->json('data.changed'));
@@ -62,7 +62,7 @@ class AdminBanTest extends TestCase
         // ④ 在途会话被踢:模拟「封禁发生时他正开着页面」——
         //    从库里重新取一次用户(等同于 session guard 每个请求从 provider 拿人),
         //    这时任何 /api/ 请求都应被 EnsureNotBanned 拦成 401 ACCOUNT_BANNED
-        $this->actingAs(User::find($player->id))->getJson('/api/me')
+        $this->actingAs(User::find($player->id), 'web')->getJson('/api/me')
             ->assertStatus(401)
             ->assertJsonPath('error', ErrorCode::ACCOUNT_BANNED);
 
@@ -71,7 +71,7 @@ class AdminBanTest extends TestCase
         $this->assertTrue(DB::table('users')->where('id', $player->id)->exists(), '封禁不得删除账号');
 
         // ⑥ 解禁后恢复
-        $res = $this->actingAs($admin)->postJson("/api/admin/players/{$player->id}/unban", [
+        $res = $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$player->id}/unban", [
             'reason' => '申诉成立,误判恢复',
         ])->assertOk();
         $this->assertTrue($res->json('data.changed'));
@@ -79,7 +79,7 @@ class AdminBanTest extends TestCase
         $this->assertNull($res->json('data.player.banned_at'));
 
         $this->postJson('/api/auth/login', ['username' => 'banvictim', 'password' => 'password123'])->assertOk();
-        $this->actingAs(User::find($player->id))->getJson('/api/me')->assertOk();
+        $this->actingAs(User::find($player->id), 'web')->getJson('/api/me')->assertOk();
     }
 
     // ---- 审计成对 ----
@@ -89,8 +89,8 @@ class AdminBanTest extends TestCase
         $admin = $this->staff('banaudit', 'admin');
         $player = $this->player('banaudited');
 
-        $this->actingAs($admin)->postJson("/api/admin/players/{$player->id}/ban", ['reason' => '恶意刷分,工单 T-77'])->assertOk();
-        $this->actingAs($admin)->postJson("/api/admin/players/{$player->id}/unban", ['reason' => '处罚期满自动恢复'])->assertOk();
+        $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$player->id}/ban", ['reason' => '恶意刷分,工单 T-77'])->assertOk();
+        $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$player->id}/unban", ['reason' => '处罚期满自动恢复'])->assertOk();
 
         $ban = DB::table('audit_logs')->where('action', AuditAction::ADMIN_PLAYER_BAN)
             ->where('user_id', $player->id)->first();
@@ -130,7 +130,7 @@ class AdminBanTest extends TestCase
         $support = $this->staff('bansupport2', 'support');
 
         foreach ([$otherAdmin, $support, $admin] as $target) {
-            $this->actingAs($admin)->postJson("/api/admin/players/{$target->id}/ban", ['reason' => '尝试封禁后台账号'])
+            $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$target->id}/ban", ['reason' => '尝试封禁后台账号'])
                 ->assertStatus(422)
                 ->assertJsonPath('error', 'VALIDATION_ERROR');
 
@@ -151,12 +151,12 @@ class AdminBanTest extends TestCase
         $admin = $this->staff('banidem', 'admin');
         $player = $this->player('banidemvictim');
 
-        $first = $this->actingAs($admin)->postJson("/api/admin/players/{$player->id}/ban", ['reason' => '重复封禁幂等测试'])->assertOk();
+        $first = $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$player->id}/ban", ['reason' => '重复封禁幂等测试'])->assertOk();
         $this->assertTrue($first->json('data.changed'));
         $bannedAt = $first->json('data.player.banned_at');
 
         // 再封一次:返回当前状态,changed=false,时间戳不变
-        $second = $this->actingAs($admin)->postJson("/api/admin/players/{$player->id}/ban", ['reason' => '重复封禁幂等测试'])->assertOk();
+        $second = $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$player->id}/ban", ['reason' => '重复封禁幂等测试'])->assertOk();
         $this->assertFalse($second->json('data.changed'));
         $this->assertTrue($second->json('data.player.banned'));
         $this->assertSame($bannedAt, $second->json('data.player.banned_at'), '重复封禁不得刷新封禁时刻');
@@ -165,9 +165,9 @@ class AdminBanTest extends TestCase
         $this->assertSame(1, DB::table('audit_logs')->where('action', AuditAction::ADMIN_PLAYER_BAN)->count());
 
         // 解禁两次同理
-        $this->actingAs($admin)->postJson("/api/admin/players/{$player->id}/unban")->assertOk()
+        $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$player->id}/unban")->assertOk()
             ->assertJsonPath('data.changed', true);
-        $this->actingAs($admin)->postJson("/api/admin/players/{$player->id}/unban")->assertOk()
+        $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$player->id}/unban")->assertOk()
             ->assertJsonPath('data.changed', false);
         $this->assertSame(1, DB::table('audit_logs')->where('action', AuditAction::ADMIN_PLAYER_UNBAN)->count());
     }
@@ -183,24 +183,24 @@ class AdminBanTest extends TestCase
 
         // game_master 没有 ban_player(权限表见 App\Support\Role)→ 403
         $gm = $this->staff('bangm', 'game_master');
-        $this->actingAs($gm)->postJson("/api/admin/players/{$player->id}/ban", ['reason' => '越权尝试封禁'])
+        $this->actingAs($gm, 'admin')->postJson("/api/admin/players/{$player->id}/ban", ['reason' => '越权尝试封禁'])
             ->assertStatus(403);
         $this->assertNull(DB::table('users')->where('id', $player->id)->value('banned_at'));
 
         $admin = $this->staff('banperfadm', 'admin');
 
         // reason 必填且至少 5 字
-        $this->actingAs($admin)->postJson("/api/admin/players/{$player->id}/ban", [])->assertStatus(422);
-        $this->actingAs($admin)->postJson("/api/admin/players/{$player->id}/ban", ['reason' => 'abc'])->assertStatus(422);
+        $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$player->id}/ban", [])->assertStatus(422);
+        $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$player->id}/ban", ['reason' => 'abc'])->assertStatus(422);
         // 超过 80 字被拒(超长会写崩 audit_logs.reason_code 并让事务回滚且不留痕)
-        $this->actingAs($admin)->postJson("/api/admin/players/{$player->id}/ban", ['reason' => str_repeat('长', 81)])->assertStatus(422);
+        $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$player->id}/ban", ['reason' => str_repeat('长', 81)])->assertStatus(422);
 
         // 不存在的玩家 404
-        $this->actingAs($admin)->postJson('/api/admin/players/999999/ban', ['reason' => '目标不存在测试'])->assertStatus(404);
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/players/999999/ban', ['reason' => '目标不存在测试'])->assertStatus(404);
 
         // 合法请求通过,且玩家列表能看到封禁状态
-        $this->actingAs($admin)->postJson("/api/admin/players/{$player->id}/ban", ['reason' => '正常封禁流程'])->assertOk();
-        $row = collect($this->actingAs($admin)->getJson('/api/admin/players?q=banperm')->json('data.players'))->firstWhere('username', 'banperm');
+        $this->actingAs($admin, 'admin')->postJson("/api/admin/players/{$player->id}/ban", ['reason' => '正常封禁流程'])->assertOk();
+        $row = collect($this->actingAs($admin, 'admin')->getJson('/api/admin/players?q=banperm')->json('data.players'))->firstWhere('username', 'banperm');
         $this->assertNotNull($row['banned_at']);
         $this->assertSame('正常封禁流程', $row['ban_reason']);
     }

@@ -62,7 +62,7 @@ class AdminCompensationTest extends TestCase
         $before = $this->amount($city, ResourceCode::WOOD);
         $revisionBefore = (int) DB::table('cities')->where('id', $city->id)->value('revision');
 
-        $res = $this->actingAs($gm)->postJson('/api/admin/compensation', [
+        $res = $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', [
             'username' => 'compplayer1',
             'resource' => ResourceCode::WOOD,
             'delta'    => 100,
@@ -111,7 +111,7 @@ class AdminCompensationTest extends TestCase
         $gm = $this->staff(Role::GAME_MASTER, 'compgm2');
         $before = (float) DB::table('cities')->where('id', $city->id)->value('money');
 
-        $this->actingAs($gm)->postJson('/api/admin/compensation', [
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', [
             'city_id'  => $city->id,
             'resource' => ResourceCode::MONEY,
             'delta'    => 250.5,
@@ -130,7 +130,7 @@ class AdminCompensationTest extends TestCase
         $gm = $this->staff(Role::GAME_MASTER, 'compgm3');
         $before = $this->amount($city, ResourceCode::WOOD);
 
-        $this->actingAs($gm)->postJson('/api/admin/compensation', [
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', [
             'city_id'  => $city->id,
             'resource' => ResourceCode::WOOD,
             'delta'    => -50,
@@ -147,7 +147,7 @@ class AdminCompensationTest extends TestCase
         $gm = $this->staff(Role::GAME_MASTER, 'compgm4');
         $this->assertSame(0.0, $this->amount($city, ResourceCode::IRON));
 
-        $this->actingAs($gm)->postJson('/api/admin/compensation', [
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', [
             'city_id'  => $city->id,
             'resource' => ResourceCode::IRON,
             'delta'    => 30,
@@ -167,7 +167,7 @@ class AdminCompensationTest extends TestCase
         $before = $this->amount($city, ResourceCode::WOOD);
         $revisionBefore = (int) DB::table('cities')->where('id', $city->id)->value('revision');
 
-        $this->actingAs($gm)->postJson('/api/admin/compensation', [
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', [
             'city_id'  => $city->id,
             'resource' => ResourceCode::WOOD,
             'delta'    => -($before + 1),
@@ -186,7 +186,7 @@ class AdminCompensationTest extends TestCase
         $gm = $this->staff(Role::GAME_MASTER, 'compgm6');
         $before = $this->amount($city, ResourceCode::WOOD);
 
-        $this->actingAs($gm)->postJson('/api/admin/compensation', [
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', [
             'city_id'  => $city->id,
             'resource' => ResourceCode::WOOD,
             'delta'    => 100000,
@@ -203,7 +203,7 @@ class AdminCompensationTest extends TestCase
         $gm = $this->staff(Role::GAME_MASTER, 'compgm7');
 
         foreach ([ResourceCode::STORAGE_CAPACITY, 'not_a_resource'] as $resource) {
-            $this->actingAs($gm)->postJson('/api/admin/compensation', [
+            $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', [
                 'city_id'  => $city->id,
                 'resource' => $resource,
                 'delta'    => 10,
@@ -218,11 +218,11 @@ class AdminCompensationTest extends TestCase
         [, $city] = $this->makePlayer('compplayer8');
         $gm = $this->staff(Role::GAME_MASTER, 'compgm8');
 
-        $this->actingAs($gm)->postJson('/api/admin/compensation', [
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', [
             'city_id' => $city->id, 'resource' => ResourceCode::WOOD, 'delta' => 10,
         ])->assertStatus(422);
 
-        $this->actingAs($gm)->postJson('/api/admin/compensation', [
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', [
             'city_id' => $city->id, 'resource' => ResourceCode::WOOD, 'delta' => 10, 'reason' => '补',
         ])->assertStatus(422);
     }
@@ -232,12 +232,12 @@ class AdminCompensationTest extends TestCase
     {
         $gm = $this->staff(Role::GAME_MASTER, 'compgm9');
 
-        $this->actingAs($gm)->postJson('/api/admin/compensation', [
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', [
             'username' => 'nobody_here', 'resource' => ResourceCode::WOOD, 'delta' => 10,
             'reason' => '目标不存在的补偿请求',
         ])->assertStatus(404);
 
-        $this->actingAs($gm)->getJson('/api/admin/compensation/lookup')->assertStatus(404);
+        $this->actingAs($gm, 'admin')->getJson('/api/admin/compensation/lookup')->assertStatus(404);
     }
 
     // ---------- 权限矩阵 ----------
@@ -257,10 +257,10 @@ class AdminCompensationTest extends TestCase
         foreach ($cases as $case) {
             $actor = $this->staff($case['role'], $case['username']);
 
-            $this->actingAs($actor)->getJson('/api/admin/compensation/lookup?city_id=' . $city->id)
+            $this->actingAs($actor, 'admin')->getJson('/api/admin/compensation/lookup?city_id=' . $city->id)
                 ->assertStatus(403);
 
-            $this->actingAs($actor)->postJson('/api/admin/compensation', [
+            $this->actingAs($actor, 'admin')->postJson('/api/admin/compensation', [
                 'city_id' => $city->id, 'resource' => ResourceCode::WOOD, 'delta' => 999,
                 'reason' => '越权尝试补偿自己',
             ])->assertStatus(403)->assertJson(['error' => 'FORBIDDEN']);
@@ -299,11 +299,11 @@ class AdminCompensationTest extends TestCase
             'idempotency_key' => 'comp-key-0001',
         ];
 
-        $this->actingAs($gm)->postJson('/api/admin/compensation', $payload)
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', $payload)
             ->assertOk()->assertJson(['data' => ['replayed' => false, 'after' => $before + 60]]);
         $revisionAfterFirst = (int) DB::table('cities')->where('id', $city->id)->value('revision');
 
-        $this->actingAs($gm)->postJson('/api/admin/compensation', $payload)
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', $payload)
             ->assertOk()->assertJson(['data' => ['replayed' => true, 'delta' => 0]]);
 
         // 只入账一次:余额、revision、审计行都不得翻倍
@@ -318,12 +318,12 @@ class AdminCompensationTest extends TestCase
         [, $city] = $this->makePlayer('compplayer12');
         $gm = $this->staff(Role::GAME_MASTER, 'compgm12');
 
-        $this->actingAs($gm)->postJson('/api/admin/compensation', [
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', [
             'city_id' => $city->id, 'resource' => ResourceCode::WOOD, 'delta' => 10,
             'reason' => '第一次补偿木材', 'idempotency_key' => 'comp-key-0002',
         ])->assertOk();
 
-        $this->actingAs($gm)->postJson('/api/admin/compensation', [
+        $this->actingAs($gm, 'admin')->postJson('/api/admin/compensation', [
             'city_id' => $city->id, 'resource' => ResourceCode::WOOD, 'delta' => 999,
             'reason' => '同一个键换了金额', 'idempotency_key' => 'comp-key-0002',
         ])->assertStatus(409)->assertJson(['error' => 'IDEMPOTENCY_KEY_REUSED']);
@@ -336,7 +336,7 @@ class AdminCompensationTest extends TestCase
         [$player, $city] = $this->makePlayer('compplayer13');
         $gm = $this->staff(Role::GAME_MASTER, 'compgm13');
 
-        $res = $this->actingAs($gm)->getJson('/api/admin/compensation/lookup?username=compplayer13');
+        $res = $this->actingAs($gm, 'admin')->getJson('/api/admin/compensation/lookup?username=compplayer13');
         $res->assertOk()->assertJson(['data' => [
             'user' => ['id' => $player->id, 'username' => 'compplayer13'],
             'city' => ['id' => $city->id],

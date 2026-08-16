@@ -132,6 +132,44 @@ class ObservabilityTest extends TestCase
         $this->assertSame('snapshot', json_decode((string) $row->metadata_json, true)['limiter']);
     }
 
+    // SecurityLogger 的 user_id 归属:显式传入的 null 表示「这次事件归不到任何账号」,
+    // **不能**退回当前登录用户。
+    //
+    // 这条是对抗性审查(2026-08-16)抓出来的:原本写的是 `$context['user_id'] ?? $request?->user()?->id`,
+    // ?? 会把显式的 null 当成「没传」。后台登录口没挂 auth、默认 guard 仍是 web,于是登录失败时
+    // 退回来的正是同一个浏览器里登着游戏的那个**无关玩家** —— security.log 指认 bob 正在被爆破,
+    // 而 bob 什么都没做。两套会话共存是本项目的常态,这不是边角情况。
+    public function test_security_logger_does_not_blame_the_current_user_when_id_is_explicitly_null(): void
+    {
+        $user = $this->actingUser('blamevictim');
+        $this->actingAs($user);
+
+        // listen() 挂的是全局 MessageLogged 事件(不限通道),所以按事件名过滤,
+        // 免得被同一请求里其它日志污染计数
+        $captured = [];
+        Log::channel('security')->listen(function ($message) use (&$captured) {
+            if ($message->message === 'security.login_failed') {
+                $captured[] = $message->context;
+            }
+        });
+
+        // 显式传 null:调用方已经查过了,这次尝试归不到任何账号
+        \App\Support\SecurityLogger::log('security.login_failed', [
+            'user_id' => null, 'route' => 'api/admin/auth/login', 'reason' => 'BAD_CREDENTIALS',
+        ]);
+        // 完全不传:才允许退回当前请求的用户。
+        // 这里显式挂 userResolver —— 本用例不走 HTTP,容器里的 Request 没有经过中间件绑定 resolver,
+        // 不挂的话 $request->user() 恒为 null,这条断言就变成「永远通过」的空断言
+        request()->setUserResolver(fn () => $user);
+        \App\Support\SecurityLogger::log('security.login_failed', [
+            'route' => 'api/admin/auth/login', 'reason' => 'BAD_CREDENTIALS',
+        ]);
+
+        $this->assertCount(2, $captured);
+        $this->assertArrayNotHasKey('user_id', $captured[0], '显式 null 不得退回当前登录用户');
+        $this->assertSame($user->id, $captured[1]['user_id'] ?? null, '不传 user_id 时仍应退回当前登录用户');
+    }
+
     // E1:security 通道可写,且不因配置缺失抛异常
     public function test_security_log_channel_is_writable(): void
     {

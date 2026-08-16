@@ -36,6 +36,10 @@ class AdminDefinitionExpansionTest extends TestCase
         return $user;
     }
 
+    // 本文件里 player 的用途只有一个:验「非后台角色一律 403」。
+    // 调用点一律写 actingAs($this->player(), 'admin') —— 后台自 2026-08-15 起走独立会话,
+    // 只有玩家会话的请求会在 auth:admin 就被挡成 401(那条路径在 AdminAccessTest 单独验),
+    // 这里要落到 EnsureAdmin 的角色闸门上才验得到 403
     private function player(string $un = 'w11bplayer'): User
     {
         return User::create(['username' => $un, 'name' => $un, 'email' => "{$un}@example.com", 'password' => 'password123']);
@@ -53,7 +57,7 @@ class AdminDefinitionExpansionTest extends TestCase
     {
         $before = $this->versions();
 
-        $res = $this->actingAs($this->admin())->postJson('/api/admin/definitions/building-level-json', [
+        $res = $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/building-level-json', [
             'building_id' => 'F01', 'level' => 1, 'column' => 'output_json',
             'resource' => 'berries', 'value' => 12.5, 'reason' => '采集营地产量偏低',
         ])->assertOk();
@@ -81,7 +85,7 @@ class AdminDefinitionExpansionTest extends TestCase
     // 建造成本是**映射**形状({wood:10, money:6}),与 output/input 的列表形状不同,单独验一遍
     public function test_edit_cost_json_entry_keeps_the_other_keys(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/building-level-json', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/building-level-json', [
             'building_id' => 'F01', 'level' => 1, 'column' => 'cost_json',
             'resource' => 'wood', 'value' => 25, 'reason' => '提高采集营地木材成本',
         ])->assertOk();
@@ -100,19 +104,19 @@ class AdminDefinitionExpansionTest extends TestCase
         $admin = $this->admin();
 
         // ① 只开放三个 JSON 列 —— cost_type 之类的普通列不走这个入口
-        $this->actingAs($admin)->postJson('/api/admin/definitions/building-level-json', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building-level-json', [
             'building_id' => 'F01', 'level' => 1, 'column' => 'cost_type',
             'resource' => 'wood', 'value' => 1, 'reason' => '试图改别的列',
         ])->assertStatus(422);
 
         // ② 未登记的资源 code:写进去就是一条**永远读不到**的配置(结算按 ResourceCode 查表)
-        $this->actingAs($admin)->postJson('/api/admin/definitions/building-level-json', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building-level-json', [
             'building_id' => 'F01', 'level' => 1, 'column' => 'output_json',
             'resource' => 'unobtainium', 'value' => 5, 'reason' => '试图造一个资源',
         ])->assertStatus(422);
 
         // ③ 条目不存在 = 新增条目 = 改这栋楼产什么,属结构性变更,必须走迁移
-        $this->actingAs($admin)->postJson('/api/admin/definitions/building-level-json', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building-level-json', [
             'building_id' => 'F01', 'level' => 1, 'column' => 'output_json',
             'resource' => 'iron', 'value' => 5, 'reason' => '试图让采集营地产铁',
         ])->assertStatus(422);
@@ -127,7 +131,7 @@ class AdminDefinitionExpansionTest extends TestCase
     public function test_json_editor_enforces_per_column_max(): void
     {
         // 速率上限 1e6:再高会让一栋楼一分钟填满仓库
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/building-level-json', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/building-level-json', [
             'building_id' => 'F01', 'level' => 1, 'column' => 'output_json',
             'resource' => 'berries', 'value' => 1000001, 'reason' => '试图爆产量',
         ])->assertStatus(422);
@@ -138,7 +142,7 @@ class AdminDefinitionExpansionTest extends TestCase
 
     public function test_json_editor_requires_edit_definition_permission(): void
     {
-        $this->actingAs($this->player())->postJson('/api/admin/definitions/building-level-json', [
+        $this->actingAs($this->player(), 'admin')->postJson('/api/admin/definitions/building-level-json', [
             'building_id' => 'F01', 'level' => 1, 'column' => 'output_json',
             'resource' => 'berries', 'value' => 12, 'reason' => '普通玩家试图改定义',
         ])->assertStatus(403);
@@ -150,17 +154,17 @@ class AdminDefinitionExpansionTest extends TestCase
         $admin = $this->admin();
 
         // 工期上限 7 天
-        $this->actingAs($admin)->postJson('/api/admin/definitions/building-level', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building-level', [
             'buildingId' => 'F02', 'level' => 1, 'field' => 'duration_seconds', 'value' => 604801, 'reason' => '试图无限工期',
         ])->assertStatus(422);
 
         // 两个 int 列必须收整数:小数写进 int 列会被静默截断
-        $this->actingAs($admin)->postJson('/api/admin/definitions/building-level', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building-level', [
             'buildingId' => 'F02', 'level' => 1, 'field' => 'worker_required', 'value' => 3.5, 'reason' => '试图填小数工人',
         ])->assertStatus(422);
 
         // 上限之内仍然放行(护栏不能把正常调整也拦掉)
-        $this->actingAs($admin)->postJson('/api/admin/definitions/building-level', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building-level', [
             'buildingId' => 'F02', 'level' => 1, 'field' => 'duration_seconds', 'value' => 600, 'reason' => '缩短工期',
         ])->assertOk();
     }
@@ -171,7 +175,7 @@ class AdminDefinitionExpansionTest extends TestCase
     {
         $admin = $this->admin();
 
-        $res = $this->actingAs($admin)->getJson('/api/admin/definitions/technologies')->assertOk();
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/definitions/technologies')->assertOk();
         $this->assertSame(['knowledge_cost', 'research_minutes'], $res->json('data.editable'));
         // 拓扑列只读下发,供后台判断「改贵了会卡住后面哪几条」
         $first = $res->json('data.technologies.0');
@@ -182,7 +186,7 @@ class AdminDefinitionExpansionTest extends TestCase
         $techId = $first['tech_id'];
         $before = $this->versions();
 
-        $this->actingAs($admin)->postJson('/api/admin/definitions/technology', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/technology', [
             'tech_id' => $techId, 'field' => 'knowledge_cost', 'value' => 123, 'reason' => '下调早期科技成本',
         ])->assertOk();
 
@@ -201,7 +205,7 @@ class AdminDefinitionExpansionTest extends TestCase
         $techId = (string) DB::table('technology_definition')->orderBy('tech_id')->value('tech_id');
 
         foreach (['prerequisite_tech_ids', 'unlock_building_ids', 'era_key', 'branch', 'name'] as $field) {
-            $this->actingAs($admin)->postJson('/api/admin/definitions/technology', [
+            $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/technology', [
                 'tech_id' => $techId, 'field' => $field, 'value' => 1, 'reason' => '试图改科技树拓扑',
             ])->assertStatus(422);
         }
@@ -213,21 +217,21 @@ class AdminDefinitionExpansionTest extends TestCase
         $techId = (string) DB::table('technology_definition')->orderBy('tech_id')->value('tech_id');
 
         // 研究时长上限一周
-        $this->actingAs($admin)->postJson('/api/admin/definitions/technology', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/technology', [
             'tech_id' => $techId, 'field' => 'research_minutes', 'value' => 10081, 'reason' => '试图无限研究',
         ])->assertStatus(422);
 
         // 知识成本是 int 列,小数会被静默截断
-        $this->actingAs($admin)->postJson('/api/admin/definitions/technology', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/technology', [
             'tech_id' => $techId, 'field' => 'knowledge_cost', 'value' => 100.5, 'reason' => '试图填小数',
         ])->assertStatus(422);
 
         // 不存在的科技
-        $this->actingAs($admin)->postJson('/api/admin/definitions/technology', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/technology', [
             'tech_id' => 'TECH_NOPE', 'field' => 'knowledge_cost', 'value' => 10, 'reason' => '不存在的科技',
         ])->assertStatus(404);
 
-        $this->actingAs($this->player())->getJson('/api/admin/definitions/technologies')->assertStatus(403);
+        $this->actingAs($this->player(), 'admin')->getJson('/api/admin/definitions/technologies')->assertStatus(403);
     }
 
     // ==================== 任务2b:建筑定义 ====================
@@ -236,13 +240,13 @@ class AdminDefinitionExpansionTest extends TestCase
     {
         $admin = $this->admin();
 
-        $res = $this->actingAs($admin)->getJson('/api/admin/definitions/buildings')->assertOk();
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/definitions/buildings')->assertOk();
         $this->assertSame(['max_count'], $res->json('data.editable'));
         // 占地只读下发:调 max_count 得知道「这栋楼一个占几格」
         $this->assertArrayHasKey('footprint_w', $res->json('data.buildings.0'));
 
         $before = $this->versions();
-        $this->actingAs($admin)->postJson('/api/admin/definitions/building', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building', [
             'building_id' => 'F01', 'field' => 'max_count', 'value' => 12, 'reason' => '放宽采集营地上限',
         ])->assertOk();
 
@@ -256,17 +260,17 @@ class AdminDefinitionExpansionTest extends TestCase
         $admin = $this->admin();
         $before = (int) DB::table('building_definition')->where('building_id', 'F01')->value('max_count');
 
-        $this->actingAs($admin)->postJson('/api/admin/definitions/building', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building', [
             'building_id' => 'F01', 'field' => 'max_count', 'value' => 0, 'reason' => '试图停售',
         ])->assertStatus(422);
 
-        $this->actingAs($admin)->postJson('/api/admin/definitions/building', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building', [
             'building_id' => 'F01', 'field' => 'max_count', 'value' => 10001, 'reason' => '试图取消上限',
         ])->assertStatus(422);
 
         // 占地绝不开放:改大一格会让所有存量建筑瞬间互相重叠
         foreach (['footprint_w', 'footprint_h'] as $field) {
-            $this->actingAs($admin)->postJson('/api/admin/definitions/building', [
+            $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building', [
                 'building_id' => 'F01', 'field' => $field, 'value' => 3, 'reason' => '试图改占地',
             ])->assertStatus(422);
         }
@@ -289,14 +293,14 @@ class AdminDefinitionExpansionTest extends TestCase
             );
         }
 
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/building', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/building', [
             'building_id' => 'F01', 'field' => 'upgrade_to_building_id', 'value' => 1, 'reason' => '试图改升级链',
         ])->assertStatus(422);
     }
 
     public function test_building_editor_requires_permission(): void
     {
-        $this->actingAs($this->player())->postJson('/api/admin/definitions/building', [
+        $this->actingAs($this->player(), 'admin')->postJson('/api/admin/definitions/building', [
             'building_id' => 'F01', 'field' => 'max_count', 'value' => 5, 'reason' => '普通玩家试图改定义',
         ])->assertStatus(403);
     }
@@ -307,12 +311,12 @@ class AdminDefinitionExpansionTest extends TestCase
     {
         $admin = $this->admin();
 
-        $res = $this->actingAs($admin)->getJson('/api/admin/definitions/npc-skill-curve')->assertOk();
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/definitions/npc-skill-curve')->assertOk();
         $this->assertCount(10, $res->json('data.curve'), '§6.2 曲线恒 10 级,整表不分页');
         $this->assertSame(['xp_to_next', 'primary_bonus', 'maintenance_reduction_cap'], $res->json('data.editable'));
 
         $before = $this->versions();
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc-skill-curve', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc-skill-curve', [
             'level' => 5, 'field' => 'primary_bonus', 'value' => 0.25, 'reason' => '中段曲线偏平',
         ])->assertOk();
 
@@ -325,21 +329,21 @@ class AdminDefinitionExpansionTest extends TestCase
         $admin = $this->admin();
 
         // 主键 level 绝不开放:改它会让 city_npcs.skill_level 指向的那一级查不到
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc-skill-curve', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc-skill-curve', [
             'level' => 5, 'field' => 'level', 'value' => 6, 'reason' => '试图搬走一级',
         ])->assertStatus(422);
 
         // 主技能加成上限 0.9:再高会让单个 NPC 顶爆 §6.4 的单人帽,调了也没反应
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc-skill-curve', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc-skill-curve', [
             'level' => 5, 'field' => 'primary_bonus', 'value' => 1.5, 'reason' => '试图爆帽',
         ])->assertStatus(422);
 
         // 经验是 unsignedInteger 列
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc-skill-curve', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc-skill-curve', [
             'level' => 5, 'field' => 'xp_to_next', 'value' => 100.5, 'reason' => '试图填小数',
         ])->assertStatus(422);
 
-        $this->actingAs($this->player())->getJson('/api/admin/definitions/npc-skill-curve')->assertStatus(403);
+        $this->actingAs($this->player(), 'admin')->getJson('/api/admin/definitions/npc-skill-curve')->assertStatus(403);
     }
 
     // ==================== 任务3:时代升级门槛编辑器 ====================
@@ -348,7 +352,7 @@ class AdminDefinitionExpansionTest extends TestCase
     {
         $admin = $this->admin();
 
-        $res = $this->actingAs($admin)->getJson('/api/admin/definitions/era-requirements')->assertOk();
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/definitions/era-requirements')->assertOk();
         $this->assertCount(9, $res->json('data.requirements'), '§5.1 恒 9 档(I→II … IX→X)');
         $this->assertSame(
             ['population', 'knowledge', 'food', 'money', 'governance', 'happiness', 'defense'],
@@ -358,7 +362,7 @@ class AdminDefinitionExpansionTest extends TestCase
         $this->assertArrayHasKey('buildings_json', $res->json('data.requirements.0'));
 
         $before = $this->versions();
-        $res = $this->actingAs($admin)->postJson('/api/admin/definitions/era-requirements', [
+        $res = $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/era-requirements', [
             'era_order' => 2, 'field' => 'population', 'value' => 80, 'reason' => 'I→II 人口门槛偏低',
         ])->assertOk();
 
@@ -377,7 +381,7 @@ class AdminDefinitionExpansionTest extends TestCase
     // 「只是想让升代难一点」会连带改掉全服的威胁等级判定
     public function test_editing_defense_warns_about_threat_requirement(): void
     {
-        $res = $this->actingAs($this->admin())->postJson('/api/admin/definitions/era-requirements', [
+        $res = $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/era-requirements', [
             'era_order' => 4, 'field' => 'defense', 'value' => 200, 'reason' => '提高国防门槛',
         ])->assertOk();
 
@@ -390,33 +394,33 @@ class AdminDefinitionExpansionTest extends TestCase
         $admin = $this->admin();
 
         // buildings_json 绝不开放:必须建筑清单是升级路径拓扑,填一栋目标时代的建筑就是死锁
-        $this->actingAs($admin)->postJson('/api/admin/definitions/era-requirements', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/era-requirements', [
             'era_order' => 8, 'field' => 'buildings_json', 'value' => 1, 'reason' => '试图改升级路径',
         ])->assertStatus(422);
 
         // 幸福度是 0~100 的百分制:101 等于把升级通道焊死
-        $this->actingAs($admin)->postJson('/api/admin/definitions/era-requirements', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/era-requirements', [
             'era_order' => 2, 'field' => 'happiness', 'value' => 101, 'reason' => '试图焊死通道',
         ])->assertStatus(422);
 
         // 七列都是 unsignedInteger,小数会被静默截断
-        $this->actingAs($admin)->postJson('/api/admin/definitions/era-requirements', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/era-requirements', [
             'era_order' => 2, 'field' => 'food', 'value' => 300.5, 'reason' => '试图填小数',
         ])->assertStatus(422);
 
         // 逐列上限(人口 10 倍余量 = 2e6)
-        $this->actingAs($admin)->postJson('/api/admin/definitions/era-requirements', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/era-requirements', [
             'era_order' => 2, 'field' => 'population', 'value' => 2000001, 'reason' => '试图锁死升代',
         ])->assertStatus(422);
 
         // 时代 I 没有「升到 I」这一档
-        $this->actingAs($admin)->postJson('/api/admin/definitions/era-requirements', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/era-requirements', [
             'era_order' => 1, 'field' => 'population', 'value' => 10, 'reason' => '不存在的档',
         ])->assertStatus(422);
 
         $this->assertSame(50, (int) DB::table('era_upgrade_requirement')->where('era_order', 2)->value('population'));
 
-        $this->actingAs($this->player())->getJson('/api/admin/definitions/era-requirements')->assertStatus(403);
+        $this->actingAs($this->player(), 'admin')->getJson('/api/admin/definitions/era-requirements')->assertStatus(403);
     }
 
     // ==================== 任务4:NPC 特性强度倍率(编辑器侧)====================
@@ -425,19 +429,19 @@ class AdminDefinitionExpansionTest extends TestCase
     {
         $admin = $this->admin();
 
-        $res = $this->actingAs($admin)->getJson('/api/admin/definitions/npcs')->assertOk();
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/definitions/npcs')->assertOk();
         $this->assertContains('trait_multiplier', $res->json('data.editable'));
         // 特性**结构**仍然锁着:倍率开放的是强度,不是结构
         $this->assertNotContains('trait_json', $res->json('data.editable'));
 
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'N001', 'field' => 'trait_multiplier', 'value' => 2.0, 'reason' => 'N001 特性偏弱',
         ])->assertOk();
 
         $this->assertEqualsWithDelta(2.0, (float) DB::table('npc_definition')->where('npc_id', 'N001')->value('trait_multiplier'), 1e-6);
 
         // 上限 10:再高会顶爆 §6.4 / §13 的帽,调了也没反应
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'N001', 'field' => 'trait_multiplier', 'value' => 10.5, 'reason' => '试图爆帽',
         ])->assertStatus(422);
 
@@ -451,13 +455,13 @@ class AdminDefinitionExpansionTest extends TestCase
     {
         $admin = $this->admin();
 
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'trade_mode', 'value' => 'non_tradeable', 'reason' => '铁被刷崩,先停市',
         ])->assertOk();
         $this->assertSame('non_tradeable', DB::table('market_definition')->where('resource_id', 'iron')->value('trade_mode'));
 
         // 复市:同一条路走回去
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'trade_mode', 'value' => 'spot', 'reason' => '查清后复市',
         ])->assertOk();
         $this->assertSame('spot', DB::table('market_definition')->where('resource_id', 'iron')->value('trade_mode'));
@@ -469,13 +473,13 @@ class AdminDefinitionExpansionTest extends TestCase
         $admin = $this->admin();
 
         // 现状是 capacity_contract → 不许切走
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'electricity', 'field' => 'trade_mode', 'value' => 'spot', 'reason' => '试图让电力上市',
         ])->assertStatus(422);
         $this->assertSame('capacity_contract', DB::table('market_definition')->where('resource_id', 'electricity')->value('trade_mode'));
 
         // 目标值是 capacity_contract → 不许切进去
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'trade_mode', 'value' => 'capacity_contract', 'reason' => '试图把铁变产能合约',
         ])->assertStatus(422);
         $this->assertSame('spot', DB::table('market_definition')->where('resource_id', 'iron')->value('trade_mode'));
@@ -487,13 +491,13 @@ class AdminDefinitionExpansionTest extends TestCase
         $admin = $this->admin();
 
         // 不给原因 → 422,且开关不能被改
-        $this->actingAs($admin)->postJson('/api/admin/definitions/event', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/event', [
             'event_id' => 'EVT_DROUGHT', 'field' => 'enabled', 'value' => 0, 'reason' => '临时下线',
         ])->assertStatus(422);
         $this->assertSame(1, (int) DB::table('event_definition')->where('event_id', 'EVT_DROUGHT')->value('enabled'));
 
         // 给了原因 → 同事务写进定义表
-        $this->actingAs($admin)->postJson('/api/admin/definitions/event', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/event', [
             'event_id' => 'EVT_DROUGHT', 'field' => 'enabled', 'value' => 0,
             'reason' => '临时下线', 'disabled_reason' => '干旱触发过密,等权重重算后再开',
         ])->assertOk();
@@ -507,7 +511,7 @@ class AdminDefinitionExpansionTest extends TestCase
         $this->assertSame('干旱触发过密,等权重重算后再开', json_decode($audit->after_json, true)['disabled_reason']);
 
         // 启用 → 原因自动清成 NULL(理由已经不成立,留着只会误导下一个人)
-        $this->actingAs($admin)->postJson('/api/admin/definitions/event', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/event', [
             'event_id' => 'EVT_DROUGHT', 'field' => 'enabled', 'value' => 1, 'reason' => '重新上线',
         ])->assertOk();
 
@@ -519,7 +523,7 @@ class AdminDefinitionExpansionTest extends TestCase
     // 工具列表补两列只读:装备对象原文 + 真正进乘区的 specs
     public function test_item_list_exposes_equip_target_and_effect_json_read_only(): void
     {
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/definitions/items')->assertOk();
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/definitions/items')->assertOk();
 
         $row = $res->json('data.items.0');
         $this->assertArrayHasKey('equip_target_desc_zh', $row);

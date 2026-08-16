@@ -124,7 +124,7 @@ class NpcTraitMultiplierTest extends EventTestCase
         ]);
         $admin->forceFill(['role' => 'admin'])->save();
 
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'N001', 'field' => 'trait_multiplier', 'value' => 0, 'reason' => 'N001 特性整体停用',
         ])->assertOk();
 

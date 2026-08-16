@@ -176,7 +176,7 @@ class InitialResourcesTest extends TestCase
         $this->assertEqualsWithDelta(100.0, $this->amountOf($city, ResourceCode::KNOWLEDGE), 0.0001);
 
         // TECH_I_SUST「生存采集」:时代 I、无前置、20 知识 → 解锁 F01,新号的第一步
-        $this->actingAs($user)->postJson('/api/city/research', ['tech_id' => 'TECH_I_SUST'])->assertOk();
+        $this->actingAs($user, 'web')->postJson('/api/city/research', ['tech_id' => 'TECH_I_SUST'])->assertOk();
 
         $this->assertEqualsWithDelta(80.0, $this->amountOf($city, ResourceCode::KNOWLEDGE), 0.0001);
         $this->assertSame(1, DB::table('city_technologies')
@@ -190,7 +190,7 @@ class InitialResourcesTest extends TestCase
         $admin = $this->admin('initadmin');
 
         // 列表下发编辑器元数据:可选键清单 + 数量上限(后台据此渲染键/值表格,不必手写 JSON)
-        $res = $this->actingAs($admin)->getJson('/api/admin/settings');
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/settings');
         $res->assertOk();
         $row = collect($res->json('data.settings'))->firstWhere('setting_key', GameSetting::INITIAL_RESOURCES);
         $this->assertSame('resource_map', $row['type']);
@@ -200,7 +200,7 @@ class InitialResourcesTest extends TestCase
         $this->assertNotContains(ResourceCode::GOVERNANCE_CAPACITY, array_column($row['options'], 'code'));
 
         $payload = [ResourceCode::MONEY => 500, ResourceCode::FOOD => 250, ResourceCode::KNOWLEDGE => 120];
-        $this->actingAs($admin)->postJson('/api/admin/settings', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/settings', [
             'setting_key' => GameSetting::INITIAL_RESOURCES,
             'value'       => $payload,
             'reason'      => '测试期上调开局知识',
@@ -241,7 +241,7 @@ class InitialResourcesTest extends TestCase
         ];
 
         foreach ($cases as $label => $value) {
-            $this->actingAs($admin)->postJson('/api/admin/settings', [
+            $this->actingAs($admin, 'admin')->postJson('/api/admin/settings', [
                 'setting_key' => GameSetting::INITIAL_RESOURCES,
                 'value'       => $value,
                 'reason'      => '恶意输入:' . $label,
@@ -257,7 +257,7 @@ class InitialResourcesTest extends TestCase
     {
         $admin = $this->admin('initadmin3');
 
-        $this->actingAs($admin)->postJson('/api/admin/settings', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/settings', [
             'setting_key' => GameSetting::WORKER_GATE_ENABLED, 'value' => false, 'reason' => '对象型上线后复测布尔开关',
         ])->assertOk()->assertJson(['data' => ['before' => true, 'after' => false]]);
 
@@ -265,12 +265,12 @@ class InitialResourcesTest extends TestCase
         $this->assertFalse(GameSetting::get(GameSetting::WORKER_GATE_ENABLED));
 
         // 布尔开关仍然只收真正的 true/false
-        $this->actingAs($admin)->postJson('/api/admin/settings', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/settings', [
             'setting_key' => GameSetting::WORKER_GATE_ENABLED, 'value' => ['wood' => 1], 'reason' => '对象值塞进布尔开关',
         ])->assertStatus(422);
 
         // 对象型设定也不接受布尔值
-        $this->actingAs($admin)->postJson('/api/admin/settings', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/settings', [
             'setting_key' => GameSetting::INITIAL_RESOURCES, 'value' => true, 'reason' => '布尔塞进对象型设定',
         ])->assertStatus(422);
     }

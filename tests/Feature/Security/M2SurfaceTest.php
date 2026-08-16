@@ -212,7 +212,10 @@ class M2SurfaceTest extends TestCase
         $player = User::create(['username' => 'ridprobe', 'name' => 'ridprobe', 'email' => 'rid@x.com', 'password' => 'password123']);
         CityFactory::createForUser($player);
 
-        $this->actingAs($player)->getJson('/api/admin/settings', ['X-Request-ID' => $forged])
+        // guard 写 'admin':后台自 2026-08-15 起走独立会话,只有玩家会话的请求会在 auth:admin 被挡成 401、
+        // 根本不会写审计 —— 那样这条用例就验不到「越权探测必须留痕」这件事了。
+        // 这里要的是「持有后台会话但角色不够」那条路径:进得到 EnsureAdmin → 403 + SECURITY.AUTHORIZATION_FAILED
+        $this->actingAs($player, 'admin')->getJson('/api/admin/settings', ['X-Request-ID' => $forged])
             ->assertStatus(403)->assertJson(['error' => 'FORBIDDEN']);
 
         $denied = DB::table('audit_logs')->where('action', 'SECURITY.AUTHORIZATION_FAILED')->first();
@@ -227,7 +230,8 @@ class M2SurfaceTest extends TestCase
         $this->unlockTechFor($city->id, 'R01');
         DB::table('city_resources')->updateOrInsert(['city_id' => $city->id, 'resource_id' => 'wood'], ['amount' => 500]);
 
-        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'R01', 'x' => 10, 'y' => 10], ['X-Request-ID' => $forged])
+        // 玩家侧请求,guard 必须显式写 'web':上面的 actingAs(..., 'admin') 已经把默认 guard 切走了
+        $this->actingAs($u, 'web')->postJson('/api/city/build', ['building_id' => 'R01', 'x' => 10, 'y' => 10], ['X-Request-ID' => $forged])
             ->assertOk();
 
         $this->assertSame(1, DB::table('audit_logs')->where('action', 'BUILDING.BUILD')->count(), '超长 X-Request-ID 把建造审计冲掉了');
@@ -240,7 +244,8 @@ class M2SurfaceTest extends TestCase
         CityFactory::createForUser($u);
 
         $id = str_repeat('b', 36);
-        $this->actingAs($u)->getJson('/api/admin/settings', ['X-Request-ID' => $id])->assertStatus(403);
+        // 同上:要落到 EnsureAdmin 才写得出审计,所以挂 admin guard(纯玩家会话会被 auth:admin 401 掉)
+        $this->actingAs($u, 'admin')->getJson('/api/admin/settings', ['X-Request-ID' => $id])->assertStatus(403);
 
         $this->assertSame($id, DB::table('audit_logs')
             ->where('action', 'SECURITY.AUTHORIZATION_FAILED')->value('request_id'));

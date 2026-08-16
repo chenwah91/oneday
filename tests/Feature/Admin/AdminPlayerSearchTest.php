@@ -43,7 +43,7 @@ class AdminPlayerSearchTest extends TestCase
         $b = $this->player('aaa_first');
         CityFactory::createForUser($a);
 
-        $res = $this->actingAs($admin)->getJson('/api/admin/players')->assertOk();
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/players')->assertOk();
         $players = $res->json('data.players');
 
         // 旧契约:id 升序,且不带分页字段
@@ -74,7 +74,7 @@ class AdminPlayerSearchTest extends TestCase
         // email 前缀命中、username 不命中的一条
         $this->player('gamma_one', 'alphamail@example.com');
 
-        $names = collect($this->actingAs($admin)->getJson('/api/admin/players?q=alpha')->assertOk()
+        $names = collect($this->actingAs($admin, 'admin')->getJson('/api/admin/players?q=alpha')->assertOk()
             ->json('data.players'))->pluck('username')->all();
 
         sort($names);
@@ -83,7 +83,7 @@ class AdminPlayerSearchTest extends TestCase
         // 中缀不该命中:'one' 只是 alpha_one 的后半段
         $this->assertSame(
             [],
-            $this->actingAs($admin)->getJson('/api/admin/players?q=one')->assertOk()->json('data.players'),
+            $this->actingAs($admin, 'admin')->getJson('/api/admin/players?q=one')->assertOk()->json('data.players'),
             '前缀匹配不该命中中缀'
         );
     }
@@ -97,19 +97,19 @@ class AdminPlayerSearchTest extends TestCase
 
         $this->assertSame(
             [],
-            $this->actingAs($admin)->getJson('/api/admin/players?q=%25')->assertOk()->json('data.players'),
+            $this->actingAs($admin, 'admin')->getJson('/api/admin/players?q=%25')->assertOk()->json('data.players'),
             '% 必须被当成字面量,不能匹配到任何人'
         );
 
         // 下划线同理:'wild_' 应当只按字面量匹配(这里字面量恰好命中两条)
-        $underscore = $this->actingAs($admin)->getJson('/api/admin/players?q=wild_')->assertOk()->json('data.players');
+        $underscore = $this->actingAs($admin, 'admin')->getJson('/api/admin/players?q=wild_')->assertOk()->json('data.players');
         $this->assertCount(2, $underscore);
 
         // 'wildX' 形态不该命中 —— 若 _ 被当成通配符,下面这一条会返回 0 条而不是报错,
         // 所以正面验一次「_ 只当字面量」:searchadm 里没有 wild 开头的其它账号
         $this->assertSame(
             [],
-            $this->actingAs($admin)->getJson('/api/admin/players?q=wildX')->assertOk()->json('data.players')
+            $this->actingAs($admin, 'admin')->getJson('/api/admin/players?q=wildX')->assertOk()->json('data.players')
         );
     }
 
@@ -122,12 +122,12 @@ class AdminPlayerSearchTest extends TestCase
         $support->forceFill(['role' => 'support'])->save();
         $this->player('roleplayer');
 
-        $players = $this->actingAs($admin)->getJson('/api/admin/players?role=support')->assertOk()->json('data.players');
+        $players = $this->actingAs($admin, 'admin')->getJson('/api/admin/players?role=support')->assertOk()->json('data.players');
         $this->assertCount(1, $players);
         $this->assertSame('rolesupport', $players[0]['username']);
 
         // 非法角色一律 422,而不是静默返回空列表(空列表会被读成「这个角色没有人」)
-        $this->actingAs($admin)->getJson('/api/admin/players?role=godmode')
+        $this->actingAs($admin, 'admin')->getJson('/api/admin/players?role=godmode')
             ->assertStatus(422)->assertJsonPath('error', 'VALIDATION_ERROR');
     }
 
@@ -146,7 +146,7 @@ class AdminPlayerSearchTest extends TestCase
 
         do {
             $url = '/api/admin/players?limit=3'.($cursor ? "&before_id={$cursor}" : '');
-            $res = $this->actingAs($admin)->getJson($url)->assertOk();
+            $res = $this->actingAs($admin, 'admin')->getJson($url)->assertOk();
             $ids = array_column($res->json('data.players'), 'id');
 
             $this->assertLessThanOrEqual(3, count($ids), 'limit 必须生效');
@@ -169,11 +169,11 @@ class AdminPlayerSearchTest extends TestCase
             $this->player('clamp'.$i);
         }
 
-        $res = $this->actingAs($admin)->getJson('/api/admin/players?limit=99999')->assertOk();
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/players?limit=99999')->assertOk();
         $this->assertSame(200, $res->json('data.limit'));
         $this->assertLessThanOrEqual(200, count($res->json('data.players')));
 
-        $res = $this->actingAs($admin)->getJson('/api/admin/players?limit=0')->assertOk();
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/players?limit=0')->assertOk();
         $this->assertSame(1, $res->json('data.limit'));
         $this->assertCount(1, $res->json('data.players'));
     }

@@ -39,7 +39,7 @@ class MarketAdminTest extends TestCase
 
     public function test_admin_can_list_all_market_definitions(): void
     {
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/definitions/market');
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/definitions/market');
 
         $res->assertOk();
         $this->assertCount(28, $res->json('data.market'));
@@ -67,7 +67,7 @@ class MarketAdminTest extends TestCase
         $epoch = PriceEngine::currentEpoch();
         $priceBefore = PriceEngine::priceFor(MarketDefinition::find('iron'), $epoch);
 
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/market', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'base_price', 'value' => 30.0, 'reason' => '铁价偏低,上调基准',
         ])->assertOk();
 
@@ -81,7 +81,7 @@ class MarketAdminTest extends TestCase
 
     public function test_admin_can_edit_volatility(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/market', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'volatility', 'value' => 0.2, 'reason' => '提高铁的波动',
         ])->assertOk();
 
@@ -93,7 +93,7 @@ class MarketAdminTest extends TestCase
     {
         $versionsBefore = DB::table('game_data_versions')->count();
 
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/market', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'fee_rate', 'value' => 0.05, 'reason' => '上调铁的手续费',
         ])->assertOk();
 
@@ -121,7 +121,7 @@ class MarketAdminTest extends TestCase
         $admin = $this->admin();
 
         foreach (['rs_code', 'resource_id', 'first_era', 'market_category'] as $field) {
-            $this->actingAs($admin)->postJson('/api/admin/definitions/market', [
+            $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market', [
                 'resource_code' => 'knowledge', 'field' => $field, 'value' => 1, 'reason' => '试图改结构列',
             ])->assertStatus(422);
         }
@@ -131,7 +131,7 @@ class MarketAdminTest extends TestCase
 
     public function test_negative_values_are_rejected(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/market', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'fee_rate', 'value' => -0.5, 'reason' => '负费率',
         ])->assertStatus(422);
 
@@ -145,7 +145,7 @@ class MarketAdminTest extends TestCase
         $admin = $this->admin();
 
         foreach ([['fee_rate', 1.5], ['volatility', 2.0], ['elasticity', 50], ['base_price', 9999999]] as [$field, $value]) {
-            $this->actingAs($admin)->postJson('/api/admin/definitions/market', [
+            $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market', [
                 'resource_code' => 'iron', 'field' => $field, 'value' => $value, 'reason' => '越界测试',
             ])->assertStatus(422);
         }
@@ -154,7 +154,7 @@ class MarketAdminTest extends TestCase
     // 跨字段自洽:min_price 不能被改到超过 max_price(夹取区间会变空)
     public function test_min_price_cannot_exceed_max_price(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/market', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'min_price', 'value' => 999.0, 'reason' => '把下限顶到上限之上',
         ])->assertStatus(422);
 
@@ -164,7 +164,7 @@ class MarketAdminTest extends TestCase
     // 现货资源的 base_price 不能改成 0:成交额恒为 0 = 该资源变成免费无限领
     public function test_spot_base_price_cannot_be_zeroed(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/market', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'base_price', 'value' => 0, 'reason' => '归零测试',
         ])->assertStatus(422);
 
@@ -173,26 +173,27 @@ class MarketAdminTest extends TestCase
 
     public function test_reason_is_required(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/market', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'base_price', 'value' => 25.0,
         ])->assertStatus(422);
     }
 
     public function test_unknown_resource_returns_404(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/market', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'unobtanium', 'field' => 'base_price', 'value' => 25.0, 'reason' => '不存在的资源',
         ])->assertStatus(404);
     }
 
     // ---- 权限 ----
 
+    // guard 写 'admin' 才落得到 EnsureAdmin 的角色闸门(403);只有玩家会话时是 auth:admin 的 401
     public function test_players_cannot_read_or_edit_market_definitions(): void
     {
         $player = $this->player();
 
-        $this->actingAs($player)->getJson('/api/admin/definitions/market')->assertStatus(403);
-        $this->actingAs($player)->postJson('/api/admin/definitions/market', [
+        $this->actingAs($player, 'admin')->getJson('/api/admin/definitions/market')->assertStatus(403);
+        $this->actingAs($player, 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'base_price', 'value' => 1, 'reason' => '越权尝试',
         ])->assertStatus(403);
 
@@ -212,7 +213,7 @@ class MarketAdminTest extends TestCase
     // 12 条市场设定必须出现在后台设置页,且带上后台渲染数字输入框所需的 min/max 元数据
     public function test_market_settings_are_exposed_through_the_settings_endpoint(): void
     {
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/settings');
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/settings');
         $res->assertOk();
 
         $settings = collect($res->json('data.settings') ?? $res->json('data'))->keyBy('setting_key');
@@ -243,7 +244,7 @@ class MarketAdminTest extends TestCase
     // 带小数位的值才能真正验出「float 原样穿过 HTTP → 校验 → 落库 → 读取」这一整条路
     public function test_changing_slippage_through_settings_endpoint_takes_effect(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/settings', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/settings', [
             'setting_key' => GameSetting::MARKET_SLIPPAGE_COEFFICIENT, 'value' => 2.5, 'reason' => '收紧滑点',
         ])->assertOk();
 
@@ -251,7 +252,7 @@ class MarketAdminTest extends TestCase
         $this->assertSame(2.5, GameSetting::get(GameSetting::MARKET_SLIPPAGE_COEFFICIENT));
 
         // 超出登记区间 [0, 5] 的值必须被拒(TYPE_NUMBER 的闭区间校验)
-        $this->actingAs($this->admin('mktadmin2'))->postJson('/api/admin/settings', [
+        $this->actingAs($this->admin('mktadmin2'), 'admin')->postJson('/api/admin/settings', [
             'setting_key' => GameSetting::MARKET_SLIPPAGE_COEFFICIENT, 'value' => 99, 'reason' => '越界',
         ])->assertStatus(422);
     }

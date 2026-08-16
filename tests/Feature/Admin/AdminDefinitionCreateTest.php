@@ -38,6 +38,10 @@ class AdminDefinitionCreateTest extends TestCase
         return $user;
     }
 
+    // 本文件里 player 的用途只有一个:验「非后台角色一律 403」。
+    // 调用点一律写 actingAs($this->player(), 'admin') —— 后台自 2026-08-15 起走独立会话,
+    // 只有玩家会话的请求会在 auth:admin 就被挡成 401(那条路径在 AdminAccessTest 单独验),
+    // 这里要落到 EnsureAdmin 的角色闸门上才验得到 403 + SECURITY.AUTHORIZATION_FAILED
     private function player(string $un = 'w14aplayer'): User
     {
         return User::create(['username' => $un, 'name' => $un, 'email' => "{$un}@example.com", 'password' => 'password123']);
@@ -129,7 +133,7 @@ class AdminDefinitionCreateTest extends TestCase
         $before = $this->versions();
         $maxBefore = (int) DB::table('building_level_definition')->where('building_id', 'F01')->max('level');
 
-        $res = $this->actingAs($this->admin())->postJson('/api/admin/definitions/building-level/add', [
+        $res = $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/building-level/add', [
             'building_id' => 'F01', 'reason' => 'F01 需要第四级', 'values' => $this->levelValues(),
         ])->assertOk();
 
@@ -164,10 +168,10 @@ class AdminDefinitionCreateTest extends TestCase
         $admin = $this->admin();
         $maxBefore = (int) DB::table('building_level_definition')->where('building_id', 'F01')->max('level');
 
-        $first = $this->actingAs($admin)->postJson('/api/admin/definitions/building-level/add', [
+        $first = $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building-level/add', [
             'building_id' => 'F01', 'reason' => '加第一档', 'values' => $this->levelValues(),
         ])->assertOk();
-        $second = $this->actingAs($admin)->postJson('/api/admin/definitions/building-level/add', [
+        $second = $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building-level/add', [
             'building_id' => 'F01', 'reason' => '加第二档', 'values' => $this->levelValues(),
         ])->assertOk();
 
@@ -186,29 +190,29 @@ class AdminDefinitionCreateTest extends TestCase
         $countBefore = DB::table('building_level_definition')->count();
 
         // 不存在的建筑:不准借道「加等级」新建建筑
-        $this->actingAs($admin)->postJson('/api/admin/definitions/building-level/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building-level/add', [
             'building_id' => 'NOPE', 'reason' => '试图新建建筑', 'values' => $this->levelValues(),
         ])->assertStatus(422);
 
         // 缺 reason(§63 强制)
-        $this->actingAs($admin)->postJson('/api/admin/definitions/building-level/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building-level/add', [
             'building_id' => 'F01', 'values' => $this->levelValues(),
         ])->assertStatus(422);
 
         // 数值列上限(工期 7 天)
-        $this->actingAs($admin)->postJson('/api/admin/definitions/building-level/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building-level/add', [
             'building_id' => 'F01', 'reason' => '试图填爆工期',
             'values' => $this->levelValues(['duration_seconds' => 604801]),
         ])->assertStatus(422);
 
         // int 列的小数会被静默截断
-        $this->actingAs($admin)->postJson('/api/admin/definitions/building-level/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building-level/add', [
             'building_id' => 'F01', 'reason' => '试图填小数工人',
             'values' => $this->levelValues(['worker_required' => 3.5]),
         ])->assertStatus(422);
 
         // JSON 列的资源 code 必须登记在册(拼错 = 一条永远读不到的配置)
-        $this->actingAs($admin)->postJson('/api/admin/definitions/building-level/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building-level/add', [
             'building_id' => 'F01', 'reason' => '试图写未登记资源',
             'values' => $this->levelValues(['cost_json' => ['woooood' => 10]]),
         ])->assertStatus(422);
@@ -216,14 +220,14 @@ class AdminDefinitionCreateTest extends TestCase
         // 数值列缺项一律拒(新增没有「默认值兜底」这回事)
         $values = $this->levelValues();
         unset($values['capacity']);
-        $this->actingAs($admin)->postJson('/api/admin/definitions/building-level/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building-level/add', [
             'building_id' => 'F01', 'reason' => '缺列', 'values' => $values,
         ])->assertStatus(422);
 
         $this->assertSame($countBefore, DB::table('building_level_definition')->count(), '任何一条失败都不得留下半行');
 
         // 普通玩家 403
-        $this->actingAs($this->player())->postJson('/api/admin/definitions/building-level/add', [
+        $this->actingAs($this->player(), 'admin')->postJson('/api/admin/definitions/building-level/add', [
             'building_id' => 'F01', 'reason' => '越权尝试', 'values' => $this->levelValues(),
         ])->assertStatus(403);
     }
@@ -234,7 +238,7 @@ class AdminDefinitionCreateTest extends TestCase
     {
         $before = $this->versions();
 
-        $res = $this->actingAs($this->admin())->postJson('/api/admin/definitions/technology/add', [
+        $res = $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/technology/add', [
             'reason' => '补一条时代 I 的实验科技', 'values' => $this->techValues(),
         ])->assertOk();
 
@@ -263,7 +267,7 @@ class AdminDefinitionCreateTest extends TestCase
     {
         $before = (int) DB::table('technology_definition')->where('tech_id', 'TECH_I_SUST')->value('knowledge_cost');
 
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/technology/add', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/technology/add', [
             'reason' => '试图覆盖既有科技',
             'values' => $this->techValues(['tech_id' => 'TECH_I_SUST', 'knowledge_cost' => 99999]),
         ])->assertStatus(422);
@@ -278,43 +282,43 @@ class AdminDefinitionCreateTest extends TestCase
         $countBefore = DB::table('technology_definition')->count();
 
         // ID 格式必须与库内 TECH_* 风格一致
-        $this->actingAs($admin)->postJson('/api/admin/definitions/technology/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/technology/add', [
             'reason' => '错误 ID 风格', 'values' => $this->techValues(['tech_id' => 'tech-lowercase']),
         ])->assertStatus(422);
 
         // branch 必须在 EnumCode::TECH_BRANCHES 登记表内
-        $this->actingAs($admin)->postJson('/api/admin/definitions/technology/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/technology/add', [
             'reason' => '非法分支', 'values' => $this->techValues(['branch' => 'not_a_branch']),
         ])->assertStatus(422);
 
         // era_key 必须存在于时代表
-        $this->actingAs($admin)->postJson('/api/admin/definitions/technology/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/technology/add', [
             'reason' => '不存在的时代', 'values' => $this->techValues(['era_key' => 'ZZ']),
         ])->assertStatus(422);
 
         // 前置科技必须已存在
-        $this->actingAs($admin)->postJson('/api/admin/definitions/technology/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/technology/add', [
             'reason' => '悬空前置', 'values' => $this->techValues(['prerequisite_tech_ids' => ['TECH_NOPE']]),
         ])->assertStatus(422);
 
         // 前置不能引用自己(自环)
-        $this->actingAs($admin)->postJson('/api/admin/definitions/technology/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/technology/add', [
             'reason' => '自环', 'values' => $this->techValues(['prerequisite_tech_ids' => ['TECH_I_TEST']]),
         ])->assertStatus(422);
 
         // 解锁建筑必须存在于 building_definition
-        $this->actingAs($admin)->postJson('/api/admin/definitions/technology/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/technology/add', [
             'reason' => '悬空解锁', 'values' => $this->techValues(['unlock_building_ids' => ['ZZZ']]),
         ])->assertStatus(422);
 
         // 缺 reason
-        $this->actingAs($admin)->postJson('/api/admin/definitions/technology/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/technology/add', [
             'values' => $this->techValues(),
         ])->assertStatus(422);
 
         $this->assertSame($countBefore, DB::table('technology_definition')->count());
 
-        $this->actingAs($this->player())->postJson('/api/admin/definitions/technology/add', [
+        $this->actingAs($this->player(), 'admin')->postJson('/api/admin/definitions/technology/add', [
             'reason' => '越权尝试', 'values' => $this->techValues(),
         ])->assertStatus(403);
     }
@@ -325,7 +329,7 @@ class AdminDefinitionCreateTest extends TestCase
     {
         $before = $this->versions();
 
-        $res = $this->actingAs($this->admin())->postJson('/api/admin/definitions/npc/add', [
+        $res = $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/npc/add', [
             'reason' => '补一位农业 NPC', 'values' => $this->npcValues(),
         ])->assertOk();
 
@@ -356,7 +360,7 @@ class AdminDefinitionCreateTest extends TestCase
     {
         $before = DB::table('npc_definition')->where('npc_id', 'N001')->value('name_zh');
 
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/npc/add', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/npc/add', [
             'reason' => '试图覆盖 N001',
             'values' => $this->npcValues(['npc_id' => 'N001', 'name_key' => 'npc.N001.name', 'name_zh' => '冒名者']),
         ])->assertStatus(422);
@@ -370,59 +374,59 @@ class AdminDefinitionCreateTest extends TestCase
         $countBefore = DB::table('npc_definition')->count();
 
         // ID 格式照 N001 风格
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc/add', [
             'reason' => '错误 ID', 'values' => $this->npcValues(['npc_id' => 'NPC_901', 'name_key' => 'npc.NPC_901.name']),
         ])->assertStatus(422);
 
         // 稀有度必须是 NpcCode::RARITIES 里的 code
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc/add', [
             'reason' => '非法稀有度', 'values' => $this->npcValues(['rarity' => 'mythic']),
         ])->assertStatus(422);
 
         // 获取来源必须是 NpcCode::SOURCES 里的 code
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc/add', [
             'reason' => '非法来源', 'values' => $this->npcValues(['recruit_source' => 'gacha']),
         ])->assertStatus(422);
 
         // category 只能用库内已有分类(新分类走迁移)
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc/add', [
             'reason' => '发明新分类', 'values' => $this->npcValues(['category' => 'wizardry']),
         ])->assertStatus(422);
 
         // 主技能必须存在于 npc_skill_definition
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc/add', [
             'reason' => '不存在的技能', 'values' => $this->npcValues(['primary_skill_id' => 'SKILL_MAGIC']),
         ])->assertStatus(422);
 
         // min_era 必须存在于时代表
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc/add', [
             'reason' => '不存在的时代', 'values' => $this->npcValues(['min_era' => 'ZZ']),
         ])->assertStatus(422);
 
         // trait_json 的 target 必须过 ModifierSpec 的三重 allowlist(拼错只会静默不生效)
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc/add', [
             'reason' => '非法特性 target',
             'values' => $this->npcValues(['trait_json' => ['specs' => [['target' => 'not_a_target', 'scope' => 'city', 'op' => 'pct', 'value' => 0.1]], 'unmapped_zh' => []]]),
         ])->assertStatus(422);
 
         // 数值列上限:初始技能值是百分制
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc/add', [
             'reason' => '技能值越界', 'values' => $this->npcValues(['initial_skill_value' => 101]),
         ])->assertStatus(422);
 
         // 等级对必须自洽
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc/add', [
             'reason' => '等级对不自洽', 'values' => $this->npcValues(['initial_skill_level' => 8, 'max_level' => 5]),
         ])->assertStatus(422);
 
         // 缺 reason
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc/add', [
             'values' => $this->npcValues(),
         ])->assertStatus(422);
 
         $this->assertSame($countBefore, DB::table('npc_definition')->count());
 
-        $this->actingAs($this->player())->postJson('/api/admin/definitions/npc/add', [
+        $this->actingAs($this->player(), 'admin')->postJson('/api/admin/definitions/npc/add', [
             'reason' => '越权尝试', 'values' => $this->npcValues(),
         ])->assertStatus(403);
     }
@@ -434,7 +438,7 @@ class AdminDefinitionCreateTest extends TestCase
         $before = $this->versions();
         $resource = DB::table('resource_definition')->where('resource_id', 'iron_tools')->first();
 
-        $res = $this->actingAs($this->admin())->postJson('/api/admin/definitions/market/add', [
+        $res = $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/market/add', [
             'reason' => '铁制工具上市补缺口', 'values' => $this->marketValues(),
         ])->assertOk();
 
@@ -464,13 +468,13 @@ class AdminDefinitionCreateTest extends TestCase
 
         // 已有市场行的资源:改数值请走编辑器,新增不得变成覆盖
         $beforePrice = DB::table('market_definition')->where('resource_id', 'iron')->value('base_price');
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market/add', [
             'reason' => '试图覆盖铁的定价', 'values' => $this->marketValues(['resource_id' => 'iron', 'base_price' => 999]),
         ])->assertStatus(422);
         $this->assertEquals($beforePrice, DB::table('market_definition')->where('resource_id', 'iron')->value('base_price'));
 
         // 不存在的资源:上市不能发明新资源
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market/add', [
             'reason' => '试图发明新资源', 'values' => $this->marketValues(['resource_id' => 'unobtainium']),
         ])->assertStatus(422);
         $this->assertNull(DB::table('market_definition')->where('resource_id', 'unobtainium')->first());
@@ -481,17 +485,17 @@ class AdminDefinitionCreateTest extends TestCase
         $admin = $this->admin();
 
         // min > max:夹取区间为空
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market/add', [
             'reason' => '区间倒置', 'values' => $this->marketValues(['min_price' => 90, 'max_price' => 15]),
         ])->assertStatus(422);
 
         // base 掉出区间下方
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market/add', [
             'reason' => 'base 低于下限', 'values' => $this->marketValues(['base_price' => 10]),
         ])->assertStatus(422);
 
         // base 掉出区间上方
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market/add', [
             'reason' => 'base 高于上限', 'values' => $this->marketValues(['base_price' => 200]),
         ])->assertStatus(422);
 
@@ -503,28 +507,28 @@ class AdminDefinitionCreateTest extends TestCase
         $admin = $this->admin();
 
         // 市场分组只能用库内已有的(market_category 与 resource_definition.category 语义不同)
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market/add', [
             'reason' => '发明新分组', 'values' => $this->marketValues(['market_category' => 'luxury']),
         ])->assertStatus(422);
 
         // trade_mode 只收 spot / non_tradeable:产能合约是电力的特例
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market/add', [
             'reason' => '试图新建产能合约', 'values' => $this->marketValues(['trade_mode' => 'capacity_contract']),
         ])->assertStatus(422);
 
         // 费率 ≥1 会让卖出变成倒贴钱
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market/add', [
             'reason' => '费率越界', 'values' => $this->marketValues(['fee_rate' => 1.5]),
         ])->assertStatus(422);
 
         // 缺 reason
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market/add', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market/add', [
             'values' => $this->marketValues(),
         ])->assertStatus(422);
 
         $this->assertNull(DB::table('market_definition')->where('resource_id', 'iron_tools')->first());
 
-        $this->actingAs($this->player())->postJson('/api/admin/definitions/market/add', [
+        $this->actingAs($this->player(), 'admin')->postJson('/api/admin/definitions/market/add', [
             'reason' => '越权尝试', 'values' => $this->marketValues(),
         ])->assertStatus(403);
     }
@@ -535,7 +539,7 @@ class AdminDefinitionCreateTest extends TestCase
     {
         $admin = $this->admin();
 
-        $res = $this->actingAs($admin)->getJson('/api/admin/definitions/npcs')->assertOk();
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/definitions/npcs')->assertOk();
         $editable = $res->json('data.editable');
         foreach (['name_zh', 'category', 'min_era', 'rarity', 'recruit_source', 'recruit_desc_zh', 'trait_desc_zh'] as $col) {
             $this->assertContains($col, $editable, "{$col} 应已扩进可编辑列");
@@ -546,34 +550,34 @@ class AdminDefinitionCreateTest extends TestCase
         }
 
         // 枚举列改成合法值:成功
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'N001', 'field' => 'rarity', 'value' => 'epic', 'reason' => '提高 N001 稀有度',
         ])->assertOk();
         $this->assertSame('epic', DB::table('npc_definition')->where('npc_id', 'N001')->value('rarity'));
 
         // 枚举列改成非法值:422(Fail Closed)
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'N001', 'field' => 'rarity', 'value' => 'mythic', 'reason' => '非法稀有度',
         ])->assertStatus(422);
         $this->assertSame('epic', DB::table('npc_definition')->where('npc_id', 'N001')->value('rarity'));
 
         // 旧挂账:五个数值列此前上限裸奔,现在逐列有上限
         $wageBefore = DB::table('npc_definition')->where('npc_id', 'N002')->value('wage_per_min');
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'N002', 'field' => 'wage_per_min', 'value' => 1000001, 'reason' => '工资越界',
         ])->assertStatus(422);
         $this->assertEquals($wageBefore, DB::table('npc_definition')->where('npc_id', 'N002')->value('wage_per_min'));
 
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'N002', 'field' => 'initial_skill_value', 'value' => 101, 'reason' => '技能值越界',
         ])->assertStatus(422);
 
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'N002', 'field' => 'food_per_min', 'value' => 10001, 'reason' => '口粮越界',
         ])->assertStatus(422);
 
         // 等级两列改单列时也要与另一列现值合并校验
-        $this->actingAs($admin)->postJson('/api/admin/definitions/npc', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/npc', [
             'npc_id' => 'N001', 'field' => 'max_level', 'value' => 2, 'reason' => '把上限压到初始之下',
         ])->assertStatus(422);
     }
@@ -582,7 +586,7 @@ class AdminDefinitionCreateTest extends TestCase
     {
         $admin = $this->admin();
 
-        $res = $this->actingAs($admin)->getJson('/api/admin/definitions/market')->assertOk();
+        $res = $this->actingAs($admin, 'admin')->getJson('/api/admin/definitions/market')->assertOk();
         $editable = $res->json('data.editable');
         foreach (['base_price', 'min_price', 'max_price', 'volatility', 'elasticity', 'fee_rate', 'base_liquidity', 'trade_mode', 'note'] as $col) {
             $this->assertContains($col, $editable, "{$col} 应在可编辑列内");
@@ -593,7 +597,7 @@ class AdminDefinitionCreateTest extends TestCase
         }
 
         // note 可改(此前没有任何入口能写它)
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'note', 'value' => '钢产线上线后再评估', 'reason' => '补一句备注',
         ])->assertOk();
         $this->assertSame('钢产线上线后再评估', DB::table('market_definition')->where('resource_id', 'iron')->value('note'));
@@ -601,21 +605,21 @@ class AdminDefinitionCreateTest extends TestCase
         // 改单列时与另两列现值合并校验:把 base 顶到 max 之上必须 422
         $max = (float) DB::table('market_definition')->where('resource_id', 'iron')->value('max_price');
         $baseBefore = DB::table('market_definition')->where('resource_id', 'iron')->value('base_price');
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'base_price', 'value' => $max + 1, 'reason' => 'base 越过上限',
         ])->assertStatus(422);
         $this->assertEquals($baseBefore, DB::table('market_definition')->where('resource_id', 'iron')->value('base_price'));
 
         // 把 min 顶到 base 之上同样 422(三元组的另一侧)
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'min_price', 'value' => (float) $baseBefore + 1, 'reason' => 'min 越过 base',
         ])->assertStatus(422);
 
         // 逐列 FIELD_MAX
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'volatility', 'value' => 1.5, 'reason' => '波动率越界',
         ])->assertStatus(422);
-        $this->actingAs($admin)->postJson('/api/admin/definitions/market', [
+        $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/market', [
             'resource_code' => 'iron', 'field' => 'base_liquidity', 'value' => 1000000001, 'reason' => '流动性越界',
         ])->assertStatus(422);
     }
@@ -623,7 +627,7 @@ class AdminDefinitionCreateTest extends TestCase
     // 后台科技 GET 必须带 branch:前端要按分支分组显示
     public function test_admin_technologies_response_carries_branch(): void
     {
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/definitions/technologies')->assertOk();
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/definitions/technologies')->assertOk();
 
         $first = $res->json('data.technologies.0');
         $this->assertArrayHasKey('branch', $first);

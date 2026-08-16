@@ -97,7 +97,17 @@ final class AuditAction
     public const SECURITY_SUSPICIOUS_ACTIVITY = 'SECURITY.SUSPICIOUS_ACTIVITY';
 
     // 管理后台
+    //
+    // ══ 后台认证三兄弟:与玩家的 AUTH.* 完全分开(用户 2026-08-16 拍板)═══════════════
+    // 后台自 2026-08-15 起走独立的 admin guard 与独立登录端点,两套会话在同一浏览器里并存。
+    // 审计上也必须彻底分家:原先后台的失败与登出复用 AUTH.LOGIN_FAILED / AUTH.LOGOUT,
+    // 靠 metadata.surface 与 actor_type 两个**字段**去区分 —— 运营按 action 一查就混在一起,
+    // 「有人在敲后台门」和「有人在爆破玩家号」这两件处置优先级完全不同的事被算成同一堆。
+    // 现在三个动作各有各的码,`WHERE action LIKE 'ADMIN.%'` 就是后台的全部认证活动。
+    // §55 说「Action Code 进入生产后尽量保持稳定」—— 系统尚未上线,现在正是分家的时机。
     public const ADMIN_LOGIN = 'ADMIN.LOGIN';
+    public const ADMIN_LOGIN_FAILED = 'ADMIN.LOGIN_FAILED';
+    public const ADMIN_LOGOUT = 'ADMIN.LOGOUT';
     public const ADMIN_CONFIG_CHANGE = 'ADMIN.CONFIG_CHANGE';
 
     // 管理员补偿(CLAUDE §80 / SECURITY.md「补偿统一使用 ADMIN.COMPENSATION」):

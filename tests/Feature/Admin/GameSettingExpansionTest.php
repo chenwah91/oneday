@@ -244,7 +244,7 @@ class GameSettingExpansionTest extends TestCase
     // 后台列表必须把四件元数据都透出来,否则前端渲染不出分组 / 步进 / 只读 / 联动提示
     public function test_settings_endpoint_exposes_group_integer_depends_and_deprecated(): void
     {
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/settings');
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/settings');
         $res->assertOk();
         $settings = collect($res->json('data.settings'))->keyBy('setting_key');
 
@@ -525,15 +525,15 @@ class GameSettingExpansionTest extends TestCase
         );
 
         // 默认单线:第二项被拒
-        $this->actingAs($u)->postJson('/api/city/research', ['tech_id' => 'TECH_I_SUST'])->assertOk();
-        $this->actingAs($u)->postJson('/api/city/research', ['tech_id' => 'TECH_I_IND'])
+        $this->actingAs($u, 'web')->postJson('/api/city/research', ['tech_id' => 'TECH_I_SUST'])->assertOk();
+        $this->actingAs($u, 'web')->postJson('/api/city/research', ['tech_id' => 'TECH_I_IND'])
             ->assertStatus(422)->assertJson(['error' => 'RESEARCH_IN_PROGRESS']);
 
         $this->setValue(GameSetting::RESEARCH_PARALLEL_LIMIT, 2);
 
         // 上限 2:第二项放行,第三项仍被拒
-        $this->actingAs($u)->postJson('/api/city/research', ['tech_id' => 'TECH_I_IND'])->assertOk();
-        $this->actingAs($u)->postJson('/api/city/research', ['tech_id' => 'TECH_I_CIV'])
+        $this->actingAs($u, 'web')->postJson('/api/city/research', ['tech_id' => 'TECH_I_IND'])->assertOk();
+        $this->actingAs($u, 'web')->postJson('/api/city/research', ['tech_id' => 'TECH_I_CIV'])
             ->assertStatus(422)->assertJson(['error' => 'RESEARCH_IN_PROGRESS']);
 
         $this->assertSame(2, DB::table('city_technologies')
@@ -555,7 +555,7 @@ class GameSettingExpansionTest extends TestCase
 
         $this->setValue(GameSetting::TECH_KNOWLEDGE_COST_MULTIPLIER, 2.5);
 
-        $this->actingAs($u)->postJson('/api/city/research', ['tech_id' => 'TECH_I_SUST'])->assertOk();
+        $this->actingAs($u, 'web')->postJson('/api/city/research', ['tech_id' => 'TECH_I_SUST'])->assertOk();
 
         $left = (float) DB::table('city_resources')
             ->where('city_id', $city->id)->where('resource_id', 'knowledge')->value('amount');
@@ -596,7 +596,7 @@ class GameSettingExpansionTest extends TestCase
 
         $this->setValue(GameSetting::BUILD_COST_MULTIPLIER, 3.0);
 
-        $this->actingAs($u)->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 2, 'y' => 2])->assertOk();
+        $this->actingAs($u, 'web')->postJson('/api/city/build', ['building_id' => 'F02', 'x' => 2, 'y' => 2])->assertOk();
 
         $left = (float) DB::table('city_resources')
             ->where('city_id', $city->id)->where('resource_id', 'wood')->value('amount');

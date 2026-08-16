@@ -24,7 +24,7 @@ class AdminDefinitionTest extends TestCase
     public function test_edit_building_level_field_audits_and_bumps_version(): void
     {
         $before = (int) DB::table('building_level_definition')->where('building_id', 'F02')->where('level', 1)->value('worker_required');
-        $res = $this->actingAs($this->admin())->postJson('/api/admin/definitions/building-level', [
+        $res = $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/building-level', [
             'buildingId' => 'F02', 'level' => 1, 'field' => 'worker_required', 'value' => $before + 2, 'reason' => '平衡性调整',
         ]);
         $res->assertOk();
@@ -39,14 +39,14 @@ class AdminDefinitionTest extends TestCase
 
     public function test_rejects_non_allowlisted_field(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/building-level', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/building-level', [
             'buildingId' => 'F02', 'level' => 1, 'field' => 'building_id', 'value' => 999, 'reason' => 'x',
         ])->assertStatus(422);
     }
 
     public function test_requires_reason(): void
     {
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/building-level', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/building-level', [
             'buildingId' => 'F02', 'level' => 1, 'field' => 'worker_required', 'value' => 5,
         ])->assertStatus(422);
     }
@@ -55,7 +55,7 @@ class AdminDefinitionTest extends TestCase
     public function test_rejects_negative_value(): void
     {
         $before = DB::table('building_level_definition')->where('building_id', 'F02')->where('level', 1)->value('maintenance_money_per_min');
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/building-level', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/building-level', [
             'buildingId' => 'F02', 'level' => 1, 'field' => 'maintenance_money_per_min', 'value' => -5, 'reason' => '平衡性调整',
         ])->assertStatus(422);
         $this->assertEquals($before, DB::table('building_level_definition')->where('building_id', 'F02')->where('level', 1)->value('maintenance_money_per_min'));
@@ -74,7 +74,7 @@ class AdminDefinitionTest extends TestCase
                 "{$dropped} 应已于 V3.2.1 从定义表删除"
             );
 
-            $this->actingAs($admin)->postJson('/api/admin/definitions/building-level', [
+            $this->actingAs($admin, 'admin')->postJson('/api/admin/definitions/building-level', [
                 'buildingId' => 'F02', 'level' => 1, 'field' => $dropped, 'value' => 10, 'reason' => '试图改已删除的列',
             ])->assertStatus(422)->assertJson(['error' => 'VALIDATION_ERROR']);
         }
@@ -83,7 +83,7 @@ class AdminDefinitionTest extends TestCase
     // 查询接口也不得再回传这三列(否则后台会拿到一堆不存在的字段名)
     public function test_building_levels_response_has_no_dropped_fields(): void
     {
-        $res = $this->actingAs($this->admin())->getJson('/api/admin/definitions/building-levels?buildingId=F02');
+        $res = $this->actingAs($this->admin(), 'admin')->getJson('/api/admin/definitions/building-levels?buildingId=F02');
         $res->assertOk();
 
         foreach ($res->json('data.levels') as $level) {
@@ -98,7 +98,7 @@ class AdminDefinitionTest extends TestCase
     {
         $before = (int) DB::table('building_level_definition')->where('building_id', 'F02')->where('level', 1)->value('worker_required');
         $auditCountBefore = DB::table('audit_logs')->count();
-        $this->actingAs($this->admin())->postJson('/api/admin/definitions/building-level', [
+        $this->actingAs($this->admin(), 'admin')->postJson('/api/admin/definitions/building-level', [
             'buildingId' => 'F02', 'level' => 1, 'field' => 'worker_required', 'value' => $before + 1,
             'reason' => str_repeat('原', 100),
         ])->assertStatus(422);
